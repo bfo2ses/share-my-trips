@@ -4,6 +4,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
@@ -11,9 +12,13 @@ import (
 
 // CreateTrip is the resolver for the createTrip field.
 func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput) (*TripPayload, error) {
-	startDate, endDate, err := parseDateRange(input.StartDate, input.EndDate)
-	if err != nil {
-		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
+	startDate, startErr := parseOptionalDate(input.StartDate)
+	if startErr != nil {
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("startDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+	}
+	endDate, endErr := parseOptionalDate(input.EndDate)
+	if endErr != nil {
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("endDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
 
 	t, err := r.tripHandler.Create(ctx, trip.CreateTripCommand{
@@ -32,9 +37,13 @@ func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput
 
 // UpdateTrip is the resolver for the updateTrip field.
 func (r *mutationResolver) UpdateTrip(ctx context.Context, id string, input UpdateTripInput) (*TripPayload, error) {
-	startDate, endDate, err := parseDateRange(input.StartDate, input.EndDate)
-	if err != nil {
-		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
+	startDate, startErr := parseOptionalDate(input.StartDate)
+	if startErr != nil {
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("startDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+	}
+	endDate, endErr := parseOptionalDate(input.EndDate)
+	if endErr != nil {
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("endDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
 
 	t, err := r.tripHandler.Update(ctx, trip.UpdateTripCommand{
@@ -129,7 +138,10 @@ func (r *queryResolver) Trips(ctx context.Context, status []TripStatus) ([]*Trip
 func (r *queryResolver) Trip(ctx context.Context, id string) (*Trip, error) {
 	t, err := r.tripHandler.GetByID(ctx, trip.GetTripQuery{ID: id})
 	if err != nil {
-		return nil, nil
+		if errors.Is(err, trip.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
 	}
 	return toGraphQLTrip(t), nil
 }
@@ -142,77 +154,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// --- helpers ---
-
-const dateFormat = time.DateOnly // "2006-01-02"
-
-func toGraphQLTrip(t *trip.Trip) *Trip {
-	return &Trip{
-		ID:          t.ID,
-		Title:       t.Title,
-		Country:     t.Country,
-		Description: t.Description,
-		CoverPhoto:  t.CoverPhoto,
-		StartDate:   formatDate(t.StartDate),
-		EndDate:     formatDate(t.EndDate),
-		Status:      toGraphQLStatus(t.Status),
-		CreatedAt:   t.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:   t.UpdatedAt.UTC().Format(time.RFC3339),
-	}
-}
-
-func formatDate(t time.Time) *string {
-	if t.IsZero() {
-		return nil
-	}
-	s := t.Format(dateFormat)
-	return &s
-}
-
-func toGraphQLStatus(s trip.Status) TripStatus {
-	switch s {
-	case trip.StatusPublished:
-		return TripStatusPublished
-	case trip.StatusClosed:
-		return TripStatusClosed
-	default:
-		return TripStatusDraft
-	}
-}
-
-func todomainStatus(s TripStatus) trip.Status {
-	switch s {
-	case TripStatusPublished:
-		return trip.StatusPublished
-	case TripStatusClosed:
-		return trip.StatusClosed
-	default:
-		return trip.StatusDraft
-	}
-}
-
-func parseDateRange(startIn, endIn *string) (time.Time, time.Time, error) {
-	var startDate, endDate time.Time
-	var err error
-	if startIn != nil && *startIn != "" {
-		startDate, err = time.Parse(dateFormat, *startIn)
-		if err != nil {
-			return time.Time{}, time.Time{}, trip.ErrInvalidDates
-		}
-	}
-	if endIn != nil && *endIn != "" {
-		endDate, err = time.Parse(dateFormat, *endIn)
-		if err != nil {
-			return time.Time{}, time.Time{}, trip.ErrInvalidDates
-		}
-	}
-	return startDate, endDate, nil
-}
-
-func derefString(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
-}

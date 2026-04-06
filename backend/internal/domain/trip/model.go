@@ -27,6 +27,7 @@ var (
 	ErrClosed             = errors.New("trip is closed and cannot be modified")
 	ErrNoDaysToClose      = errors.New("trip must have at least one day to be closed")
 	ErrCannotCloseDraft   = errors.New("cannot close a draft trip")
+	ErrNotClosed          = errors.New("trip is not closed")
 )
 
 // Trip is the root aggregate for the trip context.
@@ -119,7 +120,7 @@ func (t *Trip) Close(firstDay, lastDay time.Time) error {
 // Reopen transitions the trip from closed back to published.
 func (t *Trip) Reopen() error {
 	if t.Status != StatusClosed {
-		return fmt.Errorf("reopen: %w", ErrAlreadyClosed)
+		return fmt.Errorf("reopen: %w", ErrNotClosed)
 	}
 	t.Status = StatusPublished
 	t.UpdatedAt = time.Now()

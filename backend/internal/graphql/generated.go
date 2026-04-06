@@ -399,10 +399,14 @@ var sources = []*ast.Source{
   country: String!
   description: String!
   coverPhoto: String!
+  "Date-only, format YYYY-MM-DD. Null when not set."
   startDate: String
+  "Date-only, format YYYY-MM-DD. Null when not set."
   endDate: String
   status: TripStatus!
+  "RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z)."
   createdAt: String!
+  "RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z)."
   updatedAt: String!
 }
 
@@ -451,7 +455,9 @@ input CloseTripInput {
 }
 
 type Query {
+  "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
+  "Returns a single trip by ID, or null if not found."
   trip(id: ID!): Trip
 }
 

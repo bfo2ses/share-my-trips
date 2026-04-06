@@ -35,16 +35,20 @@ type Query struct {
 }
 
 type Trip struct {
-	ID          string     `json:"id"`
-	Title       string     `json:"title"`
-	Country     string     `json:"country"`
-	Description string     `json:"description"`
-	CoverPhoto  string     `json:"coverPhoto"`
-	StartDate   *string    `json:"startDate,omitempty"`
-	EndDate     *string    `json:"endDate,omitempty"`
-	Status      TripStatus `json:"status"`
-	CreatedAt   string     `json:"createdAt"`
-	UpdatedAt   string     `json:"updatedAt"`
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Country     string `json:"country"`
+	Description string `json:"description"`
+	CoverPhoto  string `json:"coverPhoto"`
+	// Date-only, format YYYY-MM-DD. Null when not set.
+	StartDate *string `json:"startDate,omitempty"`
+	// Date-only, format YYYY-MM-DD. Null when not set.
+	EndDate *string    `json:"endDate,omitempty"`
+	Status  TripStatus `json:"status"`
+	// RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z).
+	CreatedAt string `json:"createdAt"`
+	// RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z).
+	UpdatedAt string `json:"updatedAt"`
 }
 
 type TripPayload struct {

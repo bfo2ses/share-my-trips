@@ -31,6 +31,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: trip.ErrNoDaysToClose.Error()}}
 	case errors.Is(err, trip.ErrCannotCloseDraft):
 		return []*UserError{{Message: trip.ErrCannotCloseDraft.Error()}}
+	case errors.Is(err, trip.ErrNotClosed):
+		return []*UserError{{Message: trip.ErrNotClosed.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}
