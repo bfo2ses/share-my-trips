@@ -1,0 +1,71 @@
+type Trip {
+  id: ID!
+  title: String!
+  country: String!
+  description: String!
+  coverPhoto: String!
+  startDate: String
+  endDate: String
+  status: TripStatus!
+  createdAt: String!
+  updatedAt: String!
+}
+
+enum TripStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+type UserError {
+  field: String
+  message: String!
+}
+
+type TripPayload {
+  trip: Trip
+  errors: [UserError!]!
+}
+
+type DeleteTripPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+input CreateTripInput {
+  title: String!
+  country: String!
+  description: String
+  coverPhoto: String
+  startDate: String
+  endDate: String
+}
+
+input UpdateTripInput {
+  title: String!
+  country: String!
+  description: String
+  coverPhoto: String
+  startDate: String
+  endDate: String
+}
+
+input CloseTripInput {
+  firstDay: String!
+  lastDay: String!
+}
+
+type Query {
+  trips(status: [TripStatus!]): [Trip!]!
+  trip(id: ID!): Trip
+}
+
+type Mutation {
+  createTrip(input: CreateTripInput!): TripPayload!
+  updateTrip(id: ID!, input: UpdateTripInput!): TripPayload!
+  publishTrip(id: ID!): TripPayload!
+  unpublishTrip(id: ID!): TripPayload!
+  closeTrip(id: ID!, input: CloseTripInput!): TripPayload!
+  reopenTrip(id: ID!): TripPayload!
+  deleteTrip(id: ID!): DeleteTripPayload!
+}

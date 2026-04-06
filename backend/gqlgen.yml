@@ -1,0 +1,16 @@
+schema:
+  - api/schema.graphqls
+
+exec:
+  filename: internal/graphql/generated.go
+  package: graph
+
+model:
+  filename: internal/graphql/models_gen.go
+  package: graph
+
+resolver:
+  layout: single-file
+  filename: internal/graphql/schema.resolvers.go
+  package: graph
+  type: Resolver
