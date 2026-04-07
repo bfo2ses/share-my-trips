@@ -1,0 +1,77 @@
+type Trip {
+  id: ID!
+  title: String!
+  country: String!
+  description: String!
+  coverPhoto: String!
+  "Date-only, format YYYY-MM-DD. Null when not set."
+  startDate: String
+  "Date-only, format YYYY-MM-DD. Null when not set."
+  endDate: String
+  status: TripStatus!
+  "RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z)."
+  createdAt: String!
+  "RFC 3339 timestamp (e.g. 2025-07-01T10:00:00Z)."
+  updatedAt: String!
+}
+
+enum TripStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+type UserError {
+  field: String
+  message: String!
+}
+
+type TripPayload {
+  trip: Trip
+  errors: [UserError!]!
+}
+
+type DeleteTripPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+input CreateTripInput {
+  title: String!
+  country: String!
+  description: String
+  coverPhoto: String
+  startDate: String
+  endDate: String
+}
+
+input UpdateTripInput {
+  title: String!
+  country: String!
+  description: String
+  coverPhoto: String
+  startDate: String
+  endDate: String
+}
+
+input CloseTripInput {
+  firstDay: String!
+  lastDay: String!
+}
+
+type Query {
+  "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
+  trips(status: [TripStatus!]): [Trip!]!
+  "Returns a single trip by ID, or null if not found."
+  trip(id: ID!): Trip
+}
+
+type Mutation {
+  createTrip(input: CreateTripInput!): TripPayload!
+  updateTrip(id: ID!, input: UpdateTripInput!): TripPayload!
+  publishTrip(id: ID!): TripPayload!
+  unpublishTrip(id: ID!): TripPayload!
+  closeTrip(id: ID!, input: CloseTripInput!): TripPayload!
+  reopenTrip(id: ID!): TripPayload!
+  deleteTrip(id: ID!): DeleteTripPayload!
+}
