@@ -8,14 +8,23 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
+	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
 )
 
 func main() {
-	repo := memory.NewTripRepository()
-	tripHandler := trip.NewHandler(repo)
-	resolver := graph.NewResolver(tripHandler)
+	tripRepo := memory.NewTripRepository()
+	stageRepo := memory.NewStageRepository()
+	dayRepo := memory.NewDayRepository()
+	tripChecker := memory.NewTripChecker(tripRepo)
+
+	tripHandler := trip.NewHandler(tripRepo)
+	stageHandler := stage.NewHandler(stageRepo, tripChecker, dayRepo)
+	dayHandler := day.NewHandler(dayRepo, tripChecker)
+
+	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler)
 
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 

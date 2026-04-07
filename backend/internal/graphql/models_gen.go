@@ -9,6 +9,24 @@ import (
 	"strconv"
 )
 
+type AddDayInput struct {
+	TripID  string `json:"tripID"`
+	StageID string `json:"stageID"`
+	// Date-only, format YYYY-MM-DD.
+	Date        string  `json:"date"`
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+type AddStageInput struct {
+	TripID      string  `json:"tripID"`
+	City        string  `json:"city"`
+	Name        *string `json:"name,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Description *string `json:"description,omitempty"`
+}
+
 type CloseTripInput struct {
 	FirstDay string `json:"firstDay"`
 	LastDay  string `json:"lastDay"`
@@ -23,6 +41,37 @@ type CreateTripInput struct {
 	EndDate     *string `json:"endDate,omitempty"`
 }
 
+type Day struct {
+	ID       string   `json:"id"`
+	TripID   string   `json:"tripID"`
+	StageIDs []string `json:"stageIDs"`
+	// Date-only, format YYYY-MM-DD.
+	Date string `json:"date"`
+	// Null when not provided.
+	Title *string `json:"title,omitempty"`
+	// Null when not provided.
+	Description *string `json:"description,omitempty"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
+	// RFC 3339 timestamp.
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type DayPayload struct {
+	Day    *Day         `json:"day,omitempty"`
+	Errors []*UserError `json:"errors"`
+}
+
+type DeleteDayPayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
+type DeleteStagePayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type DeleteTripPayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
@@ -32,6 +81,28 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+type Stage struct {
+	ID     string `json:"id"`
+	TripID string `json:"tripID"`
+	City   string `json:"city"`
+	// Custom name, if set. Null when not provided.
+	Name *string `json:"name,omitempty"`
+	// Display name: returns name if set, otherwise city.
+	DisplayName string  `json:"displayName"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Description string  `json:"description"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
+	// RFC 3339 timestamp.
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type StagePayload struct {
+	Stage  *Stage       `json:"stage,omitempty"`
+	Errors []*UserError `json:"errors"`
 }
 
 type Trip struct {
@@ -54,6 +125,20 @@ type Trip struct {
 type TripPayload struct {
 	Trip   *Trip        `json:"trip,omitempty"`
 	Errors []*UserError `json:"errors"`
+}
+
+// The date of a day is immutable after creation. To change the date, delete and recreate the day.
+type UpdateDayInput struct {
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+}
+
+type UpdateStageInput struct {
+	City        string  `json:"city"`
+	Name        *string `json:"name,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Description *string `json:"description,omitempty"`
 }
 
 type UpdateTripInput struct {

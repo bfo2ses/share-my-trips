@@ -59,11 +59,104 @@ input CloseTripInput {
   lastDay: String!
 }
 
+type Stage {
+  id: ID!
+  tripID: ID!
+  city: String!
+  "Custom name, if set. Null when not provided."
+  name: String
+  "Display name: returns name if set, otherwise city."
+  displayName: String!
+  lat: Float!
+  lng: Float!
+  description: String!
+  "RFC 3339 timestamp."
+  createdAt: String!
+  "RFC 3339 timestamp."
+  updatedAt: String!
+}
+
+type StagePayload {
+  stage: Stage
+  errors: [UserError!]!
+}
+
+type DeleteStagePayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+input AddStageInput {
+  tripID: ID!
+  city: String!
+  name: String
+  lat: Float!
+  lng: Float!
+  description: String
+}
+
+input UpdateStageInput {
+  city: String!
+  name: String
+  lat: Float!
+  lng: Float!
+  description: String
+}
+
+type Day {
+  id: ID!
+  tripID: ID!
+  stageIDs: [ID!]!
+  "Date-only, format YYYY-MM-DD."
+  date: String!
+  "Null when not provided."
+  title: String
+  "Null when not provided."
+  description: String
+  "RFC 3339 timestamp."
+  createdAt: String!
+  "RFC 3339 timestamp."
+  updatedAt: String!
+}
+
+type DayPayload {
+  day: Day
+  errors: [UserError!]!
+}
+
+type DeleteDayPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+input AddDayInput {
+  tripID: ID!
+  stageID: ID!
+  "Date-only, format YYYY-MM-DD."
+  date: String!
+  title: String
+  description: String
+}
+
+"The date of a day is immutable after creation. To change the date, delete and recreate the day."
+input UpdateDayInput {
+  title: String
+  description: String
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
   "Returns a single trip by ID, or null if not found."
   trip(id: ID!): Trip
+  "Returns a single stage by ID, or null if not found."
+  stage(id: ID!): Stage
+  "Returns all stages for a trip, sorted by the date of their first day ascending. Stages without any day appear last in undefined order."
+  stages(tripID: ID!): [Stage!]!
+  "Returns a single day by ID, or null if not found."
+  day(id: ID!): Day
+  "Returns all days for a stage, sorted by date ascending."
+  days(stageID: ID!): [Day!]!
 }
 
 type Mutation {
@@ -74,4 +167,12 @@ type Mutation {
   closeTrip(id: ID!, input: CloseTripInput!): TripPayload!
   reopenTrip(id: ID!): TripPayload!
   deleteTrip(id: ID!): DeleteTripPayload!
+  addStage(input: AddStageInput!): StagePayload!
+  updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
+  deleteStage(id: ID!): DeleteStagePayload!
+  addDay(input: AddDayInput!): DayPayload!
+  updateDay(id: ID!, input: UpdateDayInput!): DayPayload!
+  deleteDay(id: ID!): DeleteDayPayload!
+  attachDayToStage(dayID: ID!, stageID: ID!): DayPayload!
+  detachDayFromStage(dayID: ID!, stageID: ID!): DayPayload!
 }
