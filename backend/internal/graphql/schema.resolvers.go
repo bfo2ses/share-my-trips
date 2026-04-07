@@ -7,6 +7,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
 
@@ -115,6 +117,104 @@ func (r *mutationResolver) DeleteTrip(ctx context.Context, id string) (*DeleteTr
 	return &DeleteTripPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
+// AddStage is the resolver for the addStage field.
+func (r *mutationResolver) AddStage(ctx context.Context, input AddStageInput) (*StagePayload, error) {
+	s, err := r.stageHandler.Add(ctx, stage.AddStageCommand{
+		TripID:      input.TripID,
+		City:        input.City,
+		Name:        derefString(input.Name),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
+		Description: derefString(input.Description),
+	})
+	if err != nil {
+		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &StagePayload{Stage: toGraphQLStage(s), Errors: []*UserError{}}, nil
+}
+
+// UpdateStage is the resolver for the updateStage field.
+func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input UpdateStageInput) (*StagePayload, error) {
+	s, err := r.stageHandler.Update(ctx, stage.UpdateStageCommand{
+		ID:          id,
+		City:        input.City,
+		Name:        derefString(input.Name),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
+		Description: derefString(input.Description),
+	})
+	if err != nil {
+		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &StagePayload{Stage: toGraphQLStage(s), Errors: []*UserError{}}, nil
+}
+
+// DeleteStage is the resolver for the deleteStage field.
+func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*DeleteStagePayload, error) {
+	if err := r.stageHandler.Delete(ctx, stage.DeleteStageCommand{ID: id}); err != nil {
+		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DeleteStagePayload{Success: true, Errors: []*UserError{}}, nil
+}
+
+// AddDay is the resolver for the addDay field.
+func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayPayload, error) {
+	date, err := time.Parse(dateFormat, input.Date)
+	if err != nil {
+		return &DayPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+	}
+	d, err := r.dayHandler.Add(ctx, day.AddDayCommand{
+		TripID:      input.TripID,
+		StageID:     input.StageID,
+		Date:        date,
+		Title:       derefString(input.Title),
+		Description: derefString(input.Description),
+	})
+	if err != nil {
+		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+}
+
+// UpdateDay is the resolver for the updateDay field.
+func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input UpdateDayInput) (*DayPayload, error) {
+	d, err := r.dayHandler.Update(ctx, day.UpdateDayCommand{
+		ID:          id,
+		Title:       derefString(input.Title),
+		Description: derefString(input.Description),
+	})
+	if err != nil {
+		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+}
+
+// DeleteDay is the resolver for the deleteDay field.
+func (r *mutationResolver) DeleteDay(ctx context.Context, id string) (*DeleteDayPayload, error) {
+	if err := r.dayHandler.Delete(ctx, day.DeleteDayCommand{ID: id}); err != nil {
+		return &DeleteDayPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DeleteDayPayload{Success: true, Errors: []*UserError{}}, nil
+}
+
+// AttachDayToStage is the resolver for the attachDayToStage field.
+func (r *mutationResolver) AttachDayToStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
+	d, err := r.dayHandler.AttachToStage(ctx, day.AttachToStageCommand{DayID: dayID, StageID: stageID})
+	if err != nil {
+		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+}
+
+// DetachDayFromStage is the resolver for the detachDayFromStage field.
+func (r *mutationResolver) DetachDayFromStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
+	d, err := r.dayHandler.DetachFromStage(ctx, day.DetachFromStageCommand{DayID: dayID, StageID: stageID})
+	if err != nil {
+		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+}
+
 // Trips is the resolver for the trips field.
 func (r *queryResolver) Trips(ctx context.Context, status []TripStatus) ([]*Trip, error) {
 	statuses := make([]trip.Status, 0, len(status))
@@ -144,6 +244,56 @@ func (r *queryResolver) Trip(ctx context.Context, id string) (*Trip, error) {
 		return nil, err
 	}
 	return toGraphQLTrip(t), nil
+}
+
+// Stage is the resolver for the stage field.
+func (r *queryResolver) Stage(ctx context.Context, id string) (*Stage, error) {
+	s, err := r.stageHandler.GetByID(ctx, stage.GetStageQuery{ID: id})
+	if err != nil {
+		if errors.Is(err, stage.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return toGraphQLStage(s), nil
+}
+
+// Stages is the resolver for the stages field.
+func (r *queryResolver) Stages(ctx context.Context, tripID string) ([]*Stage, error) {
+	stages, err := r.stageHandler.ListByTrip(ctx, stage.ListByTripQuery{TripID: tripID})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*Stage, 0, len(stages))
+	for _, s := range stages {
+		result = append(result, toGraphQLStage(s))
+	}
+	return result, nil
+}
+
+// Day is the resolver for the day field.
+func (r *queryResolver) Day(ctx context.Context, id string) (*Day, error) {
+	d, err := r.dayHandler.GetByID(ctx, day.GetDayQuery{ID: id})
+	if err != nil {
+		if errors.Is(err, day.ErrNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return toGraphQLDay(d), nil
+}
+
+// Days is the resolver for the days field.
+func (r *queryResolver) Days(ctx context.Context, stageID string) ([]*Day, error) {
+	days, err := r.dayHandler.ListByStage(ctx, day.ListByStageQuery{StageID: stageID})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*Day, 0, len(days))
+	for _, d := range days {
+		result = append(result, toGraphQLDay(d))
+	}
+	return result, nil
 }
 
 // Mutation returns MutationResolver implementation.

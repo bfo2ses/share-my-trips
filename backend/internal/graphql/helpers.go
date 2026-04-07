@@ -3,6 +3,8 @@ package graph
 import (
 	"time"
 
+	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
 
@@ -65,4 +67,46 @@ func derefString(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func toGraphQLStage(s *stage.Stage) *Stage {
+	var name *string
+	if s.Name != "" {
+		n := s.Name
+		name = &n
+	}
+	return &Stage{
+		ID:          s.ID,
+		TripID:      s.TripID,
+		City:        s.City,
+		Name:        name,
+		DisplayName: s.DisplayName(),
+		Lat:         s.Lat,
+		Lng:         s.Lng,
+		Description: s.Description,
+		CreatedAt:   s.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   s.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGraphQLDay(d *day.Day) *Day {
+	stageIDs := make([]string, len(d.StageIDs))
+	copy(stageIDs, d.StageIDs)
+	return &Day{
+		ID:          d.ID,
+		TripID:      d.TripID,
+		StageIDs:    stageIDs,
+		Date:        d.Date.Format(dateFormat),
+		Title:       nullableString(d.Title),
+		Description: nullableString(d.Description),
+		CreatedAt:   d.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   d.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func nullableString(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }
