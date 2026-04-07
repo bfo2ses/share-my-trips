@@ -10,15 +10,17 @@ import (
 
 // Handler handles commands and queries for the day context.
 type Handler struct {
-	repo        Repository
-	tripChecker TripChecker
+	repo         Repository
+	tripChecker  TripChecker
+	stageChecker StageChecker
 }
 
 // NewHandler creates a new day Handler.
-func NewHandler(repo Repository, tripChecker TripChecker) *Handler {
+func NewHandler(repo Repository, tripChecker TripChecker, stageChecker StageChecker) *Handler {
 	return &Handler{
-		repo:        repo,
-		tripChecker: tripChecker,
+		repo:         repo,
+		tripChecker:  tripChecker,
+		stageChecker: stageChecker,
 	}
 }
 
@@ -32,6 +34,14 @@ func (h *Handler) Add(ctx context.Context, cmd AddDayCommand) (*Day, error) {
 	}
 	if !modifiable {
 		return nil, fmt.Errorf("add day: %w", ErrTripClosed)
+	}
+
+	ok, err := h.stageChecker.BelongsToTrip(ctx, cmd.StageID, cmd.TripID)
+	if err != nil {
+		return nil, fmt.Errorf("add day: %w", err)
+	}
+	if !ok {
+		return nil, fmt.Errorf("add day: %w", ErrStageNotInTrip)
 	}
 
 	id := uuid.New().String()
@@ -106,6 +116,14 @@ func (h *Handler) AttachToStage(ctx context.Context, cmd AttachToStageCommand) (
 	}
 	if !modifiable {
 		return nil, fmt.Errorf("attach day to stage: %w", ErrTripClosed)
+	}
+
+	belongs, err := h.stageChecker.BelongsToTrip(ctx, cmd.StageID, d.TripID)
+	if err != nil {
+		return nil, fmt.Errorf("attach day to stage: %w", err)
+	}
+	if !belongs {
+		return nil, fmt.Errorf("attach day to stage: %w", ErrStageNotInTrip)
 	}
 
 	if err := d.AttachToStage(cmd.StageID); err != nil {

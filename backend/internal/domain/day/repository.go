@@ -17,3 +17,8 @@ type Repository interface {
 type TripChecker interface {
 	IsModifiable(ctx context.Context, tripID string) (bool, error)
 }
+
+// StageChecker is the port for verifying stage-trip membership.
+type StageChecker interface {
+	BelongsToTrip(ctx context.Context, stageID, tripID string) (bool, error)
+}

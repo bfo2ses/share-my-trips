@@ -62,6 +62,18 @@ Fonctionnalité: Gestion des jours d'un voyage
     Quand je tente de modifier le jour du voyage clôturé
     Alors un message d'erreur m'indique que le voyage est clôturé pour les jours
 
+  Scénario: Impossible d'ajouter un jour avec une étape d'un autre voyage
+    Etant donné qu'une étape "Paris" appartient à un autre voyage
+    Quand je tente d'ajouter un jour avec l'étape de l'autre voyage
+    Alors un message d'erreur m'indique que l'étape n'appartient pas au voyage
+    Et le jour n'est pas créé
+
+  Scénario: Impossible de rattacher un jour à une étape d'un autre voyage
+    Etant donné qu'un jour "2025-07-01" existe dans l'étape
+    Et qu'une étape "Paris" appartient à un autre voyage
+    Quand je tente de rattacher le jour à l'étape de l'autre voyage
+    Alors un message d'erreur m'indique que l'étape n'appartient pas au voyage
+
   Scénario: Les jours d'une étape sont triés par date
     Etant donné que l'étape contient les jours suivants :
       | date       | titre          |

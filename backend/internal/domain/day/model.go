@@ -13,6 +13,7 @@ var (
 	ErrMustBelongToStage = errors.New("day must belong to at least one stage")
 	ErrAlreadyAttached   = errors.New("day is already attached to this stage")
 	ErrNotAttached       = errors.New("day is not attached to this stage")
+	ErrStageNotInTrip    = errors.New("stage does not belong to the trip")
 )
 
 // Day represents a single date within a stage of a trip.

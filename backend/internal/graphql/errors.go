@@ -57,6 +57,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: day.ErrAlreadyAttached.Error()}}
 	case errors.Is(err, day.ErrNotAttached):
 		return []*UserError{{Message: day.ErrNotAttached.Error()}}
+	case errors.Is(err, day.ErrStageNotInTrip):
+		return []*UserError{{Field: strPtr("stageID"), Message: day.ErrStageNotInTrip.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}

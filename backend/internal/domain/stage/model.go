@@ -31,6 +31,8 @@ func NewStage(id, tripID, city, name string, lat, lng float64, description strin
 	if city == "" {
 		return nil, ErrCityRequired
 	}
+	// Phase 1: (0, 0) is used as a sentinel for "not provided". The geographic
+	// origin (Gulf of Guinea) is excluded. Phase 2 will use *float64 pointers.
 	if lat == 0 && lng == 0 {
 		return nil, ErrGPSRequired
 	}
@@ -62,6 +64,7 @@ func (s *Stage) Update(city, name string, lat, lng float64, description string) 
 	if city == "" {
 		return ErrCityRequired
 	}
+	// Same sentinel as NewStage — see note there.
 	if lat == 0 && lng == 0 {
 		return ErrGPSRequired
 	}

@@ -22,7 +22,7 @@ func main() {
 
 	tripHandler := trip.NewHandler(tripRepo)
 	stageHandler := stage.NewHandler(stageRepo, tripChecker, dayRepo)
-	dayHandler := day.NewHandler(dayRepo, tripChecker)
+	dayHandler := day.NewHandler(dayRepo, tripChecker, stageRepo)
 
 	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler)
 

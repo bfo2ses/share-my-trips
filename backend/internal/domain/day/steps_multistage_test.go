@@ -20,6 +20,7 @@ func registerMultiStageSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^le jour est conservé dans l'étape "([^"]*)"$`, tc.dayConservedInStage)
 	ctx.Step(`^je tente de détacher le jour de sa seule étape$`, tc.tryDetachFromOnlyStage)
 	ctx.Step(`^un message d'erreur m'indique qu'un jour doit appartenir à au moins une étape$`, tc.errMustBelongToStage)
+	ctx.Step(`^je tente de rattacher le jour à l'étape de l'autre voyage$`, tc.attachDayToForeignStage)
 }
 
 func (tc *testContext) attachDayToStage(stageName string) error {
@@ -55,6 +56,8 @@ func (tc *testContext) dayAttachedToTwoStages(dateStr, stage1Name, stage2Name st
 	stage1ID := "stage-" + stage1Name
 	stage2ID := "stage-" + stage2Name
 	tc.secondStage = stage2ID
+	tc.stageChecker.stagesInTrip[stage1ID] = tc.defaultTripID
+	tc.stageChecker.stagesInTrip[stage2ID] = tc.defaultTripID
 
 	created, err := tc.handler.Add(context.Background(), day.AddDayCommand{
 		TripID:  tc.defaultTripID,
@@ -132,5 +135,15 @@ func (tc *testContext) errMustBelongToStage() error {
 	if !errors.Is(tc.lastErr, day.ErrMustBelongToStage) {
 		return fmt.Errorf("expected ErrMustBelongToStage, got: %v", tc.lastErr)
 	}
+	return nil
+}
+
+func (tc *testContext) attachDayToForeignStage() error {
+	updated, err := tc.handler.AttachToStage(context.Background(), day.AttachToStageCommand{
+		DayID:   tc.currentDay.ID,
+		StageID: tc.foreignStage,
+	})
+	tc.currentDay = updated
+	tc.lastErr = err
 	return nil
 }

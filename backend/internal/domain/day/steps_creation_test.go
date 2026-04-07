@@ -20,6 +20,9 @@ func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^je tente d'ajouter un jour sans date$`, tc.addDayWithoutDate)
 	ctx.Step(`^un message d'erreur m'indique que la date est obligatoire$`, tc.errDateRequired)
 	ctx.Step(`^le jour n'est pas créé$`, tc.dayIsNotCreated)
+	ctx.Step(`^une étape "([^"]*)" appartient à un autre voyage$`, tc.stageExistsInAnotherTrip)
+	ctx.Step(`^je tente d'ajouter un jour avec l'étape de l'autre voyage$`, tc.addDayWithForeignStage)
+	ctx.Step(`^un message d'erreur m'indique que l'étape n'appartient pas au voyage$`, tc.errStageNotInTrip)
 }
 
 func (tc *testContext) tripExistsAndOpen(_ string) error {
@@ -34,6 +37,7 @@ func (tc *testContext) stageExistsInTrip(city string) error {
 	} else {
 		tc.secondStage = stageID
 	}
+	tc.stageChecker.stagesInTrip[stageID] = tc.defaultTripID
 	return nil
 }
 
@@ -105,6 +109,29 @@ func (tc *testContext) errDateRequired() error {
 func (tc *testContext) dayIsNotCreated() error {
 	if tc.currentDay != nil {
 		return fmt.Errorf("expected day to be nil, got %+v", tc.currentDay)
+	}
+	return nil
+}
+
+func (tc *testContext) stageExistsInAnotherTrip(city string) error {
+	stageID := "stage-" + city
+	tc.foreignStage = stageID
+	tc.stageChecker.stagesInTrip[stageID] = "trip-other"
+	return nil
+}
+
+func (tc *testContext) addDayWithForeignStage() error {
+	tc.currentDay, tc.lastErr = tc.handler.Add(context.Background(), day.AddDayCommand{
+		TripID:  tc.defaultTripID,
+		StageID: tc.foreignStage,
+		Date:    time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC),
+	})
+	return nil
+}
+
+func (tc *testContext) errStageNotInTrip() error {
+	if !errors.Is(tc.lastErr, day.ErrStageNotInTrip) {
+		return fmt.Errorf("expected ErrStageNotInTrip, got: %v", tc.lastErr)
 	}
 	return nil
 }

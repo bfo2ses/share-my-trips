@@ -104,13 +104,29 @@ func (r *dayRepository) DetachStage(_ context.Context, stageID string) error {
 	return nil
 }
 
+// stubStageChecker is a test double for day.StageChecker.
+type stubStageChecker struct {
+	stagesInTrip map[string]string // stageID -> tripID
+}
+
+func newStubStageChecker() *stubStageChecker {
+	return &stubStageChecker{stagesInTrip: make(map[string]string)}
+}
+
+func (s *stubStageChecker) BelongsToTrip(_ context.Context, stageID, tripID string) (bool, error) {
+	tid, ok := s.stagesInTrip[stageID]
+	return ok && tid == tripID, nil
+}
+
 type testContext struct {
 	handler       *day.Handler
 	repo          *dayRepository
 	tripChecker   *stubTripChecker
+	stageChecker  *stubStageChecker
 	defaultTripID string
 	defaultStage  string
 	secondStage   string
+	foreignStage  string
 	currentDay    *day.Day
 	lastErr       error
 }
@@ -118,10 +134,12 @@ type testContext struct {
 func newTestContext() *testContext {
 	repo := newDayRepository()
 	tripChecker := newStubTripChecker()
+	stageChecker := newStubStageChecker()
 	return &testContext{
-		handler:       day.NewHandler(repo, tripChecker),
+		handler:       day.NewHandler(repo, tripChecker, stageChecker),
 		repo:          repo,
 		tripChecker:   tripChecker,
+		stageChecker:  stageChecker,
 		defaultTripID: "trip-iceland",
 		// defaultStage is set dynamically by the Contexte step
 	}
