@@ -1,6 +1,8 @@
 package crypto
 
 import (
+	"fmt"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -9,9 +11,13 @@ type BcryptHasher struct {
 	cost int
 }
 
-// NewBcryptHasher creates a BcryptHasher with the given cost (use bcrypt.DefaultCost in production).
-func NewBcryptHasher(cost int) *BcryptHasher {
-	return &BcryptHasher{cost: cost}
+// NewBcryptHasher creates a BcryptHasher with the given cost.
+// Returns an error if cost < bcrypt.DefaultCost to prevent accidental weak hashing.
+func NewBcryptHasher(cost int) (*BcryptHasher, error) {
+	if cost < bcrypt.DefaultCost {
+		return nil, fmt.Errorf("bcrypt cost %d is below minimum acceptable value %d", cost, bcrypt.DefaultCost)
+	}
+	return &BcryptHasher{cost: cost}, nil
 }
 
 func (h *BcryptHasher) Hash(password string) (string, error) {

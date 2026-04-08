@@ -107,6 +107,9 @@ func (tc *testContext) tokenInvalid() error {
 	if err == nil {
 		return fmt.Errorf("expected token to be invalidated after logout")
 	}
+	if !errors.Is(err, auth.ErrInvalidCredentials) {
+		return fmt.Errorf("expected ErrInvalidCredentials for invalidated token, got: %v", err)
+	}
 	return nil
 }
 

@@ -117,6 +117,17 @@ func (r *SessionRepository) Delete(_ context.Context, token string) error {
 	return nil
 }
 
+func (r *SessionRepository) DeleteByUserID(_ context.Context, userID string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for token, uid := range r.sessions {
+		if uid == userID {
+			delete(r.sessions, token)
+		}
+	}
+	return nil
+}
+
 // PasswordResetRepository is an in-memory implementation of auth.PasswordResetRepository.
 type PasswordResetRepository struct {
 	mu     sync.RWMutex

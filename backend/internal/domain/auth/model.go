@@ -20,6 +20,7 @@ var (
 	ErrInvalidResetToken      = errors.New("reset token is invalid or has already been used")
 	ErrResetTokenExpired      = errors.New("reset token has expired")
 	ErrInvalidCurrentPassword = errors.New("current password is incorrect")
+	ErrPasswordTooLong        = errors.New("password must not exceed 128 characters")
 )
 
 // Role represents the role of a user account.

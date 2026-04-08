@@ -87,6 +87,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("token"), Message: auth.ErrResetTokenExpired.Error()}}
 	case errors.Is(err, auth.ErrInvalidCurrentPassword):
 		return []*UserError{{Field: strPtr("currentPassword"), Message: auth.ErrInvalidCurrentPassword.Error()}}
+	case errors.Is(err, auth.ErrPasswordTooLong):
+		return []*UserError{{Field: strPtr("password"), Message: auth.ErrPasswordTooLong.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}

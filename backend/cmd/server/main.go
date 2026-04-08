@@ -34,7 +34,10 @@ func main() {
 	userRepo := memory.NewUserRepository()
 	sessionRepo := memory.NewSessionRepository()
 	resetRepo := memory.NewPasswordResetRepository()
-	hasher := crypto.NewBcryptHasher(bcrypt.DefaultCost)
+	hasher, err := crypto.NewBcryptHasher(bcrypt.DefaultCost)
+	if err != nil {
+		log.Fatalf("failed to create hasher: %v", err)
+	}
 	tokenGen := &crypto.UUIDTokenGenerator{}
 
 	resetURLBase := os.Getenv("RESET_URL_BASE")

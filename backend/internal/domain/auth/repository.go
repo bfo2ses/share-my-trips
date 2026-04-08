@@ -20,6 +20,8 @@ type SessionRepository interface {
 	Save(ctx context.Context, token, userID string) error
 	FindUserID(ctx context.Context, token string) (string, error)
 	Delete(ctx context.Context, token string) error
+	// DeleteByUserID removes all sessions for a given user (e.g. after a password reset).
+	DeleteByUserID(ctx context.Context, userID string) error
 }
 
 // PasswordResetRepository is the port for password reset token persistence.

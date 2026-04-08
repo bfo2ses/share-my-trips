@@ -150,6 +150,15 @@ func (r *sessionRepo) Delete(_ context.Context, token string) error {
 	return nil
 }
 
+func (r *sessionRepo) DeleteByUserID(_ context.Context, userID string) error {
+	for token, uid := range r.sessions {
+		if uid == userID {
+			delete(r.sessions, token)
+		}
+	}
+	return nil
+}
+
 // resetRepo is an in-memory auth.PasswordResetRepository for tests.
 type resetRepo struct {
 	tokens map[string]*auth.PasswordResetToken // token -> reset token

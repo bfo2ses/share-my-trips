@@ -200,8 +200,18 @@ func (h *Handler) ResetPassword(ctx context.Context, cmd ResetPasswordCommand) (
 	if cmd.NewPassword == "" {
 		return nil, fmt.Errorf("reset password: %w", ErrPasswordRequired)
 	}
+	if len(cmd.NewPassword) > maxPasswordLen {
+		return nil, fmt.Errorf("reset password: %w", ErrPasswordTooLong)
+	}
 	if cmd.NewPassword != cmd.NewPasswordConfirm {
 		return nil, fmt.Errorf("reset password: %w", ErrPasswordMismatch)
+	}
+
+	// Consume the token before making any state change so it cannot be replayed
+	// even if the subsequent steps fail.
+	now := time.Now()
+	if err := h.resets.MarkUsed(ctx, rt.ID, now); err != nil {
+		return nil, fmt.Errorf("reset password: %w", err)
 	}
 
 	hash, err := h.hasher.Hash(cmd.NewPassword)
@@ -219,8 +229,8 @@ func (h *Handler) ResetPassword(ctx context.Context, cmd ResetPasswordCommand) (
 		return nil, fmt.Errorf("reset password: %w", err)
 	}
 
-	now := time.Now()
-	if err := h.resets.MarkUsed(ctx, rt.ID, now); err != nil {
+	// Invalidate all existing sessions so any previously stolen token is revoked.
+	if err := h.sessions.DeleteByUserID(ctx, user.ID); err != nil {
 		return nil, fmt.Errorf("reset password: %w", err)
 	}
 
@@ -240,6 +250,9 @@ func (h *Handler) ChangePassword(ctx context.Context, cmd ChangePasswordCommand)
 
 	if cmd.NewPassword == "" {
 		return nil, fmt.Errorf("change password: %w", ErrPasswordRequired)
+	}
+	if len(cmd.NewPassword) > maxPasswordLen {
+		return nil, fmt.Errorf("change password: %w", ErrPasswordTooLong)
 	}
 	if cmd.NewPassword != cmd.NewPasswordConfirm {
 		return nil, fmt.Errorf("change password: %w", ErrPasswordMismatch)
@@ -322,6 +335,11 @@ func (h *Handler) requireAdmin(ctx context.Context, actorID string) error {
 	return nil
 }
 
+// maxPasswordLen is the maximum accepted password length. bcrypt silently
+// truncates at 72 bytes; we cap earlier to prevent credential ambiguity and
+// CPU-exhaustion attacks.
+const maxPasswordLen = 128
+
 func (h *Handler) validateNewAccount(name, email, password, passwordConfirm string) error {
 	if name == "" {
 		return ErrNameRequired
@@ -331,6 +349,9 @@ func (h *Handler) validateNewAccount(name, email, password, passwordConfirm stri
 	}
 	if password == "" {
 		return ErrPasswordRequired
+	}
+	if len(password) > maxPasswordLen {
+		return ErrPasswordTooLong
 	}
 	if password != passwordConfirm {
 		return ErrPasswordMismatch
