@@ -34,6 +34,25 @@ type DirectiveRoot struct {
 }
 
 type ComplexityRoot struct {
+	Account struct {
+		CreatedAt func(childComplexity int) int
+		Email     func(childComplexity int) int
+		ID        func(childComplexity int) int
+		Name      func(childComplexity int) int
+		Role      func(childComplexity int) int
+	}
+
+	AccountPayload struct {
+		Account func(childComplexity int) int
+		Errors  func(childComplexity int) int
+	}
+
+	AuthPayload struct {
+		Account func(childComplexity int) int
+		Errors  func(childComplexity int) int
+		Token   func(childComplexity int) int
+	}
+
 	Day struct {
 		CreatedAt   func(childComplexity int) int
 		Date        func(childComplexity int) int
@@ -48,6 +67,11 @@ type ComplexityRoot struct {
 	DayPayload struct {
 		Day    func(childComplexity int) int
 		Errors func(childComplexity int) int
+	}
+
+	DeleteAccountPayload struct {
+		Errors  func(childComplexity int) int
+		Success func(childComplexity int) int
 	}
 
 	DeleteDayPayload struct {
@@ -66,30 +90,45 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddDay             func(childComplexity int, input AddDayInput) int
-		AddStage           func(childComplexity int, input AddStageInput) int
-		AttachDayToStage   func(childComplexity int, dayID string, stageID string) int
-		CloseTrip          func(childComplexity int, id string, input CloseTripInput) int
-		CreateTrip         func(childComplexity int, input CreateTripInput) int
-		DeleteDay          func(childComplexity int, id string) int
-		DeleteStage        func(childComplexity int, id string) int
-		DeleteTrip         func(childComplexity int, id string) int
-		DetachDayFromStage func(childComplexity int, dayID string, stageID string) int
-		PublishTrip        func(childComplexity int, id string) int
-		ReopenTrip         func(childComplexity int, id string) int
-		UnpublishTrip      func(childComplexity int, id string) int
-		UpdateDay          func(childComplexity int, id string, input UpdateDayInput) int
-		UpdateStage        func(childComplexity int, id string, input UpdateStageInput) int
-		UpdateTrip         func(childComplexity int, id string, input UpdateTripInput) int
+		AddDay               func(childComplexity int, input AddDayInput) int
+		AddStage             func(childComplexity int, input AddStageInput) int
+		AttachDayToStage     func(childComplexity int, dayID string, stageID string) int
+		ChangePassword       func(childComplexity int, input ChangePasswordInput) int
+		CloseTrip            func(childComplexity int, id string, input CloseTripInput) int
+		CreateAccount        func(childComplexity int, input CreateAccountInput) int
+		CreateTrip           func(childComplexity int, input CreateTripInput) int
+		DeleteAccount        func(childComplexity int, id string) int
+		DeleteDay            func(childComplexity int, id string) int
+		DeleteStage          func(childComplexity int, id string) int
+		DeleteTrip           func(childComplexity int, id string) int
+		DetachDayFromStage   func(childComplexity int, dayID string, stageID string) int
+		Login                func(childComplexity int, email string, password string) int
+		Logout               func(childComplexity int) int
+		PublishTrip          func(childComplexity int, id string) int
+		ReopenTrip           func(childComplexity int, id string) int
+		RequestPasswordReset func(childComplexity int, email string) int
+		ResetPassword        func(childComplexity int, input ResetPasswordInput) int
+		SetupAdmin           func(childComplexity int, input SetupAdminInput) int
+		UnpublishTrip        func(childComplexity int, id string) int
+		UpdateDay            func(childComplexity int, id string, input UpdateDayInput) int
+		UpdateStage          func(childComplexity int, id string, input UpdateStageInput) int
+		UpdateTrip           func(childComplexity int, id string, input UpdateTripInput) int
 	}
 
 	Query struct {
-		Day    func(childComplexity int, id string) int
-		Days   func(childComplexity int, stageID string) int
-		Stage  func(childComplexity int, id string) int
-		Stages func(childComplexity int, tripID string) int
-		Trip   func(childComplexity int, id string) int
-		Trips  func(childComplexity int, status []TripStatus) int
+		Accounts    func(childComplexity int) int
+		Day         func(childComplexity int, id string) int
+		Days        func(childComplexity int, stageID string) int
+		Me          func(childComplexity int) int
+		SetupStatus func(childComplexity int) int
+		Stage       func(childComplexity int, id string) int
+		Stages      func(childComplexity int, tripID string) int
+		Trip        func(childComplexity int, id string) int
+		Trips       func(childComplexity int, status []TripStatus) int
+	}
+
+	SetupStatusPayload struct {
+		Done func(childComplexity int) int
 	}
 
 	Stage struct {
@@ -150,6 +189,14 @@ type MutationResolver interface {
 	DeleteDay(ctx context.Context, id string) (*DeleteDayPayload, error)
 	AttachDayToStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error)
 	DetachDayFromStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error)
+	SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error)
+	Login(ctx context.Context, email string, password string) (*AuthPayload, error)
+	Logout(ctx context.Context) (bool, error)
+	CreateAccount(ctx context.Context, input CreateAccountInput) (*AccountPayload, error)
+	DeleteAccount(ctx context.Context, id string) (*DeleteAccountPayload, error)
+	RequestPasswordReset(ctx context.Context, email string) (bool, error)
+	ResetPassword(ctx context.Context, input ResetPasswordInput) (*AccountPayload, error)
+	ChangePassword(ctx context.Context, input ChangePasswordInput) (*AccountPayload, error)
 }
 type QueryResolver interface {
 	Trips(ctx context.Context, status []TripStatus) ([]*Trip, error)
@@ -158,6 +205,9 @@ type QueryResolver interface {
 	Stages(ctx context.Context, tripID string) ([]*Stage, error)
 	Day(ctx context.Context, id string) (*Day, error)
 	Days(ctx context.Context, stageID string) ([]*Day, error)
+	Me(ctx context.Context) (*Account, error)
+	SetupStatus(ctx context.Context) (*SetupStatusPayload, error)
+	Accounts(ctx context.Context) ([]*Account, error)
 }
 
 type executableSchema graphql.ExecutableSchemaState[ResolverRoot, DirectiveRoot, ComplexityRoot]
@@ -173,6 +223,69 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 	ec := newExecutionContext(nil, e, nil)
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Account.createdAt":
+		if e.ComplexityRoot.Account.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Account.CreatedAt(childComplexity), true
+	case "Account.email":
+		if e.ComplexityRoot.Account.Email == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Account.Email(childComplexity), true
+	case "Account.id":
+		if e.ComplexityRoot.Account.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Account.ID(childComplexity), true
+	case "Account.name":
+		if e.ComplexityRoot.Account.Name == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Account.Name(childComplexity), true
+	case "Account.role":
+		if e.ComplexityRoot.Account.Role == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Account.Role(childComplexity), true
+
+	case "AccountPayload.account":
+		if e.ComplexityRoot.AccountPayload.Account == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccountPayload.Account(childComplexity), true
+	case "AccountPayload.errors":
+		if e.ComplexityRoot.AccountPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AccountPayload.Errors(childComplexity), true
+
+	case "AuthPayload.account":
+		if e.ComplexityRoot.AuthPayload.Account == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AuthPayload.Account(childComplexity), true
+	case "AuthPayload.errors":
+		if e.ComplexityRoot.AuthPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AuthPayload.Errors(childComplexity), true
+	case "AuthPayload.token":
+		if e.ComplexityRoot.AuthPayload.Token == nil {
+			break
+		}
+
+		return e.ComplexityRoot.AuthPayload.Token(childComplexity), true
 
 	case "Day.createdAt":
 		if e.ComplexityRoot.Day.CreatedAt == nil {
@@ -235,6 +348,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DayPayload.Errors(childComplexity), true
+
+	case "DeleteAccountPayload.errors":
+		if e.ComplexityRoot.DeleteAccountPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteAccountPayload.Errors(childComplexity), true
+	case "DeleteAccountPayload.success":
+		if e.ComplexityRoot.DeleteAccountPayload.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteAccountPayload.Success(childComplexity), true
 
 	case "DeleteDayPayload.errors":
 		if e.ComplexityRoot.DeleteDayPayload.Errors == nil {
@@ -308,6 +434,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AttachDayToStage(childComplexity, args["dayID"].(string), args["stageID"].(string)), true
+	case "Mutation.changePassword":
+		if e.ComplexityRoot.Mutation.ChangePassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_changePassword_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ChangePassword(childComplexity, args["input"].(ChangePasswordInput)), true
 	case "Mutation.closeTrip":
 		if e.ComplexityRoot.Mutation.CloseTrip == nil {
 			break
@@ -319,6 +456,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CloseTrip(childComplexity, args["id"].(string), args["input"].(CloseTripInput)), true
+	case "Mutation.createAccount":
+		if e.ComplexityRoot.Mutation.CreateAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createAccount_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateAccount(childComplexity, args["input"].(CreateAccountInput)), true
 	case "Mutation.createTrip":
 		if e.ComplexityRoot.Mutation.CreateTrip == nil {
 			break
@@ -330,6 +478,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateTrip(childComplexity, args["input"].(CreateTripInput)), true
+	case "Mutation.deleteAccount":
+		if e.ComplexityRoot.Mutation.DeleteAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteAccount_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteAccount(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteDay":
 		if e.ComplexityRoot.Mutation.DeleteDay == nil {
 			break
@@ -374,6 +533,23 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DetachDayFromStage(childComplexity, args["dayID"].(string), args["stageID"].(string)), true
+	case "Mutation.login":
+		if e.ComplexityRoot.Mutation.Login == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_login_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.Login(childComplexity, args["email"].(string), args["password"].(string)), true
+	case "Mutation.logout":
+		if e.ComplexityRoot.Mutation.Logout == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Mutation.Logout(childComplexity), true
 	case "Mutation.publishTrip":
 		if e.ComplexityRoot.Mutation.PublishTrip == nil {
 			break
@@ -396,6 +572,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ReopenTrip(childComplexity, args["id"].(string)), true
+	case "Mutation.requestPasswordReset":
+		if e.ComplexityRoot.Mutation.RequestPasswordReset == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_requestPasswordReset_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.RequestPasswordReset(childComplexity, args["email"].(string)), true
+	case "Mutation.resetPassword":
+		if e.ComplexityRoot.Mutation.ResetPassword == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_resetPassword_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ResetPassword(childComplexity, args["input"].(ResetPasswordInput)), true
+	case "Mutation.setupAdmin":
+		if e.ComplexityRoot.Mutation.SetupAdmin == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setupAdmin_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.SetupAdmin(childComplexity, args["input"].(SetupAdminInput)), true
 	case "Mutation.unpublishTrip":
 		if e.ComplexityRoot.Mutation.UnpublishTrip == nil {
 			break
@@ -441,6 +650,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Mutation.UpdateTrip(childComplexity, args["id"].(string), args["input"].(UpdateTripInput)), true
 
+	case "Query.accounts":
+		if e.ComplexityRoot.Query.Accounts == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.Accounts(childComplexity), true
 	case "Query.day":
 		if e.ComplexityRoot.Query.Day == nil {
 			break
@@ -464,6 +679,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.Query.Days(childComplexity, args["stageID"].(string)), true
 
+	case "Query.me":
+		if e.ComplexityRoot.Query.Me == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.Me(childComplexity), true
+	case "Query.setupStatus":
+		if e.ComplexityRoot.Query.SetupStatus == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Query.SetupStatus(childComplexity), true
 	case "Query.stage":
 		if e.ComplexityRoot.Query.Stage == nil {
 			break
@@ -508,6 +735,13 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Trips(childComplexity, args["status"].([]TripStatus)), true
+
+	case "SetupStatusPayload.done":
+		if e.ComplexityRoot.SetupStatusPayload.Done == nil {
+			break
+		}
+
+		return e.ComplexityRoot.SetupStatusPayload.Done(childComplexity), true
 
 	case "Stage.city":
 		if e.ComplexityRoot.Stage.City == nil {
@@ -680,8 +914,12 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
 		ec.unmarshalInputAddDayInput,
 		ec.unmarshalInputAddStageInput,
+		ec.unmarshalInputChangePasswordInput,
 		ec.unmarshalInputCloseTripInput,
+		ec.unmarshalInputCreateAccountInput,
 		ec.unmarshalInputCreateTripInput,
+		ec.unmarshalInputResetPasswordInput,
+		ec.unmarshalInputSetupAdminInput,
 		ec.unmarshalInputUpdateDayInput,
 		ec.unmarshalInputUpdateStageInput,
 		ec.unmarshalInputUpdateTripInput,
@@ -906,6 +1144,67 @@ input UpdateDayInput {
   description: String
 }
 
+enum AccountRole {
+  ADMIN
+  FAMILY
+}
+
+type Account {
+  id: ID!
+  name: String!
+  email: String!
+  role: AccountRole!
+  "RFC 3339 timestamp."
+  createdAt: String!
+}
+
+type AuthPayload {
+  "Session token. Present on success, null on error."
+  token: String
+  account: Account
+  errors: [UserError!]!
+}
+
+type AccountPayload {
+  account: Account
+  errors: [UserError!]!
+}
+
+type DeleteAccountPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+type SetupStatusPayload {
+  done: Boolean!
+}
+
+input SetupAdminInput {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirm: String!
+}
+
+input CreateAccountInput {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirm: String!
+}
+
+input ResetPasswordInput {
+  token: String!
+  newPassword: String!
+  newPasswordConfirm: String!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+  newPasswordConfirm: String!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -919,6 +1218,12 @@ type Query {
   day(id: ID!): Day
   "Returns all days for a stage, sorted by date ascending."
   days(stageID: ID!): [Day!]!
+  "Returns the currently authenticated account, or null if not authenticated."
+  me: Account
+  "Returns true if the admin account has already been created."
+  setupStatus: SetupStatusPayload!
+  "Returns all accounts. Requires admin role."
+  accounts: [Account!]!
 }
 
 type Mutation {
@@ -937,6 +1242,18 @@ type Mutation {
   deleteDay(id: ID!): DeleteDayPayload!
   attachDayToStage(dayID: ID!, stageID: ID!): DayPayload!
   detachDayFromStage(dayID: ID!, stageID: ID!): DayPayload!
+  "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
+  setupAdmin(input: SetupAdminInput!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  logout: Boolean!
+  "Creates a family account. Requires admin role."
+  createAccount(input: CreateAccountInput!): AccountPayload!
+  "Deletes an account. Requires admin role. Cannot delete own account."
+  deleteAccount(id: ID!): DeleteAccountPayload!
+  "Sends a password reset email. Always returns true regardless of whether the email exists."
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(input: ResetPasswordInput!): AccountPayload!
+  changePassword(input: ChangePasswordInput!): AccountPayload!
 }
 `, BuiltIn: false},
 }
@@ -984,6 +1301,17 @@ func (ec *executionContext) field_Mutation_attachDayToStage_args(ctx context.Con
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNChangePasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐChangePasswordInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_closeTrip_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1000,6 +1328,17 @@ func (ec *executionContext) field_Mutation_closeTrip_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createAccount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateAccountInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateAccountInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_createTrip_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1008,6 +1347,17 @@ func (ec *executionContext) field_Mutation_createTrip_args(ctx context.Context, 
 		return nil, err
 	}
 	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteAccount_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
 	return args, nil
 }
 
@@ -1060,6 +1410,22 @@ func (ec *executionContext) field_Mutation_detachDayFromStage_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "password", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["password"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_publishTrip_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1079,6 +1445,39 @@ func (ec *executionContext) field_Mutation_reopenTrip_args(ctx context.Context, 
 		return nil, err
 	}
 	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_requestPasswordReset_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "email", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["email"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_resetPassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNResetPasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐResetPasswordInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setupAdmin_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNSetupAdminInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐSetupAdminInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -1269,6 +1668,332 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 // endregion ************************** directives.gotpl **************************
 
 // region    **************************** field.gotpl *****************************
+
+func (ec *executionContext) _Account_id(ctx context.Context, field graphql.CollectedField, obj *Account) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Account_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Account_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Account_name(ctx context.Context, field graphql.CollectedField, obj *Account) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Account_name,
+		func(ctx context.Context) (any, error) {
+			return obj.Name, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Account_name(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Account_email(ctx context.Context, field graphql.CollectedField, obj *Account) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Account_email,
+		func(ctx context.Context) (any, error) {
+			return obj.Email, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Account_email(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Account_role(ctx context.Context, field graphql.CollectedField, obj *Account) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Account_role,
+		func(ctx context.Context) (any, error) {
+			return obj.Role, nil
+		},
+		nil,
+		ec.marshalNAccountRole2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Account_role(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type AccountRole does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Account_createdAt(ctx context.Context, field graphql.CollectedField, obj *Account) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Account_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Account_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Account",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AccountPayload_account(ctx context.Context, field graphql.CollectedField, obj *AccountPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AccountPayload_account,
+		func(ctx context.Context) (any, error) {
+			return obj.Account, nil
+		},
+		nil,
+		ec.marshalOAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AccountPayload_account(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Account_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Account_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Account_email(ctx, field)
+			case "role":
+				return ec.fieldContext_Account_role(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Account_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Account", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AccountPayload_errors(ctx context.Context, field graphql.CollectedField, obj *AccountPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AccountPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AccountPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AuthPayload_token(ctx context.Context, field graphql.CollectedField, obj *AuthPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AuthPayload_token,
+		func(ctx context.Context) (any, error) {
+			return obj.Token, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AuthPayload_token(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AuthPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AuthPayload_account(ctx context.Context, field graphql.CollectedField, obj *AuthPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AuthPayload_account,
+		func(ctx context.Context) (any, error) {
+			return obj.Account, nil
+		},
+		nil,
+		ec.marshalOAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_AuthPayload_account(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AuthPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Account_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Account_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Account_email(ctx, field)
+			case "role":
+				return ec.fieldContext_Account_role(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Account_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Account", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _AuthPayload_errors(ctx context.Context, field graphql.CollectedField, obj *AuthPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_AuthPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_AuthPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "AuthPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
 
 func (ec *executionContext) _Day_id(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
@@ -1568,6 +2293,70 @@ func (ec *executionContext) _DayPayload_errors(ctx context.Context, field graphq
 func (ec *executionContext) fieldContext_DayPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DayPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteAccountPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteAccountPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteAccountPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteAccountPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteAccountPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteAccountPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DeleteAccountPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteAccountPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteAccountPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteAccountPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -2481,6 +3270,362 @@ func (ec *executionContext) fieldContext_Mutation_detachDayFromStage(ctx context
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_setupAdmin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_setupAdmin,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().SetupAdmin(ctx, fc.Args["input"].(SetupAdminInput))
+		},
+		nil,
+		ec.marshalNAuthPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAuthPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_setupAdmin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_AuthPayload_token(ctx, field)
+			case "account":
+				return ec.fieldContext_AuthPayload_account(ctx, field)
+			case "errors":
+				return ec.fieldContext_AuthPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_setupAdmin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_login(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_login,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().Login(ctx, fc.Args["email"].(string), fc.Args["password"].(string))
+		},
+		nil,
+		ec.marshalNAuthPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAuthPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_login(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "token":
+				return ec.fieldContext_AuthPayload_token(ctx, field)
+			case "account":
+				return ec.fieldContext_AuthPayload_account(ctx, field)
+			case "errors":
+				return ec.fieldContext_AuthPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AuthPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_login_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_logout(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_logout,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Mutation().Logout(ctx)
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_logout(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createAccount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateAccount(ctx, fc.Args["input"].(CreateAccountInput))
+		},
+		nil,
+		ec.marshalNAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "account":
+				return ec.fieldContext_AccountPayload_account(ctx, field)
+			case "errors":
+				return ec.fieldContext_AccountPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteAccount,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteAccount(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNDeleteAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteAccount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteAccountPayload_success(ctx, field)
+			case "errors":
+				return ec.fieldContext_DeleteAccountPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteAccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteAccount_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_requestPasswordReset(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_requestPasswordReset,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().RequestPasswordReset(ctx, fc.Args["email"].(string))
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_requestPasswordReset(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_requestPasswordReset_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_resetPassword,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ResetPassword(ctx, fc.Args["input"].(ResetPasswordInput))
+		},
+		nil,
+		ec.marshalNAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_resetPassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "account":
+				return ec.fieldContext_AccountPayload_account(ctx, field)
+			case "errors":
+				return ec.fieldContext_AccountPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_resetPassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_changePassword(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_changePassword,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ChangePassword(ctx, fc.Args["input"].(ChangePasswordInput))
+		},
+		nil,
+		ec.marshalNAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_changePassword(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "account":
+				return ec.fieldContext_AccountPayload_account(ctx, field)
+			case "errors":
+				return ec.fieldContext_AccountPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type AccountPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_changePassword_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_trips(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2851,6 +3996,121 @@ func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_me,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().Me(ctx)
+		},
+		nil,
+		ec.marshalOAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_me(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Account_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Account_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Account_email(ctx, field)
+			case "role":
+				return ec.fieldContext_Account_role(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Account_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Account", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_setupStatus(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_setupStatus,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().SetupStatus(ctx)
+		},
+		nil,
+		ec.marshalNSetupStatusPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐSetupStatusPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_setupStatus(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "done":
+				return ec.fieldContext_SetupStatusPayload_done(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type SetupStatusPayload", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_accounts(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_accounts,
+		func(ctx context.Context) (any, error) {
+			return ec.Resolvers.Query().Accounts(ctx)
+		},
+		nil,
+		ec.marshalNAccount2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_accounts(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Account_id(ctx, field)
+			case "name":
+				return ec.fieldContext_Account_name(ctx, field)
+			case "email":
+				return ec.fieldContext_Account_email(ctx, field)
+			case "role":
+				return ec.fieldContext_Account_role(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Account_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Account", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2954,6 +4214,35 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _SetupStatusPayload_done(ctx context.Context, field graphql.CollectedField, obj *SetupStatusPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_SetupStatusPayload_done,
+		func(ctx context.Context) (any, error) {
+			return obj.Done, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_SetupStatusPayload_done(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "SetupStatusPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5338,6 +6627,50 @@ func (ec *executionContext) unmarshalInputAddStageInput(ctx context.Context, obj
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputChangePasswordInput(ctx context.Context, obj any) (ChangePasswordInput, error) {
+	var it ChangePasswordInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"currentPassword", "newPassword", "newPasswordConfirm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "currentPassword":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("currentPassword"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.CurrentPassword = data
+		case "newPassword":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newPassword"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NewPassword = data
+		case "newPasswordConfirm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newPasswordConfirm"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NewPasswordConfirm = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCloseTripInput(ctx context.Context, obj any) (CloseTripInput, error) {
 	var it CloseTripInput
 	if obj == nil {
@@ -5370,6 +6703,57 @@ func (ec *executionContext) unmarshalInputCloseTripInput(ctx context.Context, ob
 				return it, err
 			}
 			it.LastDay = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context, obj any) (CreateAccountInput, error) {
+	var it CreateAccountInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "password", "passwordConfirm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		case "passwordConfirm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passwordConfirm"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PasswordConfirm = data
 		}
 	}
 	return it, nil
@@ -5435,6 +6819,101 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 				return it, err
 			}
 			it.EndDate = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputResetPasswordInput(ctx context.Context, obj any) (ResetPasswordInput, error) {
+	var it ResetPasswordInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"token", "newPassword", "newPasswordConfirm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "token":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("token"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Token = data
+		case "newPassword":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newPassword"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NewPassword = data
+		case "newPasswordConfirm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newPasswordConfirm"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.NewPasswordConfirm = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetupAdminInput(ctx context.Context, obj any) (SetupAdminInput, error) {
+	var it SetupAdminInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"name", "email", "password", "passwordConfirm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "email":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Email = data
+		case "password":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Password = data
+		case "passwordConfirm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passwordConfirm"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.PasswordConfirm = data
 		}
 	}
 	return it, nil
@@ -5608,6 +7087,149 @@ func (ec *executionContext) unmarshalInputUpdateTripInput(ctx context.Context, o
 
 // region    **************************** object.gotpl ****************************
 
+var accountImplementors = []string{"Account"}
+
+func (ec *executionContext) _Account(ctx context.Context, sel ast.SelectionSet, obj *Account) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accountImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Account")
+		case "id":
+			out.Values[i] = ec._Account_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Account_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "email":
+			out.Values[i] = ec._Account_email(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "role":
+			out.Values[i] = ec._Account_role(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Account_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var accountPayloadImplementors = []string{"AccountPayload"}
+
+func (ec *executionContext) _AccountPayload(ctx context.Context, sel ast.SelectionSet, obj *AccountPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, accountPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AccountPayload")
+		case "account":
+			out.Values[i] = ec._AccountPayload_account(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._AccountPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var authPayloadImplementors = []string{"AuthPayload"}
+
+func (ec *executionContext) _AuthPayload(ctx context.Context, sel ast.SelectionSet, obj *AuthPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, authPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("AuthPayload")
+		case "token":
+			out.Values[i] = ec._AuthPayload_token(ctx, field, obj)
+		case "account":
+			out.Values[i] = ec._AuthPayload_account(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._AuthPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var dayImplementors = []string{"Day"}
 
 func (ec *executionContext) _Day(ctx context.Context, sel ast.SelectionSet, obj *Day) graphql.Marshaler {
@@ -5691,6 +7313,50 @@ func (ec *executionContext) _DayPayload(ctx context.Context, sel ast.SelectionSe
 			out.Values[i] = ec._DayPayload_day(ctx, field, obj)
 		case "errors":
 			out.Values[i] = ec._DayPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var deleteAccountPayloadImplementors = []string{"DeleteAccountPayload"}
+
+func (ec *executionContext) _DeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteAccountPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteAccountPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteAccountPayload")
+		case "success":
+			out.Values[i] = ec._DeleteAccountPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DeleteAccountPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5973,6 +7639,62 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "setupAdmin":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_setupAdmin(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "login":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_login(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "logout":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_logout(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createAccount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createAccount(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteAccount":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteAccount(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "requestPasswordReset":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_requestPasswordReset(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "resetPassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_resetPassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "changePassword":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_changePassword(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6138,6 +7860,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "me":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_me(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "setupStatus":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_setupStatus(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "accounts":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_accounts(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -6146,6 +7931,45 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var setupStatusPayloadImplementors = []string{"SetupStatusPayload"}
+
+func (ec *executionContext) _SetupStatusPayload(ctx context.Context, sel ast.SelectionSet, obj *SetupStatusPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, setupStatusPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("SetupStatusPayload")
+		case "done":
+			out.Values[i] = ec._SetupStatusPayload_done(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -6786,6 +8610,56 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
+func (ec *executionContext) marshalNAccount2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountᚄ(ctx context.Context, sel ast.SelectionSet, v []*Account) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount(ctx context.Context, sel ast.SelectionSet, v *Account) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Account(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNAccountPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountPayload(ctx context.Context, sel ast.SelectionSet, v AccountPayload) graphql.Marshaler {
+	return ec._AccountPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountPayload(ctx context.Context, sel ast.SelectionSet, v *AccountPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AccountPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNAccountRole2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole(ctx context.Context, v any) (AccountRole, error) {
+	var res AccountRole
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAccountRole2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole(ctx context.Context, sel ast.SelectionSet, v AccountRole) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) unmarshalNAddDayInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddDayInput(ctx context.Context, v any) (AddDayInput, error) {
 	res, err := ec.unmarshalInputAddDayInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6794,6 +8668,20 @@ func (ec *executionContext) unmarshalNAddDayInput2githubᚗcomᚋbfossesᚋshare
 func (ec *executionContext) unmarshalNAddStageInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddStageInput(ctx context.Context, v any) (AddStageInput, error) {
 	res, err := ec.unmarshalInputAddStageInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNAuthPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v AuthPayload) graphql.Marshaler {
+	return ec._AuthPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNAuthPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAuthPayload(ctx context.Context, sel ast.SelectionSet, v *AuthPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._AuthPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v any) (bool, error) {
@@ -6812,8 +8700,18 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) unmarshalNChangePasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐChangePasswordInput(ctx context.Context, v any) (ChangePasswordInput, error) {
+	res, err := ec.unmarshalInputChangePasswordInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNCloseTripInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCloseTripInput(ctx context.Context, v any) (CloseTripInput, error) {
 	res, err := ec.unmarshalInputCloseTripInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateAccountInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateAccountInput(ctx context.Context, v any) (CreateAccountInput, error) {
+	res, err := ec.unmarshalInputCreateAccountInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -6860,6 +8758,20 @@ func (ec *executionContext) marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋshare
 		return graphql.Null
 	}
 	return ec._DayPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteAccountPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, v DeleteAccountPayload) graphql.Marshaler {
+	return ec._DeleteAccountPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteAccountPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, v *DeleteAccountPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteAccountPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDeleteDayPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteDayPayload(ctx context.Context, sel ast.SelectionSet, v DeleteDayPayload) graphql.Marshaler {
@@ -6964,6 +8876,30 @@ func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNResetPasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐResetPasswordInput(ctx context.Context, v any) (ResetPasswordInput, error) {
+	res, err := ec.unmarshalInputResetPasswordInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNSetupAdminInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐSetupAdminInput(ctx context.Context, v any) (SetupAdminInput, error) {
+	res, err := ec.unmarshalInputSetupAdminInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNSetupStatusPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐSetupStatusPayload(ctx context.Context, sel ast.SelectionSet, v SetupStatusPayload) graphql.Marshaler {
+	return ec._SetupStatusPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNSetupStatusPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐSetupStatusPayload(ctx context.Context, sel ast.SelectionSet, v *SetupStatusPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._SetupStatusPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNStage2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐStageᚄ(ctx context.Context, sel ast.SelectionSet, v []*Stage) graphql.Marshaler {
@@ -7252,6 +9188,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalOAccount2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccount(ctx context.Context, sel ast.SelectionSet, v *Account) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Account(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

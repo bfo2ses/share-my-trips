@@ -7,6 +7,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
@@ -215,6 +216,95 @@ func (r *mutationResolver) DetachDayFromStage(ctx context.Context, dayID string,
 	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
 }
 
+// SetupAdmin is the resolver for the setupAdmin field.
+func (r *mutationResolver) SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error) {
+	result, err := r.authHandler.SetupAdmin(ctx, auth.SetupAdminCommand{
+		Name:            input.Name,
+		Email:           input.Email,
+		Password:        input.Password,
+		PasswordConfirm: input.PasswordConfirm,
+	})
+	if err != nil {
+		return &AuthPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &AuthPayload{Token: &result.Token, Account: toGraphQLAccount(result.User), Errors: []*UserError{}}, nil
+}
+
+// Login is the resolver for the login field.
+func (r *mutationResolver) Login(ctx context.Context, email string, password string) (*AuthPayload, error) {
+	result, err := r.authHandler.Login(ctx, auth.LoginCommand{Email: email, Password: password})
+	if err != nil {
+		return &AuthPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &AuthPayload{Token: &result.Token, Account: toGraphQLAccount(result.User), Errors: []*UserError{}}, nil
+}
+
+// Logout is the resolver for the logout field.
+func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
+	token := sessionTokenFromContext(ctx)
+	_ = r.authHandler.Logout(ctx, auth.LogoutCommand{Token: token})
+	return true, nil
+}
+
+// CreateAccount is the resolver for the createAccount field.
+func (r *mutationResolver) CreateAccount(ctx context.Context, input CreateAccountInput) (*AccountPayload, error) {
+	actorID := r.currentUserID(ctx)
+	user, err := r.authHandler.CreateAccount(ctx, auth.CreateAccountCommand{
+		ActorID:         actorID,
+		Name:            input.Name,
+		Email:           input.Email,
+		Password:        input.Password,
+		PasswordConfirm: input.PasswordConfirm,
+	})
+	if err != nil {
+		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &AccountPayload{Account: toGraphQLAccount(user), Errors: []*UserError{}}, nil
+}
+
+// DeleteAccount is the resolver for the deleteAccount field.
+func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*DeleteAccountPayload, error) {
+	actorID := r.currentUserID(ctx)
+	if err := r.authHandler.DeleteAccount(ctx, auth.DeleteAccountCommand{ActorID: actorID, TargetID: id}); err != nil {
+		return &DeleteAccountPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DeleteAccountPayload{Success: true, Errors: []*UserError{}}, nil
+}
+
+// RequestPasswordReset is the resolver for the requestPasswordReset field.
+func (r *mutationResolver) RequestPasswordReset(ctx context.Context, email string) (bool, error) {
+	_ = r.authHandler.RequestPasswordReset(ctx, auth.RequestPasswordResetCommand{Email: email})
+	return true, nil
+}
+
+// ResetPassword is the resolver for the resetPassword field.
+func (r *mutationResolver) ResetPassword(ctx context.Context, input ResetPasswordInput) (*AccountPayload, error) {
+	user, err := r.authHandler.ResetPassword(ctx, auth.ResetPasswordCommand{
+		Token:              input.Token,
+		NewPassword:        input.NewPassword,
+		NewPasswordConfirm: input.NewPasswordConfirm,
+	})
+	if err != nil {
+		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &AccountPayload{Account: toGraphQLAccount(user), Errors: []*UserError{}}, nil
+}
+
+// ChangePassword is the resolver for the changePassword field.
+func (r *mutationResolver) ChangePassword(ctx context.Context, input ChangePasswordInput) (*AccountPayload, error) {
+	userID := r.currentUserID(ctx)
+	user, err := r.authHandler.ChangePassword(ctx, auth.ChangePasswordCommand{
+		UserID:             userID,
+		CurrentPassword:    input.CurrentPassword,
+		NewPassword:        input.NewPassword,
+		NewPasswordConfirm: input.NewPasswordConfirm,
+	})
+	if err != nil {
+		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &AccountPayload{Account: toGraphQLAccount(user), Errors: []*UserError{}}, nil
+}
+
 // Trips is the resolver for the trips field.
 func (r *queryResolver) Trips(ctx context.Context, status []TripStatus) ([]*Trip, error) {
 	statuses := make([]trip.Status, 0, len(status))
@@ -294,6 +384,56 @@ func (r *queryResolver) Days(ctx context.Context, stageID string) ([]*Day, error
 		result = append(result, toGraphQLDay(d))
 	}
 	return result, nil
+}
+
+// Me is the resolver for the me field.
+func (r *queryResolver) Me(ctx context.Context) (*Account, error) {
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return nil, nil
+	}
+	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
+	if err != nil {
+		return nil, nil
+	}
+	return toGraphQLAccount(user), nil
+}
+
+// SetupStatus is the resolver for the setupStatus field.
+func (r *queryResolver) SetupStatus(ctx context.Context) (*SetupStatusPayload, error) {
+	done, err := r.authHandler.IsSetupDone(ctx, auth.IsSetupDoneQuery{})
+	if err != nil {
+		return nil, err
+	}
+	return &SetupStatusPayload{Done: done}, nil
+}
+
+// Accounts is the resolver for the accounts field.
+func (r *queryResolver) Accounts(ctx context.Context) ([]*Account, error) {
+	actorID := r.currentUserID(ctx)
+	users, err := r.authHandler.ListAccounts(ctx, auth.ListAccountsQuery{ActorID: actorID})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*Account, 0, len(users))
+	for _, u := range users {
+		result = append(result, toGraphQLAccount(u))
+	}
+	return result, nil
+}
+
+// currentUserID resolves the session token in the context to a user ID.
+// Returns an empty string when unauthenticated (domain handlers enforce authorization).
+func (r *Resolver) currentUserID(ctx context.Context) string {
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return ""
+	}
+	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
+	if err != nil {
+		return ""
+	}
+	return user.ID
 }
 
 // Mutation returns MutationResolver implementation.

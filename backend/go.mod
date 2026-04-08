@@ -7,6 +7,7 @@ require (
 	github.com/cucumber/godog v0.15.1
 	github.com/google/uuid v1.6.0
 	github.com/vektah/gqlparser/v2 v2.5.32
+	golang.org/x/crypto v0.49.0
 )
 
 require (
@@ -24,7 +25,6 @@ require (
 	github.com/sosodev/duration v1.4.0 // indirect
 	github.com/spf13/pflag v1.0.7 // indirect
 	github.com/urfave/cli/v3 v3.7.0 // indirect
-	golang.org/x/crypto v0.49.0 // indirect
 	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.35.0 // indirect

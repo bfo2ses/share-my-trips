@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 
+	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
@@ -59,6 +60,33 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: day.ErrNotAttached.Error()}}
 	case errors.Is(err, day.ErrStageNotInTrip):
 		return []*UserError{{Field: strPtr("stageID"), Message: day.ErrStageNotInTrip.Error()}}
+	// auth errors
+	case errors.Is(err, auth.ErrNameRequired):
+		return []*UserError{{Field: strPtr("name"), Message: auth.ErrNameRequired.Error()}}
+	case errors.Is(err, auth.ErrEmailRequired):
+		return []*UserError{{Field: strPtr("email"), Message: auth.ErrEmailRequired.Error()}}
+	case errors.Is(err, auth.ErrPasswordRequired):
+		return []*UserError{{Field: strPtr("password"), Message: auth.ErrPasswordRequired.Error()}}
+	case errors.Is(err, auth.ErrPasswordMismatch):
+		return []*UserError{{Field: strPtr("passwordConfirm"), Message: auth.ErrPasswordMismatch.Error()}}
+	case errors.Is(err, auth.ErrEmailTaken):
+		return []*UserError{{Field: strPtr("email"), Message: auth.ErrEmailTaken.Error()}}
+	case errors.Is(err, auth.ErrNotFound):
+		return []*UserError{{Message: auth.ErrNotFound.Error()}}
+	case errors.Is(err, auth.ErrInvalidCredentials):
+		return []*UserError{{Message: auth.ErrInvalidCredentials.Error()}}
+	case errors.Is(err, auth.ErrSetupAlreadyDone):
+		return []*UserError{{Message: auth.ErrSetupAlreadyDone.Error()}}
+	case errors.Is(err, auth.ErrCannotDeleteSelf):
+		return []*UserError{{Message: auth.ErrCannotDeleteSelf.Error()}}
+	case errors.Is(err, auth.ErrForbidden):
+		return []*UserError{{Message: auth.ErrForbidden.Error()}}
+	case errors.Is(err, auth.ErrInvalidResetToken):
+		return []*UserError{{Field: strPtr("token"), Message: auth.ErrInvalidResetToken.Error()}}
+	case errors.Is(err, auth.ErrResetTokenExpired):
+		return []*UserError{{Field: strPtr("token"), Message: auth.ErrResetTokenExpired.Error()}}
+	case errors.Is(err, auth.ErrInvalidCurrentPassword):
+		return []*UserError{{Field: strPtr("currentPassword"), Message: auth.ErrInvalidCurrentPassword.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}
