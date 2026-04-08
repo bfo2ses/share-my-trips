@@ -3,6 +3,7 @@ package graph
 import (
 	"time"
 
+	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
@@ -109,4 +110,21 @@ func nullableString(s string) *string {
 		return nil
 	}
 	return &s
+}
+
+func toGraphQLAccount(u *auth.User) *Account {
+	return &Account{
+		ID:        u.ID,
+		Name:      u.Name,
+		Email:     u.Email,
+		Role:      toGraphQLRole(u.Role),
+		CreatedAt: u.CreatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGraphQLRole(r auth.Role) AccountRole {
+	if r == auth.RoleAdmin {
+		return AccountRoleAdmin
+	}
+	return AccountRoleFamily
 }

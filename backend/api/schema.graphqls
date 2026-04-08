@@ -144,6 +144,67 @@ input UpdateDayInput {
   description: String
 }
 
+enum AccountRole {
+  ADMIN
+  FAMILY
+}
+
+type Account {
+  id: ID!
+  name: String!
+  email: String!
+  role: AccountRole!
+  "RFC 3339 timestamp."
+  createdAt: String!
+}
+
+type AuthPayload {
+  "Session token. Present on success, null on error."
+  token: String
+  account: Account
+  errors: [UserError!]!
+}
+
+type AccountPayload {
+  account: Account
+  errors: [UserError!]!
+}
+
+type DeleteAccountPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+type SetupStatusPayload {
+  done: Boolean!
+}
+
+input SetupAdminInput {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirm: String!
+}
+
+input CreateAccountInput {
+  name: String!
+  email: String!
+  password: String!
+  passwordConfirm: String!
+}
+
+input ResetPasswordInput {
+  token: String!
+  newPassword: String!
+  newPasswordConfirm: String!
+}
+
+input ChangePasswordInput {
+  currentPassword: String!
+  newPassword: String!
+  newPasswordConfirm: String!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -157,6 +218,12 @@ type Query {
   day(id: ID!): Day
   "Returns all days for a stage, sorted by date ascending."
   days(stageID: ID!): [Day!]!
+  "Returns the currently authenticated account, or null if not authenticated."
+  me: Account
+  "Returns true if the admin account has already been created."
+  setupStatus: SetupStatusPayload!
+  "Returns all accounts. Requires admin role."
+  accounts: [Account!]!
 }
 
 type Mutation {
@@ -175,4 +242,16 @@ type Mutation {
   deleteDay(id: ID!): DeleteDayPayload!
   attachDayToStage(dayID: ID!, stageID: ID!): DayPayload!
   detachDayFromStage(dayID: ID!, stageID: ID!): DayPayload!
+  "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
+  setupAdmin(input: SetupAdminInput!): AuthPayload!
+  login(email: String!, password: String!): AuthPayload!
+  logout: Boolean!
+  "Creates a family account. Requires admin role."
+  createAccount(input: CreateAccountInput!): AccountPayload!
+  "Deletes an account. Requires admin role. Cannot delete own account."
+  deleteAccount(id: ID!): DeleteAccountPayload!
+  "Sends a password reset email. Always returns true regardless of whether the email exists."
+  requestPasswordReset(email: String!): Boolean!
+  resetPassword(input: ResetPasswordInput!): AccountPayload!
+  changePassword(input: ChangePasswordInput!): AccountPayload!
 }

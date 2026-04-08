@@ -9,6 +9,20 @@ import (
 	"strconv"
 )
 
+type Account struct {
+	ID    string      `json:"id"`
+	Name  string      `json:"name"`
+	Email string      `json:"email"`
+	Role  AccountRole `json:"role"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
+}
+
+type AccountPayload struct {
+	Account *Account     `json:"account,omitempty"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type AddDayInput struct {
 	TripID  string `json:"tripID"`
 	StageID string `json:"stageID"`
@@ -27,9 +41,29 @@ type AddStageInput struct {
 	Description *string `json:"description,omitempty"`
 }
 
+type AuthPayload struct {
+	// Session token. Present on success, null on error.
+	Token   *string      `json:"token,omitempty"`
+	Account *Account     `json:"account,omitempty"`
+	Errors  []*UserError `json:"errors"`
+}
+
+type ChangePasswordInput struct {
+	CurrentPassword    string `json:"currentPassword"`
+	NewPassword        string `json:"newPassword"`
+	NewPasswordConfirm string `json:"newPasswordConfirm"`
+}
+
 type CloseTripInput struct {
 	FirstDay string `json:"firstDay"`
 	LastDay  string `json:"lastDay"`
+}
+
+type CreateAccountInput struct {
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"passwordConfirm"`
 }
 
 type CreateTripInput struct {
@@ -62,6 +96,11 @@ type DayPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
+type DeleteAccountPayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type DeleteDayPayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
@@ -81,6 +120,23 @@ type Mutation struct {
 }
 
 type Query struct {
+}
+
+type ResetPasswordInput struct {
+	Token              string `json:"token"`
+	NewPassword        string `json:"newPassword"`
+	NewPasswordConfirm string `json:"newPasswordConfirm"`
+}
+
+type SetupAdminInput struct {
+	Name            string `json:"name"`
+	Email           string `json:"email"`
+	Password        string `json:"password"`
+	PasswordConfirm string `json:"passwordConfirm"`
+}
+
+type SetupStatusPayload struct {
+	Done bool `json:"done"`
 }
 
 type Stage struct {
@@ -153,6 +209,61 @@ type UpdateTripInput struct {
 type UserError struct {
 	Field   *string `json:"field,omitempty"`
 	Message string  `json:"message"`
+}
+
+type AccountRole string
+
+const (
+	AccountRoleAdmin  AccountRole = "ADMIN"
+	AccountRoleFamily AccountRole = "FAMILY"
+)
+
+var AllAccountRole = []AccountRole{
+	AccountRoleAdmin,
+	AccountRoleFamily,
+}
+
+func (e AccountRole) IsValid() bool {
+	switch e {
+	case AccountRoleAdmin, AccountRoleFamily:
+		return true
+	}
+	return false
+}
+
+func (e AccountRole) String() string {
+	return string(e)
+}
+
+func (e *AccountRole) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = AccountRole(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid AccountRole", str)
+	}
+	return nil
+}
+
+func (e AccountRole) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *AccountRole) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e AccountRole) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
 }
 
 type TripStatus string
