@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { SetupPage } from './features/auth/pages/SetupPage';
 import { ProtectedLayout } from './features/auth/components/ProtectedLayout';
+import { LogoutButton } from './features/auth/components/LogoutButton';
 
 export const router = createBrowserRouter([
   {
@@ -17,7 +18,7 @@ export const router = createBrowserRouter([
     children: [
       {
         path: '/',
-        element: <div>Accueil (à venir)</div>,
+        element: <div>Accueil (à venir) <LogoutButton /></div>,
       },
     ],
   },
