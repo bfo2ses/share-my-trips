@@ -32,10 +32,9 @@ export type AccountPayload = {
   errors: Array<UserError>;
 };
 
-export enum AccountRole {
-  Admin = 'ADMIN',
-  Family = 'FAMILY'
-}
+export type AccountRole =
+  | 'ADMIN'
+  | 'FAMILY';
 
 export type AddDayInput = {
   /** Date-only, format YYYY-MM-DD. */
@@ -403,11 +402,10 @@ export type TripPayload = {
   trip?: Maybe<Trip>;
 };
 
-export enum TripStatus {
-  Closed = 'CLOSED',
-  Draft = 'DRAFT',
-  Published = 'PUBLISHED'
-}
+export type TripStatus =
+  | 'CLOSED'
+  | 'DRAFT'
+  | 'PUBLISHED';
 
 /** The date of a day is immutable after creation. To change the date, delete and recreate the day. */
 export type UpdateDayInput = {
