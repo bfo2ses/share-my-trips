@@ -64,10 +64,10 @@ src/
 
 ## Authentification
 
-- Session gérée via cookie httpOnly (posé par le backend)
-- Le frontend ne stocke pas de token (pas de localStorage, pas de sessionStorage)
-- Vérification de session au démarrage via query GraphQL `me`
-- Redirection automatique vers `/login` si la query `me` retourne une erreur 401
+- Token Bearer stocké en `sessionStorage` (clé `smt_token`) — survit au refresh, effacé à la fermeture de l'onglet
+- Token injecté dans urql via header `Authorization: Bearer <token>` à chaque requête
+- Pas de localStorage (objectif long terme : migrer vers cookie httpOnly côté backend)
+- Redirection automatique vers `/login` si pas de token
 
 ## Flux de développement
 

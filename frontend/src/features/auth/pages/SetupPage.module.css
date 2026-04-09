@@ -1,0 +1,121 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+.page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #0d0d0d;
+  font-family: 'DM Sans', sans-serif;
+}
+
+/* Left visual panel */
+.visual {
+  position: relative;
+  overflow: hidden;
+  background: #0d0d0d;
+}
+
+.visualInner {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 35% 55%, rgba(55, 100, 90, 0.3) 0%, transparent 55%),
+    radial-gradient(ellipse at 70% 20%, rgba(80, 60, 100, 0.22) 0%, transparent 50%),
+    radial-gradient(ellipse at 20% 85%, rgba(20, 30, 50, 0.8) 0%, transparent 45%),
+    radial-gradient(ellipse at 85% 80%, rgba(40, 60, 50, 0.18) 0%, transparent 40%),
+    linear-gradient(160deg, #0a1210 0%, #0d0d0d 45%, #080810 100%);
+}
+
+.visualInner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.06'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  opacity: 0.4;
+  mix-blend-mode: overlay;
+}
+
+.visualInner::after {
+  content: '';
+  position: absolute;
+  inset: 32px;
+  border: 1px solid rgba(120, 190, 160, 0.1);
+  pointer-events: none;
+}
+
+.horizon {
+  position: absolute;
+  top: 50%;
+  left: 48px;
+  right: 48px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(120, 190, 160, 0.18), transparent);
+  transform: translateY(-50%);
+}
+
+.tagline {
+  position: absolute;
+  bottom: 48px;
+  left: 48px;
+  right: 48px;
+  z-index: 2;
+}
+
+.taglineText {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0 0 16px;
+  letter-spacing: 0.01em;
+}
+
+.taglineLabel {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(120, 190, 160, 0.65);
+}
+
+/* Right form panel */
+.formPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 5rem;
+  background: #121210;
+  border-left: 1px solid rgba(120, 190, 160, 0.07);
+  position: relative;
+  overflow-y: auto;
+}
+
+.formPanel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(120, 190, 160, 0.03) 0%, transparent 60%),
+    linear-gradient(90deg, rgba(120, 190, 160, 0.04) 0%, transparent 8%);
+  pointer-events: none;
+}
+
+@media (max-width: 768px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .visual {
+    display: none;
+  }
+
+  .formPanel {
+    padding: 2.5rem 1.5rem;
+    background: #0d0d0d;
+    border-left: none;
+  }
+}

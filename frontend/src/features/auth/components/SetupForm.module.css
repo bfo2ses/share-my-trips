@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  width: 100%;
+  max-width: 360px;
+}
+
+.title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.875rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: #f0ede8;
+  margin: 0 0 8px;
+  text-align: left;
+  line-height: 1.2;
+}
+
+.subtitle {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(120, 190, 160, 0.65);
+  margin: 0 0 36px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  line-height: 1.5;
+}
+
+.error {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.8125rem;
+  color: #e07070;
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  background: rgba(224, 112, 112, 0.08);
+  border: 1px solid rgba(224, 112, 112, 0.2);
+  border-radius: 3px;
+}
+
+.label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 28px;
+}
+
+.input {
+  padding: 0 0 13px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 1rem;
+  font-weight: 300;
+  color: #f0ede8;
+  outline: none;
+  transition: border-color 0.2s ease;
+  caret-color: rgba(120, 190, 160, 0.9);
+  width: 100%;
+}
+
+.input::placeholder {
+  color: rgba(255, 255, 255, 0.15);
+}
+
+.input:focus {
+  border-bottom-color: rgba(120, 190, 160, 0.55);
+}
+
+.input:-webkit-autofill,
+.input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f0ede8;
+  -webkit-box-shadow: 0 0 0 100px #121210 inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.submit {
+  margin-top: 16px;
+  padding: 15px 24px;
+  background: rgba(120, 190, 160, 0.09);
+  color: rgba(120, 190, 160, 0.88);
+  border: 1px solid rgba(120, 190, 160, 0.28);
+  border-radius: 2px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+  width: 100%;
+}
+
+.submit:hover {
+  background: rgba(120, 190, 160, 0.16);
+  border-color: rgba(120, 190, 160, 0.5);
+  color: rgba(160, 220, 195, 1);
+}
+
+.submit:active {
+  background: rgba(120, 190, 160, 0.22);
+}

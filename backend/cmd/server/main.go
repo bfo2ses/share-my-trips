@@ -19,6 +19,19 @@ import (
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
 )
 
+func corsMiddleware(origin string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+		if r.Method == http.MethodOptions {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func main() {
 	// Trip / Stage / Day
 	tripRepo := memory.NewTripRepository()
@@ -57,12 +70,17 @@ func main() {
 		port = "8080"
 	}
 
+	corsOrigin := os.Getenv("CORS_ORIGIN")
+	if corsOrigin == "" {
+		corsOrigin = "http://localhost:5173"
+	}
+
 	if os.Getenv("ENV") == "dev" {
 		http.Handle("/", playground.Handler("ShareMyTrips GraphQL", "/query"))
 		log.Printf("GraphQL Playground available at http://localhost:%s/", port)
 	}
 
-	http.Handle("/query", graph.AuthMiddleware(srv))
+	http.Handle("/query", corsMiddleware(corsOrigin, graph.AuthMiddleware(srv)))
 
 	log.Printf("Server running at http://localhost:%s/query", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
