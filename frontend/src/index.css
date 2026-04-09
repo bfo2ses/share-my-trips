@@ -39,8 +39,50 @@
   box-sizing: border-box;
 }
 
+/* Fond sur html pour éviter le flash blanc du backdrop ::view-transition */
+html {
+  background-color: #0e0c09;
+}
+
 body {
   margin: 0;
   background-color: var(--color-bg);
   color: var(--color-text);
+}
+
+/* ── View transitions ── */
+@media (prefers-reduced-motion: no-preference) {
+  /* Désactive le contexte de composition isolé par défaut (cause du voile blanc) */
+  ::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
+  /* Root : crossfade synchrone — même durée pour éviter tout gap */
+  ::view-transition-old(root) {
+    animation: 300ms ease both vt-crossfade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 300ms ease both vt-crossfade-in;
+  }
+
+  /* Panneau voyage : slide depuis/vers la gauche */
+  ::view-transition-new(trip-panel) {
+    animation: 380ms cubic-bezier(0.4, 0, 0.2, 1) both vt-slide-from-left;
+  }
+  ::view-transition-old(trip-panel) {
+    animation: 280ms cubic-bezier(0.4, 0, 0.2, 1) both vt-slide-to-left;
+  }
+}
+
+@keyframes vt-crossfade-out {
+  to { opacity: 0; }
+}
+@keyframes vt-crossfade-in {
+  from { opacity: 0; }
+}
+@keyframes vt-slide-from-left {
+  from { transform: translateX(-100%); opacity: 0; }
+}
+@keyframes vt-slide-to-left {
+  to { transform: translateX(-100%); opacity: 0; }
 }

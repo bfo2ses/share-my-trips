@@ -18,7 +18,7 @@ function App() {
 
   return (
     <>
-      <Header userName={MOCK_USER.name} />
+      <Header user={{ id: '0', name: MOCK_USER.name, email: '', role: 'ADMIN' }} />
       <TripsPage />
     </>
   );
