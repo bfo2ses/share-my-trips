@@ -1,5 +1,50 @@
 # Backend — Guide d'implémentation
 
+## Architecture
+
+### Principes
+
+- **Architecture Hexagonale** : le domaine ne dépend jamais des couches techniques
+- **CQRS simple** : séparation commands/queries, même base de données
+- **Inversion de dépendances** : le domaine définit des interfaces (ports), les adapters les implémentent
+- **Séparation des contextes** : trip, stage, media, auth sont des packages isolés
+
+### Structure des packages
+
+```
+internal/
+├── domain/{contexte}/     # Logique métier pure, aucune dépendance technique
+│   ├── model.go           # Entités et value objects
+│   ├── command.go         # Définition des commands
+│   ├── query.go           # Définition des queries
+│   ├── repository.go      # Port (interface)
+│   └── handler.go         # Command & Query handlers
+├── adapter/{techno}/      # Implémentations des ports
+│   ├── memory/            # Implémentation in-memory (phase 1)
+│   └── postgres/          # Implémentation PostgreSQL (phase 2)
+└── graphql/               # Resolvers gqlgen
+```
+
+## Conventions Go
+
+- Suivre les conventions standard Go (Effective Go, Go Code Review Comments)
+- Erreurs wrappées avec `fmt.Errorf("contexte: %w", err)` et vérifiées avec `errors.Is` / `errors.As`
+- Pas de panic en dehors du main, toujours retourner des erreurs
+- Interfaces définies côté consommateur (dans le domaine), pas côté implémentation
+- Nommage des interfaces : pas de préfixe `I`, utiliser le comportement (ex: `Repository`, `Storage`, `Extractor`)
+- Les constructeurs retournent des pointeurs : `func NewTrip(...) (*Trip, error)`
+- Contexte (`context.Context`) en premier paramètre de toute fonction I/O
+
+## Tests Go
+
+- Utiliser **testify** pour les assertions (`assert`, `require`)
+- Table-driven tests quand il y a plusieurs cas similaires
+- Tests unitaires dans le même package (accès aux types non exportés)
+- Nommage : `TestNomFonction_CasTesté` (ex: `TestCreateTrip_WithoutTitle`)
+- Chaque contexte domaine doit avoir ses tests sur les handlers avec le repository in-memory
+
+---
+
 ## Flux de développement
 
 Pour chaque feature, suivre ces étapes dans l'ordre :
