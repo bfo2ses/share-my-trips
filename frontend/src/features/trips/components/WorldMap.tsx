@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps';
 import type { Trip } from '../mockData';
 import styles from './WorldMap.module.css';
@@ -16,6 +17,7 @@ function formatDateRange(start: string, end: string): string {
 
 export function WorldMap({ trips }: WorldMapProps) {
   const [selected, setSelected] = useState<Trip | null>(null);
+  const navigate = useNavigate();
 
   return (
     <section className={styles.section}>
@@ -94,7 +96,7 @@ export function WorldMap({ trips }: WorldMapProps) {
             <p className={styles.popupDates}>
               {formatDateRange(selected.startDate, selected.endDate)}
             </p>
-            <a href={`/trips/${selected.id}`} className={styles.popupLink}>
+            <a href={`/trips/${selected.id}`} className={styles.popupLink} onClick={(e) => { e.preventDefault(); navigate(`/trips/${selected.id}`); }}>
               Voir le voyage →
             </a>
           </div>
