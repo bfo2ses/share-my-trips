@@ -17,19 +17,12 @@ interface CountryGroup {
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
-function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
-  if (!start || !end) return '';
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'long', year: 'numeric' };
-  return `${new Date(start).toLocaleDateString('fr-FR', opts)} — ${new Date(end).toLocaleDateString('fr-FR', opts)}`;
-}
-
 interface WorldMapProps {
   trips: TripSummary[];
 }
 
 export function WorldMap({ trips }: WorldMapProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountryGroup | null>(null);
-  const [selectedTrip, setSelectedTrip] = useState<TripSummary | null>(null);
   const navigate = useNavigate();
 
   const countryGroups: CountryGroup[] = [];
@@ -37,30 +30,26 @@ export function WorldMap({ trips }: WorldMapProps) {
 
   for (const trip of trips) {
     if (seen.has(trip.country)) {
-      const group = countryGroups.find((g) => g.country === trip.country);
-      group?.trips.push(trip);
+      countryGroups.find((g) => g.country === trip.country)?.trips.push(trip);
     } else {
       const coords = getCountryCoords(trip.country);
       if (coords) {
-        countryGroups.push({
-          country: trip.country,
-          coords,
-          trips: [trip],
-          color: tripColor(trip.id),
-        });
+        countryGroups.push({ country: trip.country, coords, trips: [trip], color: tripColor(trip.id) });
         seen.add(trip.country);
       }
     }
   }
 
+  function goToTrip(tripId: string) {
+    navigate(`/trips/${tripId}`, { viewTransition: true });
+  }
+
   function handleMarkerClick(group: CountryGroup) {
-    if (selectedCountry?.country === group.country) {
-      setSelectedCountry(null);
-      setSelectedTrip(null);
-    } else {
-      setSelectedCountry(group);
-      setSelectedTrip(group.trips.length === 1 ? group.trips[0] : null);
+    if (group.trips.length === 1) {
+      goToTrip(group.trips[0].id);
+      return;
     }
+    setSelectedCountry(selectedCountry?.country === group.country ? null : group);
   }
 
   return (
@@ -81,7 +70,7 @@ export function WorldMap({ trips }: WorldMapProps) {
                 strokeWidth={0.5}
                 style={{
                   default: { outline: 'none' },
-                  hover: { outline: 'none', fill: 'rgba(255,255,255,0.09)' },
+                  hover:   { outline: 'none', fill: 'rgba(255,255,255,0.09)' },
                   pressed: { outline: 'none' },
                 }}
               />
@@ -92,25 +81,9 @@ export function WorldMap({ trips }: WorldMapProps) {
         {countryGroups.map((group) => {
           const isActive = selectedCountry?.country === group.country;
           return (
-            <Marker
-              key={group.country}
-              coordinates={group.coords}
-              onClick={() => handleMarkerClick(group)}
-            >
-              <circle
-                r={isActive ? 16 : 10}
-                fill={group.color}
-                fillOpacity={0.25}
-                className={styles.markerPulse}
-              />
-              <circle
-                r={isActive ? 7 : 5}
-                fill={group.color}
-                stroke="#ffffff"
-                strokeWidth={1.5}
-                className={styles.markerDot}
-                style={{ cursor: 'pointer' }}
-              />
+            <Marker key={group.country} coordinates={group.coords} onClick={() => handleMarkerClick(group)}>
+              <circle r={isActive ? 16 : 10} fill={group.color} fillOpacity={0.25} className={styles.markerPulse} />
+              <circle r={isActive ? 7 : 5} fill={group.color} stroke="#ffffff" strokeWidth={1.5} className={styles.markerDot} style={{ cursor: 'pointer' }} />
             </Marker>
           );
         })}
@@ -118,74 +91,26 @@ export function WorldMap({ trips }: WorldMapProps) {
 
       <div className={styles.counter}>
         <span className={styles.counterNumber}>{trips.length}</span>
-        <span className={styles.counterLabel}>
-          {trips.length === 1 ? 'voyage' : 'voyages'}
-        </span>
+        <span className={styles.counterLabel}>{trips.length === 1 ? 'voyage' : 'voyages'}</span>
       </div>
 
       {selectedCountry && (
         <div className={styles.popup} key={selectedCountry.country}>
-          <button
-            className={styles.popupClose}
-            onClick={() => { setSelectedCountry(null); setSelectedTrip(null); }}
-            aria-label="Fermer"
-          >
-            ✕
-          </button>
-
-          {/* Plusieurs voyages dans ce pays → liste */}
-          {!selectedTrip && selectedCountry.trips.length > 1 && (
-            <>
-              <div
-                className={styles.popupCover}
-                style={{ background: `linear-gradient(160deg, ${selectedCountry.color}cc, ${selectedCountry.color})` }}
-              >
-                <span className={styles.popupCountry}>{selectedCountry.country}</span>
-                <span className={styles.popupCount}>{selectedCountry.trips.length} voyages</span>
-              </div>
-              <div className={styles.popupTripList}>
-                {selectedCountry.trips.map((t) => (
-                  <button
-                    key={t.id}
-                    className={styles.popupTripItem}
-                    onClick={() => setSelectedTrip(t)}
-                  >
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* Un seul voyage ou voyage sélectionné dans la liste */}
-          {selectedTrip && (
-            <>
-              {selectedCountry.trips.length > 1 && (
-                <button className={styles.popupBack} onClick={() => setSelectedTrip(null)}>
-                  ← {selectedCountry.country}
-                </button>
-              )}
-              <div
-                className={styles.popupCover}
-                style={{ background: `linear-gradient(160deg, ${tripColor(selectedTrip.id)}cc, ${tripColor(selectedTrip.id)})` }}
-              >
-                <span className={styles.popupCountry}>{selectedTrip.country}</span>
-              </div>
-              <div className={styles.popupBody}>
-                <h3 className={styles.popupTitle}>{selectedTrip.title}</h3>
-                <p className={styles.popupDates}>
-                  {formatDateRange(selectedTrip.startDate, selectedTrip.endDate)}
-                </p>
-                <a
-                  href={`/trips/${selectedTrip.id}`}
-                  className={styles.popupLink}
-                  onClick={(e) => { e.preventDefault(); navigate(`/trips/${selectedTrip.id}`); }}
-                >
-                  Voir le voyage →
-                </a>
-              </div>
-            </>
-          )}
+          <div className={styles.popupHeader}>
+            <span className={styles.popupCountry}>{selectedCountry.country}</span>
+            <button
+              className={styles.popupClose}
+              onClick={() => setSelectedCountry(null)}
+              aria-label="Fermer"
+            >✕</button>
+          </div>
+          <div className={styles.popupTripList}>
+            {selectedCountry.trips.map((t) => (
+              <button key={t.id} className={styles.popupTripItem} onClick={() => goToTrip(t.id)}>
+                {t.title}
+              </button>
+            ))}
+          </div>
         </div>
       )}
     </section>

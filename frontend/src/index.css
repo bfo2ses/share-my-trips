@@ -44,3 +44,21 @@ body {
   background-color: var(--color-bg);
   color: var(--color-text);
 }
+
+/* ── View transitions ── */
+@media (prefers-reduced-motion: no-preference) {
+  ::view-transition-old(root) {
+    animation: 200ms ease both vt-fade-out;
+  }
+  ::view-transition-new(root) {
+    animation: 280ms ease both vt-fade-in;
+  }
+}
+
+@keyframes vt-fade-out {
+  to { opacity: 0; transform: translateY(-6px); }
+}
+
+@keyframes vt-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+}

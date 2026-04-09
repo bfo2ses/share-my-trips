@@ -15,7 +15,6 @@
   z-index: 0;
 }
 
-
 .counter {
   position: absolute;
   top: 32px;
@@ -42,153 +41,78 @@
   color: var(--color-text-muted);
 }
 
-/* ── Popup ── */
+/* ── Popup multi-voyages ── */
 .popup {
   position: absolute;
   bottom: 48px;
   right: 40px;
   z-index: 10;
-  width: 260px;
+  width: 240px;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-panel);
-  animation: slideIn 0.22s ease;
+  animation: slideIn 0.2s ease;
 }
 
 @keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.popupClose {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: rgba(0, 0, 0, 0.3);
-  border: none;
-  color: rgba(255, 255, 255, 0.6);
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 0.65rem;
+.popupHeader {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 2;
-  transition: background 0.15s ease;
-}
-
-.popupClose:hover {
-  background: rgba(0, 0, 0, 0.5);
-}
-
-.popupCover {
-  height: 110px;
-  display: flex;
-  align-items: flex-end;
-  padding: 10px 14px;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .popupCountry {
   font-size: 0.65rem;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.7);
-  background: rgba(0, 0, 0, 0.3);
-  padding: 3px 8px;
-  border-radius: 100px;
-}
-
-.popupBody {
-  padding: 14px 16px 18px;
-}
-
-.popupTitle {
-  font-family: var(--font-display);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 5px;
-  line-height: 1.3;
-}
-
-.popupDates {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  margin: 0 0 14px;
-}
-
-.popupLink {
-  font-size: 0.75rem;
-  font-weight: 500;
   color: var(--color-gold);
-  text-decoration: none;
-  letter-spacing: 0.04em;
 }
 
-.popupLink:hover {
-  text-decoration: underline;
-}
-
-.popupCount {
+.popupClose {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
   font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.6);
-  margin-left: 8px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  transition: color 0.15s;
+}
+
+.popupClose:hover {
+  color: var(--color-text);
 }
 
 .popupTripList {
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .popupTripItem {
   display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 16px;
+  padding: 11px 16px;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--color-border);
   color: var(--color-text);
-  font-size: 0.8rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.popupTripItem:last-child {
-  border-bottom: none;
+  transition: background 0.15s;
 }
 
 .popupTripItem:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.popupBack {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.03);
-  border: none;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.popupBack:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-gold);
 }
 
 /* ── Markers ── */
