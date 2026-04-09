@@ -76,7 +76,7 @@ export function TripDetailPage() {
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
-          <Link to="/" className={styles.backLink}>← Tous les voyages</Link>
+          <Link to="/" viewTransition className={styles.backLink}>← Tous les voyages</Link>
           <p className={styles.country}>{trip!.country}</p>
           <h1 className={styles.tripTitle}>{trip!.title}</h1>
           <p className={styles.tripDates}>{formatDateRange(trip!.startDate, trip!.endDate)}</p>
