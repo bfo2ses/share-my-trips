@@ -1,9 +1,11 @@
-import type { Trip } from '../mockData';
+import type { TripsQuery } from '../../../graphql/generated/graphql';
+
+type TripSummary = TripsQuery['trips'][number];
 import { TripCard } from './TripCard';
 import styles from './TripsDrawer.module.css';
 
 interface TripsDrawerProps {
-  trips: Trip[];
+  trips: TripSummary[];
   open: boolean;
   onClose: () => void;
 }

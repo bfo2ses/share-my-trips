@@ -1,17 +1,19 @@
 import { useNavigate } from 'react-router-dom';
-import type { Trip } from '../mockData';
+import type { TripsQuery } from '../../../graphql/generated/graphql';
+import { tripColor } from '../utils/tripColor';
 import styles from './TripCard.module.css';
 
+type TripSummary = TripsQuery['trips'][number];
+
 interface TripCardProps {
-  trip: Trip;
+  trip: TripSummary;
   index: number;
 }
 
-function formatDateRange(start: string, end: string): string {
-  const startDate = new Date(start);
-  const endDate = new Date(end);
+function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
+  if (!start || !end) return '';
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
-  return `${startDate.toLocaleDateString('fr-FR', opts)} — ${endDate.toLocaleDateString('fr-FR', opts)}`;
+  return `${new Date(start).toLocaleDateString('fr-FR', opts)} — ${new Date(end).toLocaleDateString('fr-FR', opts)}`;
 }
 
 export function TripCard({ trip, index }: TripCardProps) {
@@ -27,10 +29,10 @@ export function TripCard({ trip, index }: TripCardProps) {
     >
       <div
         className={styles.cover}
-        style={{ background: `linear-gradient(160deg, ${trip.coverColor}cc 0%, ${trip.coverColor} 100%)` }}
+        style={{ background: `linear-gradient(160deg, ${tripColor(trip.id)}cc 0%, ${tripColor(trip.id)} 100%)` }}
       >
         <span className={styles.country}>{trip.country}</span>
-        {trip.status === 'closed' && (
+        {trip.status === 'CLOSED' && (
           <span className={styles.statusBadge}>Terminé</span>
         )}
       </div>

@@ -140,6 +140,57 @@
   text-decoration: underline;
 }
 
+.popupCount {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  margin-left: 8px;
+}
+
+.popupTripList {
+  padding: 8px 0;
+}
+
+.popupTripItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.popupTripItem:last-child {
+  border-bottom: none;
+}
+
+.popupTripItem:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.popupBack {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.popupBack:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-text);
+}
+
 /* ── Markers ── */
 .markerDot {
   transition: r 0.2s ease;
