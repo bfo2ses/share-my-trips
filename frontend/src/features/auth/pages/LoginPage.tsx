@@ -23,7 +23,19 @@ export function LoginPage() {
 
   return (
     <main className={styles.page}>
-      <LoginForm onSuccess={handleSuccess} />
+      <div className={styles.visual}>
+        <div className={styles.visualInner} />
+        <div className={styles.horizon} />
+        <div className={styles.tagline}>
+          <p className={styles.taglineText}>
+            "Les plus beaux voyages<br />sont ceux qu'on partage."
+          </p>
+          <span className={styles.taglineLabel}>ShareMyTrips</span>
+        </div>
+      </div>
+      <div className={styles.formPanel}>
+        <LoginForm onSuccess={handleSuccess} />
+      </div>
     </main>
   );
 }

@@ -48,6 +48,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
       <h1 className={styles.title}>ShareMyTrips</h1>
+      <p className={styles.subtitle}>Album de famille</p>
 
       {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 

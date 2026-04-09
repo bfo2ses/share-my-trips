@@ -23,7 +23,19 @@ export function SetupPage() {
 
   return (
     <main className={styles.page}>
-      <SetupForm onSuccess={handleSuccess} />
+      <div className={styles.visual}>
+        <div className={styles.visualInner} />
+        <div className={styles.horizon} />
+        <div className={styles.tagline}>
+          <p className={styles.taglineText}>
+            "Chaque voyage mérite<br />d'être raconté."
+          </p>
+          <span className={styles.taglineLabel}>Premier lancement</span>
+        </div>
+      </div>
+      <div className={styles.formPanel}>
+        <SetupForm onSuccess={handleSuccess} />
+      </div>
     </main>
   );
 }

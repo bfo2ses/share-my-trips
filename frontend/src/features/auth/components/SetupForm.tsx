@@ -56,8 +56,8 @@ export function SetupForm({ onSuccess }: SetupFormProps) {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
-      <h1 className={styles.title}>Créer le compte administrateur</h1>
-      <p className={styles.subtitle}>Premier lancement — configurez votre compte.</p>
+      <h1 className={styles.title}>Bienvenue dans<br />ShareMyTrips</h1>
+      <p className={styles.subtitle}>Création du compte</p>
 
       {errorMessage && <p className={styles.error}>{errorMessage}</p>}
 
