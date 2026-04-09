@@ -1,11 +1,16 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { LoginPage } from './features/auth/pages/LoginPage';
+import { SetupPage } from './features/auth/pages/SetupPage';
 import { ProtectedLayout } from './features/auth/components/ProtectedLayout';
 
 export const router = createBrowserRouter([
   {
     path: '/login',
     element: <LoginPage />,
+  },
+  {
+    path: '/setup',
+    element: <SetupPage />,
   },
   {
     element: <ProtectedLayout />,
