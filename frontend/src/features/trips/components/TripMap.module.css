@@ -9,6 +9,11 @@
   background: var(--color-bg);
 }
 
+/* Leaflet applique background:#ddd sur .leaflet-container — on l'écrase */
+:global(.leaflet-container) {
+  background: var(--color-bg);
+}
+
 /* Leaflet tooltip */
 :global(.leaflet-tooltip.smt-tooltip) {
   background: var(--color-bg-subtle);

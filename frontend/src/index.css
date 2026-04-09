@@ -52,6 +52,11 @@ body {
 
 /* ── View transitions ── */
 @media (prefers-reduced-motion: no-preference) {
+  /* Désactive le contexte de composition isolé par défaut (cause du voile blanc) */
+  ::view-transition-image-pair(root) {
+    isolation: auto;
+  }
+
   /* Root : crossfade synchrone — même durée pour éviter tout gap */
   ::view-transition-old(root) {
     animation: 300ms ease both vt-crossfade-out;
