@@ -19,6 +19,7 @@ type Documents = {
     "\n  mutation ResetPassword($input: ResetPasswordInput!) {\n    resetPassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ResetPasswordDocument,
     "\n  mutation SetupAdmin($input: SetupAdminInput!) {\n    setupAdmin(input: $input) {\n      token\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.SetupAdminDocument,
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
+    "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": typeof types.SetupStatusDocument,
     "\n  query Days($stageID: ID!) {\n    days(stageID: $stageID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n    }\n  }\n": typeof types.DaysDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": typeof types.StagesDocument,
@@ -31,6 +32,7 @@ const documents: Documents = {
     "\n  mutation ResetPassword($input: ResetPasswordInput!) {\n    resetPassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ResetPasswordDocument,
     "\n  mutation SetupAdmin($input: SetupAdminInput!) {\n    setupAdmin(input: $input) {\n      token\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.SetupAdminDocument,
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
+    "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": types.SetupStatusDocument,
     "\n  query Days($stageID: ID!) {\n    days(stageID: $stageID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n    }\n  }\n": types.DaysDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": types.StagesDocument,
@@ -72,6 +74,10 @@ export function gql(source: "\n  mutation SetupAdmin($input: SetupAdminInput!) {
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  mutation Logout {\n    logout\n  }\n"): (typeof documents)["\n  mutation Logout {\n    logout\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n"): (typeof documents)["\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
