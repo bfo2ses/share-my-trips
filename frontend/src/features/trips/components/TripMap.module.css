@@ -9,8 +9,8 @@
   background: var(--color-bg);
 }
 
-/* Leaflet applique background:#ddd sur .leaflet-container — on l'écrase */
-:global(.leaflet-container) {
+/* Combine la classe module + la classe Leaflet pour gagner en spécificité */
+.map:global(.leaflet-container) {
   background: var(--color-bg);
 }
 
