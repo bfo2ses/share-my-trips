@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Trip } from '../mockData';
 import styles from './TripCard.module.css';
 
@@ -14,10 +15,15 @@ function formatDateRange(start: string, end: string): string {
 }
 
 export function TripCard({ trip, index }: TripCardProps) {
+  const navigate = useNavigate();
   return (
     <article
       className={styles.card}
       style={{ animationDelay: `${index * 80}ms` }}
+      onClick={() => navigate(`/trips/${trip.id}`)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => e.key === 'Enter' && navigate(`/trips/${trip.id}`)}
     >
       <div
         className={styles.cover}
