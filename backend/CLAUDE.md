@@ -51,7 +51,9 @@ Pour chaque feature, suivre ces étapes dans l'ordre :
 
 ### 0. Créer la branche
 ```bash
+git fetch origin
 git checkout -b feat/{contexte}-{feature}   # ex: feat/stage-creation
+git rebase origin/main
 ```
 
 ### 1. Lire la spec
