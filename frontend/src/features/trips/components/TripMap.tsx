@@ -1,9 +1,11 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import type { Stage } from '../mockData';
+import type { StagesQuery } from '../../../graphql/generated/graphql';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
+
+type Stage = StagesQuery['stages'][number];
 
 // Fix default marker icons (Leaflet + Vite issue)
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -34,7 +36,7 @@ function FitBounds({ stages }: { stages: Stage[] }) {
   const fitted = useRef(false);
   useEffect(() => {
     if (fitted.current || stages.length === 0) return;
-    const bounds = L.latLngBounds(stages.map((s) => s.coordinates));
+    const bounds = L.latLngBounds(stages.map((s) => [s.lat, s.lng]));
     map.fitBounds(bounds, { padding: [48, 48] });
     fitted.current = true;
   }, [map, stages]);
@@ -50,12 +52,12 @@ interface TripMapProps {
 const STAGE_COLORS = ['#c6a35d', '#7a8ebd', '#c87060', '#6aab8e', '#b07ab8'];
 
 export function TripMap({ stages, activeStageId, onStageClick }: TripMapProps) {
-  const polylinePositions = stages.map((s) => s.coordinates);
+  const polylinePositions = stages.map((s) => [s.lat, s.lng] as [number, number]);
 
   return (
     <div className={styles.wrapper}>
       <MapContainer
-        center={stages[0]?.coordinates ?? [64.1, -18.5]}
+        center={stages[0] ? [stages[0].lat, stages[0].lng] : [64.1, -18.5]}
         zoom={6}
         className={styles.map}
         zoomControl={false}
@@ -77,14 +79,13 @@ export function TripMap({ stages, activeStageId, onStageClick }: TripMapProps) {
         {stages.map((stage, i) => (
           <Marker
             key={stage.id}
-            position={stage.coordinates}
+            position={[stage.lat, stage.lng]}
             icon={makeNumberedIcon(i + 1, activeStageId === stage.id ? '#c6a35d' : STAGE_COLORS[i % STAGE_COLORS.length])}
             eventHandlers={{ click: () => onStageClick?.(stage.id) }}
           >
             <Popup className={styles.popup}>
-              <strong>{stage.name}</strong>
+              <strong>{stage.displayName}</strong>
               <span>{stage.city}</span>
-              <span>{stage.days.length} jour{stage.days.length > 1 ? 's' : ''}</span>
             </Popup>
           </Marker>
         ))}

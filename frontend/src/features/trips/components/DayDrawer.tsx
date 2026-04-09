@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import Lightbox from 'yet-another-react-lightbox';
-import 'yet-another-react-lightbox/styles.css';
-import type { Day } from '../mockData';
+import type { DaysQuery } from '../../../graphql/generated/graphql';
 import styles from './DayDrawer.module.css';
+
+type Day = DaysQuery['days'][number];
 
 interface DayDrawerProps {
   day: Day;
@@ -15,8 +14,6 @@ function formatDate(dateStr: string) {
 }
 
 export function DayDrawer({ day, open, onClose }: DayDrawerProps) {
-  const [lightboxIndex, setLightboxIndex] = useState(-1);
-
   return (
     <>
       {open && <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />}
@@ -24,37 +21,21 @@ export function DayDrawer({ day, open, onClose }: DayDrawerProps) {
         <div className={styles.header}>
           <div>
             <p className={styles.date}>{formatDate(day.date)}</p>
-            <h3 className={styles.title}>{day.title}</h3>
+            <h3 className={styles.title}>{day.title ?? day.date}</h3>
           </div>
           <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
         </div>
 
         <div className={styles.body}>
-          <p className={styles.description}>{day.description}</p>
-
-          {day.photos.length > 0 && (
-            <div className={styles.gallery}>
-              {day.photos.map((photo, i) => (
-                <button
-                  key={i}
-                  className={styles.thumb}
-                  onClick={() => setLightboxIndex(i)}
-                  aria-label={`Voir ${photo.alt}`}
-                >
-                  <img src={photo.thumb} alt={photo.alt} loading="lazy" />
-                </button>
-              ))}
-            </div>
+          {day.description ? (
+            <p className={styles.description}>{day.description}</p>
+          ) : (
+            <p className={styles.description} style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>
+              Aucune description pour ce jour.
+            </p>
           )}
         </div>
       </aside>
-
-      <Lightbox
-        open={lightboxIndex >= 0}
-        index={lightboxIndex}
-        close={() => setLightboxIndex(-1)}
-        slides={day.photos.map((p) => ({ src: p.src, alt: p.alt }))}
-      />
     </>
   );
 }

@@ -1,42 +1,53 @@
 import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { MOCK_TRIPS } from '../mockData';
-import type { Day, Stage } from '../mockData';
+import { useTrip } from '../hooks/useTrip';
+import { useStages } from '../../stages/hooks/useStages';
+import { useDays } from '../../stages/hooks/useDays';
 import { TripMap } from '../components/TripMap';
 import { DayDrawer } from '../components/DayDrawer';
+import { tripColor } from '../utils/tripColor';
+import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
+
+type Stage = StagesQuery['stages'][number];
+type Day = DaysQuery['days'][number];
+
+type View = 'timeline' | 'stages';
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
 
-function formatDateRange(start: string, end: string) {
+function formatDateRange(start: string | null | undefined, end: string | null | undefined) {
+  if (!start || !end) return '';
   return `${formatDate(start)} — ${new Date(end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
 }
 
-type View = 'timeline' | 'stages';
-
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const trip = MOCK_TRIPS.find((t) => t.id === id);
+  const { data: tripData, fetching: tripFetching } = useTrip(id!);
+  const { data: stagesData, fetching: stagesFetching } = useStages(id!);
 
   const [view, setView] = useState<View>('timeline');
   const [activeStageId, setActiveStageId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Day | null>(null);
 
-  if (!trip) {
+  const trip = tripData?.trip;
+  const stages = stagesData?.stages ?? [];
+
+  if (!tripFetching && !trip) {
     return <div className={styles.notFound}>Voyage introuvable.</div>;
   }
 
-  const stages = trip.stages ?? [];
+  if (tripFetching) {
+    return <div className={styles.notFound} style={{ color: 'var(--color-text-muted)' }}>Chargement…</div>;
+  }
+
+  const color = tripColor(trip!.id);
 
   function handleStageClick(stageId: string) {
     setActiveStageId(stageId);
     document.getElementById(`stage-${stageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function handleDayClick(day: Day) {
-    setSelectedDay(day);
   }
 
   return (
@@ -44,11 +55,11 @@ export function TripDetailPage() {
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         {/* En-tête voyage */}
-        <div className={styles.tripHeader} style={{ borderColor: trip.coverColor }}>
+        <div className={styles.tripHeader} style={{ borderColor: color }}>
           <Link to="/" className={styles.backLink}>← Tous les voyages</Link>
-          <p className={styles.country}>{trip.country}</p>
-          <h1 className={styles.tripTitle}>{trip.title}</h1>
-          <p className={styles.tripDates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
+          <p className={styles.country}>{trip!.country}</p>
+          <h1 className={styles.tripTitle}>{trip!.title}</h1>
+          <p className={styles.tripDates}>{formatDateRange(trip!.startDate, trip!.endDate)}</p>
         </div>
 
         {/* Toggle vue */}
@@ -69,36 +80,42 @@ export function TripDetailPage() {
 
         {/* Contenu */}
         <div className={styles.content}>
-          {view === 'timeline' && (
-            <div className={styles.timeline}>
-              {stages.map((stage) => (
-                <div key={stage.id} id={`stage-${stage.id}`} className={styles.timelineGroup}>
-                  <div
-                    className={`${styles.stageDivider} ${activeStageId === stage.id ? styles.stageDividerActive : ''}`}
-                    onClick={() => setActiveStageId(activeStageId === stage.id ? null : stage.id)}
-                  >
-                    <span>{stage.name}</span>
-                  </div>
-                  {stage.days.map((day) => (
-                    <DayRow key={day.id} day={day} onClick={() => handleDayClick(day)} />
+          {stagesFetching ? (
+            <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
+          ) : (
+            <>
+              {view === 'timeline' && (
+                <div className={styles.timeline}>
+                  {stages.map((stage, i) => (
+                    <StageSection
+                      key={stage.id}
+                      stage={stage}
+                      index={i}
+                      view="timeline"
+                      active={activeStageId === stage.id}
+                      onDayClick={setSelectedDay}
+                      onStageClick={handleStageClick}
+                    />
                   ))}
                 </div>
-              ))}
-            </div>
-          )}
+              )}
 
-          {view === 'stages' && (
-            <div className={styles.stageList}>
-              {stages.map((stage, i) => (
-                <StageRow
-                  key={stage.id}
-                  stage={stage}
-                  index={i + 1}
-                  active={activeStageId === stage.id}
-                  onClick={() => handleStageClick(stage.id)}
-                />
-              ))}
-            </div>
+              {view === 'stages' && (
+                <div className={styles.stageList}>
+                  {stages.map((stage, i) => (
+                    <StageSection
+                      key={stage.id}
+                      stage={stage}
+                      index={i}
+                      view="stages"
+                      active={activeStageId === stage.id}
+                      onDayClick={setSelectedDay}
+                      onStageClick={handleStageClick}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </aside>
@@ -112,7 +129,7 @@ export function TripDetailPage() {
             onStageClick={handleStageClick}
           />
         ) : (
-          <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
+          !stagesFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
         )}
       </div>
 
@@ -128,6 +145,49 @@ export function TripDetailPage() {
   );
 }
 
+interface StageSectionProps {
+  stage: Stage;
+  index: number;
+  view: View;
+  active: boolean;
+  onDayClick: (day: Day) => void;
+  onStageClick: (stageId: string) => void;
+}
+
+function StageSection({ stage, index, view, active, onDayClick, onStageClick }: StageSectionProps) {
+  const { data } = useDays(stage.id);
+  const days = data?.days ?? [];
+
+  if (view === 'timeline') {
+    return (
+      <div id={`stage-${stage.id}`} className={styles.timelineGroup}>
+        <div
+          className={`${styles.stageDivider} ${active ? styles.stageDividerActive : ''}`}
+          onClick={() => onStageClick(stage.id)}
+        >
+          <span>{stage.displayName}</span>
+        </div>
+        {days.map((day) => (
+          <DayRow key={day.id} day={day} onClick={() => onDayClick(day)} />
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <button
+      className={`${styles.stageRow} ${active ? styles.stageRowActive : ''}`}
+      onClick={() => onStageClick(stage.id)}
+    >
+      <span className={styles.stageIndex}>{index + 1}</span>
+      <div className={styles.stageInfo}>
+        <p className={styles.stageName}>{stage.displayName}</p>
+        <p className={styles.stageMeta}>{stage.city} · {days.length} jour{days.length > 1 ? 's' : ''}</p>
+      </div>
+    </button>
+  );
+}
+
 function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
   return (
     <button className={styles.dayRow} onClick={onClick}>
@@ -136,30 +196,7 @@ function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
         <span className={styles.dayDate}>{formatDate(day.date)}</span>
       </div>
       <div className={styles.dayInfo}>
-        <p className={styles.dayTitle}>{day.title}</p>
-        {day.photos.length > 0 && (
-          <div className={styles.dayThumbs}>
-            {day.photos.slice(0, 3).map((p, i) => (
-              <img key={i} src={p.thumb} alt={p.alt} className={styles.dayThumb} />
-            ))}
-            {day.photos.length > 3 && (
-              <span className={styles.morePhotos}>+{day.photos.length - 3}</span>
-            )}
-          </div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function StageRow({ stage, index, active, onClick }: { stage: Stage; index: number; active: boolean; onClick: () => void }) {
-  const totalDays = stage.days.length;
-  return (
-    <button className={`${styles.stageRow} ${active ? styles.stageRowActive : ''}`} onClick={onClick}>
-      <span className={styles.stageIndex}>{index}</span>
-      <div className={styles.stageInfo}>
-        <p className={styles.stageName}>{stage.name}</p>
-        <p className={styles.stageMeta}>{stage.city} · {totalDays} jour{totalDays > 1 ? 's' : ''}</p>
+        <p className={styles.dayTitle}>{day.title ?? day.date}</p>
       </div>
     </button>
   );

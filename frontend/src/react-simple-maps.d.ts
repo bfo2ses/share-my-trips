@@ -1,5 +1,5 @@
 declare module 'react-simple-maps' {
-  import { ComponentProps, ReactNode } from 'react';
+  import { ReactNode } from 'react';
 
   interface Geography {
     rsmKey: string;
