@@ -1,6 +1,6 @@
 import { createClient, cacheExchange, fetchExchange, mapExchange } from 'urql';
 
-const API_URL = import.meta.env.VITE_API_URL || '/graphql';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
 
 let authToken: string | null = null;
 
