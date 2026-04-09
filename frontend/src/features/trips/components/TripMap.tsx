@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import type { StagesQuery } from '../../../graphql/generated/graphql';
 import styles from './TripMap.module.css';
@@ -31,6 +31,10 @@ function makeNumberedIcon(n: number, color: string) {
   });
 }
 
+function formatShortDate(d: string) {
+  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
 function FitBounds({ stages }: { stages: Stage[] }) {
   const map = useMap();
   const fitted = useRef(false);
@@ -46,12 +50,13 @@ function FitBounds({ stages }: { stages: Stage[] }) {
 interface TripMapProps {
   stages: Stage[];
   activeStageId?: string | null;
+  stageDateRanges?: Record<string, { start: string; end: string }>;
   onStageClick?: (stageId: string) => void;
 }
 
 const STAGE_COLORS = ['#c6a35d', '#7a8ebd', '#c87060', '#6aab8e', '#b07ab8'];
 
-export function TripMap({ stages, activeStageId, onStageClick }: TripMapProps) {
+export function TripMap({ stages, activeStageId, stageDateRanges = {}, onStageClick }: TripMapProps) {
   const polylinePositions = stages.map((s) => [s.lat, s.lng] as [number, number]);
 
   return (
@@ -76,19 +81,24 @@ export function TripMap({ stages, activeStageId, onStageClick }: TripMapProps) {
           />
         )}
 
-        {stages.map((stage, i) => (
-          <Marker
-            key={stage.id}
-            position={[stage.lat, stage.lng]}
-            icon={makeNumberedIcon(i + 1, activeStageId === stage.id ? '#c6a35d' : STAGE_COLORS[i % STAGE_COLORS.length])}
-            eventHandlers={{ click: () => onStageClick?.(stage.id) }}
-          >
-            <Popup className={styles.popup}>
-              <strong>{stage.displayName}</strong>
-              <span>{stage.city}</span>
-            </Popup>
-          </Marker>
-        ))}
+        {stages.map((stage, i) => {
+          const dateRange = stageDateRanges[stage.id];
+          return (
+            <Marker
+              key={stage.id}
+              position={[stage.lat, stage.lng]}
+              icon={makeNumberedIcon(i + 1, activeStageId === stage.id ? '#c6a35d' : STAGE_COLORS[i % STAGE_COLORS.length])}
+              eventHandlers={{ click: () => onStageClick?.(stage.id) }}
+            >
+              <Tooltip direction="top" offset={[0, -18]} opacity={1} className="smt-tooltip">
+                <strong>{stage.displayName}</strong>
+                {dateRange && (
+                  <span>{formatShortDate(dateRange.start)} — {formatShortDate(dateRange.end)}</span>
+                )}
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         <FitBounds stages={stages} />
       </MapContainer>
