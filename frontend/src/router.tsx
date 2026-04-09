@@ -3,6 +3,7 @@ import { LoginPage } from './features/auth/pages/LoginPage';
 import { SetupPage } from './features/auth/pages/SetupPage';
 import { ProtectedLayout } from './features/auth/components/ProtectedLayout';
 import { LogoutButton } from './features/auth/components/LogoutButton';
+import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
 
 export const router = createBrowserRouter([
   {
@@ -12,6 +13,10 @@ export const router = createBrowserRouter([
   {
     path: '/setup',
     element: <SetupPage />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPasswordPage />,
   },
   {
     element: <ProtectedLayout />,
