@@ -8,6 +8,8 @@ import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useClos
 import { TripMap } from '../components/TripMap';
 import { TripForm } from '../components/TripForm';
 import { DetailPanel } from '../components/DetailPanel';
+import { StageForm } from '../../stages/components/StageForm';
+import { DayForm } from '../../stages/components/DayForm';
 import { tripColor } from '../utils/tripColor';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
@@ -39,6 +41,11 @@ export function TripDetailPage() {
   const [selectedDay, setSelectedDay] = useState<Day | null>(null);
   const [stageDateRanges, setStageDateRanges] = useState<Record<string, { start: string; end: string }>>({});
   const [formOpen, setFormOpen] = useState(false);
+  const [stageFormOpen, setStageFormOpen] = useState(false);
+  const [editingStage, setEditingStage] = useState<Stage | null>(null);
+  const [dayFormOpen, setDayFormOpen] = useState(false);
+  const [editingDay, setEditingDay] = useState<Day | null>(null);
+  const [dayFormStageId, setDayFormStageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   const [, publishTrip] = usePublishTrip();
@@ -74,6 +81,30 @@ export function TripDetailPage() {
     if (!result.error && result.data?.deleteTrip.success) {
       navigate('/');
     }
+  }
+
+  const isModifiable = tripData?.trip?.status !== 'CLOSED';
+
+  function handleAddStage() {
+    setEditingStage(null);
+    setStageFormOpen(true);
+  }
+
+  function handleEditStage(stage: Stage) {
+    setEditingStage(stage);
+    setStageFormOpen(true);
+  }
+
+  function handleAddDay(stageId: string) {
+    setEditingDay(null);
+    setDayFormStageId(stageId);
+    setDayFormOpen(true);
+  }
+
+  function handleEditDay(stageId: string, day: Day) {
+    setEditingDay(day);
+    setDayFormStageId(stageId);
+    setDayFormOpen(true);
   }
 
   const trip = tripData?.trip;
@@ -185,6 +216,14 @@ export function TripDetailPage() {
             <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
           ) : (
             <>
+              {isAdmin && isModifiable && (
+                <div className={styles.addStageBar}>
+                  <button className={styles.addStageBtn} onClick={handleAddStage}>
+                    + Ajouter une étape
+                  </button>
+                </div>
+              )}
+
               {view === 'timeline' && (
                 <div className={styles.timeline}>
                   {stages.map((stage, i) => (
@@ -230,6 +269,11 @@ export function TripDetailPage() {
         onClose={handleDetailClose}
         onDayClick={setSelectedDay}
         onBackToStage={() => setSelectedDay(null)}
+        isAdmin={isAdmin}
+        isModifiable={isModifiable}
+        onEditStage={handleEditStage}
+        onAddDay={handleAddDay}
+        onEditDay={handleEditDay}
       />
 
       {/* ── Carte droite ── */}
@@ -249,11 +293,28 @@ export function TripDetailPage() {
     </div>
 
     {isAdmin && (
-      <TripForm
-        open={formOpen}
-        onClose={() => setFormOpen(false)}
-        trip={trip}
-      />
+      <>
+        <TripForm
+          open={formOpen}
+          onClose={() => setFormOpen(false)}
+          trip={trip}
+        />
+        <StageForm
+          open={stageFormOpen}
+          onClose={() => { setStageFormOpen(false); setEditingStage(null); }}
+          tripID={id!}
+          stage={editingStage}
+        />
+        {dayFormStageId && (
+          <DayForm
+            open={dayFormOpen}
+            onClose={() => { setDayFormOpen(false); setEditingDay(null); setDayFormStageId(null); }}
+            tripID={id!}
+            stageID={dayFormStageId}
+            day={editingDay}
+          />
+        )}
+      </>
     )}
     </>
   );
