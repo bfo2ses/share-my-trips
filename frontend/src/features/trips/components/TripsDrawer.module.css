@@ -41,6 +41,38 @@
   flex-shrink: 0;
 }
 
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addBtn {
+  background: var(--color-gold);
+  color: var(--color-bg);
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.addBtn:hover {
+  opacity: 0.85;
+}
+
+.empty {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 40px 20px;
+  margin: 0;
+}
+
 .title {
   font-family: var(--font-display);
   font-size: 1.05rem;

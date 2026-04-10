@@ -1,9 +1,12 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
 import { useStages } from '../../stages/hooks/useStages';
 import { useDays } from '../../stages/hooks/useDays';
+import { useMe } from '../../auth/hooks/useMe';
+import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { TripMap } from '../components/TripMap';
+import { TripForm } from '../components/TripForm';
 import { DetailPanel } from '../components/DetailPanel';
 import { tripColor } from '../utils/tripColor';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
@@ -25,13 +28,53 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: tripData, fetching: tripFetching } = useTrip(id!);
   const { data: stagesData, fetching: stagesFetching } = useStages(id!);
+  const { data: meData } = useMe();
+  const isAdmin = meData?.me?.role === 'ADMIN';
 
   const [view, setView] = useState<View>('timeline');
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Day | null>(null);
   const [stageDateRanges, setStageDateRanges] = useState<Record<string, { start: string; end: string }>>({});
+  const [formOpen, setFormOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const [, publishTrip] = usePublishTrip();
+  const [, unpublishTrip] = useUnpublishTrip();
+  const [, closeTrip] = useCloseTrip();
+  const [, deleteTrip] = useDeleteTrip();
+  const [, reopenTrip] = useReopenTrip();
+
+  const refetchContext = { additionalTypenames: ['Trip'] };
+
+  async function handlePublish() {
+    await publishTrip({ id: id! }, refetchContext);
+  }
+
+  async function handleUnpublish() {
+    await unpublishTrip({ id: id! }, refetchContext);
+  }
+
+  async function handleClose() {
+    const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
+    if (allDates.length === 0) return;
+    const firstDay = allDates[0];
+    const lastDay = allDates[allDates.length - 1];
+    await closeTrip({ id: id!, input: { firstDay, lastDay } }, refetchContext);
+  }
+
+  async function handleReopen() {
+    await reopenTrip({ id: id! }, refetchContext);
+  }
+
+  async function handleDelete() {
+    const result = await deleteTrip({ id: id! }, refetchContext);
+    if (!result.error && result.data?.deleteTrip.success) {
+      navigate('/');
+    }
+  }
 
   const trip = tripData?.trip;
   const stages = stagesData?.stages ?? [];
@@ -72,6 +115,7 @@ export function TripDetailPage() {
   const selectedStage = selectedStageId ? (stages.find((s) => s.id === selectedStageId) ?? null) : null;
 
   return (
+    <>
     <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''}`}>
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
@@ -80,6 +124,45 @@ export function TripDetailPage() {
           <p className={styles.country}>{trip!.country}</p>
           <h1 className={styles.tripTitle}>{trip!.title}</h1>
           <p className={styles.tripDates}>{formatDateRange(trip!.startDate, trip!.endDate)}</p>
+          {isAdmin && (
+            <div className={styles.adminActions}>
+              <button className={styles.adminBtn} onClick={() => setFormOpen(true)}>
+                Modifier
+              </button>
+              {trip!.status === 'DRAFT' && (
+                <button className={`${styles.adminBtn} ${styles.adminBtnPrimary}`} onClick={handlePublish}>
+                  Publier
+                </button>
+              )}
+              {trip!.status === 'PUBLISHED' && (
+                <>
+                  <button className={styles.adminBtn} onClick={handleUnpublish}>
+                    Brouillon
+                  </button>
+                  {Object.keys(stageDateRanges).length > 0 && (
+                    <button className={styles.adminBtn} onClick={handleClose}>
+                      Clôturer
+                    </button>
+                  )}
+                </>
+              )}
+              {trip!.status === 'CLOSED' && (
+                <button className={styles.adminBtn} onClick={handleReopen}>
+                  Réouvrir
+                </button>
+              )}
+              <button className={`${styles.adminBtn} ${styles.adminBtnDanger}`} onClick={() => setConfirmDelete(true)}>
+                Supprimer
+              </button>
+            </div>
+          )}
+          {confirmDelete && (
+            <div className={styles.confirmBar}>
+              <span>Supprimer ce voyage ?</span>
+              <button className={styles.adminBtn} onClick={() => setConfirmDelete(false)}>Annuler</button>
+              <button className={`${styles.adminBtn} ${styles.adminBtnDanger}`} onClick={handleDelete}>Confirmer</button>
+            </div>
+          )}
         </div>
 
         <div className={styles.viewToggle}>
@@ -162,7 +245,17 @@ export function TripDetailPage() {
           !stagesFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
         )}
       </div>
+
     </div>
+
+    {isAdmin && (
+      <TripForm
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        trip={trip}
+      />
+    )}
+    </>
   );
 }
 

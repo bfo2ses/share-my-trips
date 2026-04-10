@@ -7,6 +7,7 @@
   box-shadow: var(--shadow-card);
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   animation: fadeInUp 0.45s ease both;
+  position: relative;
 }
 
 .card:hover {
@@ -58,10 +59,25 @@
   font-weight: 500;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.2);
   padding: 3px 8px;
   border-radius: 100px;
+}
+
+.statusDraft {
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.statusPublished {
+  color: rgba(120, 220, 120, 0.9);
+  background: rgba(120, 220, 120, 0.12);
+  border: 1px solid rgba(120, 220, 120, 0.3);
+}
+
+.statusClosed {
+  color: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .body {
@@ -82,4 +98,126 @@
   color: var(--color-text-muted);
   margin: 0;
   font-weight: 300;
+}
+
+/* ── Admin menu ── */
+
+.menuBtn {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1rem;
+  letter-spacing: 2px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.menuBtn:hover {
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+}
+
+.actionMenu {
+  position: absolute;
+  top: 38px;
+  left: 12px;
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  min-width: 180px;
+  z-index: 10;
+  padding: 4px 0;
+}
+
+.actionItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--color-text);
+  font-size: 0.8rem;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.actionItem:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.actionDivider {
+  height: 1px;
+  background: var(--color-border);
+  margin: 4px 0;
+}
+
+.actionDanger {
+  color: #e55;
+}
+
+.actionDanger:hover {
+  background: rgba(238, 85, 85, 0.08);
+}
+
+/* ── Delete confirmation ── */
+
+.confirmOverlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 20;
+  border-radius: var(--radius-lg);
+}
+
+.confirmOverlay p {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 0;
+}
+
+.confirmActions {
+  display: flex;
+  gap: 10px;
+}
+
+.confirmCancel,
+.confirmDelete {
+  border: none;
+  padding: 7px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.confirmCancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text);
+}
+
+.confirmCancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.confirmDelete {
+  background: #e55;
+  color: white;
+}
+
+.confirmDelete:hover {
+  opacity: 0.85;
 }

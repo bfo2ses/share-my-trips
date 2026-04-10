@@ -1,16 +1,19 @@
 import type { TripsQuery } from '../../../graphql/generated/graphql';
-
-type TripSummary = TripsQuery['trips'][number];
 import { TripCard } from './TripCard';
 import styles from './TripsDrawer.module.css';
+
+type TripSummary = TripsQuery['trips'][number];
 
 interface TripsDrawerProps {
   trips: TripSummary[];
   open: boolean;
   onClose: () => void;
+  isAdmin?: boolean;
+  onEdit?: (trip: TripSummary) => void;
+  onCreate?: () => void;
 }
 
-export function TripsDrawer({ trips, open, onClose }: TripsDrawerProps) {
+export function TripsDrawer({ trips, open, onClose, isAdmin, onEdit, onCreate }: TripsDrawerProps) {
   return (
     <>
       {open && (
@@ -22,14 +25,30 @@ export function TripsDrawer({ trips, open, onClose }: TripsDrawerProps) {
       >
         <div className={styles.header}>
           <span className={styles.title}>Tous les voyages</span>
-          <button className={styles.close} onClick={onClose} aria-label="Fermer">
-            ✕
-          </button>
+          <div className={styles.headerActions}>
+            {isAdmin && onCreate && (
+              <button className={styles.addBtn} onClick={onCreate} aria-label="Créer un voyage">
+                +
+              </button>
+            )}
+            <button className={styles.close} onClick={onClose} aria-label="Fermer">
+              ✕
+            </button>
+          </div>
         </div>
         <div className={styles.list}>
           {trips.map((trip, index) => (
-            <TripCard key={trip.id} trip={trip} index={index} />
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              index={index}
+              isAdmin={isAdmin}
+              onEdit={onEdit}
+            />
           ))}
+          {trips.length === 0 && (
+            <p className={styles.empty}>Aucun voyage pour le moment.</p>
+          )}
         </div>
       </aside>
     </>
