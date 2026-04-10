@@ -67,12 +67,14 @@ type CreateAccountInput struct {
 }
 
 type CreateTripInput struct {
-	Title       string  `json:"title"`
-	Country     string  `json:"country"`
-	Description *string `json:"description,omitempty"`
-	CoverPhoto  *string `json:"coverPhoto,omitempty"`
-	StartDate   *string `json:"startDate,omitempty"`
-	EndDate     *string `json:"endDate,omitempty"`
+	Title       string   `json:"title"`
+	Country     string   `json:"country"`
+	Description *string  `json:"description,omitempty"`
+	CoverPhoto  *string  `json:"coverPhoto,omitempty"`
+	Lat         *float64 `json:"lat,omitempty"`
+	Lng         *float64 `json:"lng,omitempty"`
+	StartDate   *string  `json:"startDate,omitempty"`
+	EndDate     *string  `json:"endDate,omitempty"`
 }
 
 type Day struct {
@@ -167,6 +169,10 @@ type Trip struct {
 	Country     string `json:"country"`
 	Description string `json:"description"`
 	CoverPhoto  string `json:"coverPhoto"`
+	// Latitude for map placement. Null when not set.
+	Lat *float64 `json:"lat,omitempty"`
+	// Longitude for map placement. Null when not set.
+	Lng *float64 `json:"lng,omitempty"`
 	// Date-only, format YYYY-MM-DD. Null when not set.
 	StartDate *string `json:"startDate,omitempty"`
 	// Date-only, format YYYY-MM-DD. Null when not set.
@@ -198,12 +204,14 @@ type UpdateStageInput struct {
 }
 
 type UpdateTripInput struct {
-	Title       string  `json:"title"`
-	Country     string  `json:"country"`
-	Description *string `json:"description,omitempty"`
-	CoverPhoto  *string `json:"coverPhoto,omitempty"`
-	StartDate   *string `json:"startDate,omitempty"`
-	EndDate     *string `json:"endDate,omitempty"`
+	Title       string   `json:"title"`
+	Country     string   `json:"country"`
+	Description *string  `json:"description,omitempty"`
+	CoverPhoto  *string  `json:"coverPhoto,omitempty"`
+	Lat         *float64 `json:"lat,omitempty"`
+	Lng         *float64 `json:"lng,omitempty"`
+	StartDate   *string  `json:"startDate,omitempty"`
+	EndDate     *string  `json:"endDate,omitempty"`
 }
 
 type UserError struct {

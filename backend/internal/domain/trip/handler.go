@@ -24,7 +24,7 @@ func NewHandler(repo Repository) *Handler {
 func (h *Handler) Create(ctx context.Context, cmd CreateTripCommand) (*Trip, error) {
 	id := uuid.New().String()
 
-	t, err := NewTrip(id, cmd.Title, cmd.Country, cmd.Description, cmd.CoverPhoto, cmd.StartDate, cmd.EndDate)
+	t, err := NewTrip(id, cmd.Title, cmd.Country, cmd.Description, cmd.CoverPhoto, cmd.Lat, cmd.Lng, cmd.StartDate, cmd.EndDate)
 	if err != nil {
 		return nil, fmt.Errorf("create trip: %w", err)
 	}
@@ -43,7 +43,7 @@ func (h *Handler) Update(ctx context.Context, cmd UpdateTripCommand) (*Trip, err
 		return nil, fmt.Errorf("update trip: %w", err)
 	}
 
-	if err := t.Update(cmd.Title, cmd.Country, cmd.Description, cmd.CoverPhoto, cmd.StartDate, cmd.EndDate); err != nil {
+	if err := t.Update(cmd.Title, cmd.Country, cmd.Description, cmd.CoverPhoto, cmd.Lat, cmd.Lng, cmd.StartDate, cmd.EndDate); err != nil {
 		return nil, fmt.Errorf("update trip: %w", err)
 	}
 

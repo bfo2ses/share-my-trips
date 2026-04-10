@@ -8,6 +8,8 @@ export const TRIPS_QUERY = gql(`
       id
       title
       country
+      lat
+      lng
       startDate
       endDate
       status

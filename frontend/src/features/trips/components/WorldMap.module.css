@@ -115,6 +115,11 @@
   color: var(--color-gold);
 }
 
+/* ── Placement mode ── */
+.placementMode {
+  cursor: crosshair;
+}
+
 /* ── Markers ── */
 .markerDot {
   transition: r 0.2s ease;

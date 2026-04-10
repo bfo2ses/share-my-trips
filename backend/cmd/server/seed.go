@@ -33,6 +33,7 @@ func seedData(
 		"trip-1", "Road Trip USA", "États-Unis",
 		"3 semaines sur la côte ouest, de San Francisco à Los Angeles.",
 		"default_cover.jpg",
+		37.7749, -122.4194, // San Francisco
 		time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC),
 		time.Date(2024, 7, 21, 0, 0, 0, 0, time.UTC),
 	)
@@ -67,6 +68,7 @@ func seedData(
 		"trip-2", "Voyage au Japon", "Japon",
 		"Deux semaines entre Tokyo, Kyoto et Osaka.",
 		"default_cover.jpg",
+		35.6762, 139.6503, // Tokyo
 		time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC),
 		time.Date(2023, 10, 19, 0, 0, 0, 0, time.UTC),
 	)
@@ -109,6 +111,7 @@ func seedData(
 		"trip-3", "Road Trip Islande", "Islande",
 		"Tour de l'île en van sur la route 1.",
 		"default_cover.jpg",
+		64.1466, -21.9426, // Reykjavik
 		time.Date(2025, 6, 15, 0, 0, 0, 0, time.UTC),
 		time.Date(2025, 6, 29, 0, 0, 0, 0, time.UTC),
 	)
