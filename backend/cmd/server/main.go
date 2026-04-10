@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -60,6 +61,8 @@ func main() {
 	logMailer := mailer.NewLogMailer(resetURLBase)
 
 	authHandler := auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
+
+	seedData(context.Background(), userRepo, tripRepo, stageRepo, dayRepo)
 
 	// GraphQL
 	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler, authHandler)
