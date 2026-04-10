@@ -24,6 +24,13 @@ type Documents = {
     "\n  query Days($stageID: ID!) {\n    days(stageID: $stageID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n    }\n  }\n": typeof types.DaysDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": typeof types.StagesDocument,
     "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": typeof types.TripDocument,
+    "\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.CreateTripDocument,
+    "\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateTripDocument,
+    "\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteTripDocument,
+    "\n  mutation PublishTrip($id: ID!) {\n    publishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.PublishTripDocument,
+    "\n  mutation UnpublishTrip($id: ID!) {\n    unpublishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UnpublishTripDocument,
+    "\n  mutation CloseTrip($id: ID!, $input: CloseTripInput!) {\n    closeTrip(id: $id, input: $input) {\n      trip {\n        id\n        status\n        startDate\n        endDate\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.CloseTripDocument,
+    "\n  mutation ReopenTrip($id: ID!) {\n    reopenTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ReopenTripDocument,
     "\n  query Trips($status: [TripStatus!]) {\n    trips(status: $status) {\n      id\n      title\n      country\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": typeof types.TripsDocument,
 };
 const documents: Documents = {
@@ -37,6 +44,13 @@ const documents: Documents = {
     "\n  query Days($stageID: ID!) {\n    days(stageID: $stageID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n    }\n  }\n": types.DaysDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": types.StagesDocument,
     "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": types.TripDocument,
+    "\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.CreateTripDocument,
+    "\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateTripDocument,
+    "\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteTripDocument,
+    "\n  mutation PublishTrip($id: ID!) {\n    publishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.PublishTripDocument,
+    "\n  mutation UnpublishTrip($id: ID!) {\n    unpublishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UnpublishTripDocument,
+    "\n  mutation CloseTrip($id: ID!, $input: CloseTripInput!) {\n    closeTrip(id: $id, input: $input) {\n      trip {\n        id\n        status\n        startDate\n        endDate\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.CloseTripDocument,
+    "\n  mutation ReopenTrip($id: ID!) {\n    reopenTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ReopenTripDocument,
     "\n  query Trips($status: [TripStatus!]) {\n    trips(status: $status) {\n      id\n      title\n      country\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": types.TripsDocument,
 };
 
@@ -94,6 +108,34 @@ export function gql(source: "\n  query Stages($tripID: ID!) {\n    stages(tripID
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n"): (typeof documents)["\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation PublishTrip($id: ID!) {\n    publishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation PublishTrip($id: ID!) {\n    publishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation UnpublishTrip($id: ID!) {\n    unpublishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UnpublishTrip($id: ID!) {\n    unpublishTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CloseTrip($id: ID!, $input: CloseTripInput!) {\n    closeTrip(id: $id, input: $input) {\n      trip {\n        id\n        status\n        startDate\n        endDate\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CloseTrip($id: ID!, $input: CloseTripInput!) {\n    closeTrip(id: $id, input: $input) {\n      trip {\n        id\n        status\n        startDate\n        endDate\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation ReopenTrip($id: ID!) {\n    reopenTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation ReopenTrip($id: ID!) {\n    reopenTrip(id: $id) {\n      trip {\n        id\n        status\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
