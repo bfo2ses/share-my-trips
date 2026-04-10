@@ -29,6 +29,8 @@ func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput
 		Country:     input.Country,
 		Description: derefString(input.Description),
 		CoverPhoto:  derefString(input.CoverPhoto),
+		Lat:         derefFloat64(input.Lat),
+		Lng:         derefFloat64(input.Lng),
 		StartDate:   startDate,
 		EndDate:     endDate,
 	})
@@ -55,6 +57,8 @@ func (r *mutationResolver) UpdateTrip(ctx context.Context, id string, input Upda
 		Country:     input.Country,
 		Description: derefString(input.Description),
 		CoverPhoto:  derefString(input.CoverPhoto),
+		Lat:         derefFloat64(input.Lat),
+		Lng:         derefFloat64(input.Lng),
 		StartDate:   startDate,
 		EndDate:     endDate,
 	})
@@ -420,20 +424,6 @@ func (r *queryResolver) Accounts(ctx context.Context) ([]*Account, error) {
 		result = append(result, toGraphQLAccount(u))
 	}
 	return result, nil
-}
-
-// currentUserID resolves the session token in the context to a user ID.
-// Returns an empty string when unauthenticated (domain handlers enforce authorization).
-func (r *Resolver) currentUserID(ctx context.Context) string {
-	token := sessionTokenFromContext(ctx)
-	if token == "" {
-		return ""
-	}
-	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
-	if err != nil {
-		return ""
-	}
-	return user.ID
 }
 
 // Mutation returns MutationResolver implementation.

@@ -13,6 +13,7 @@ export function TripsPage() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
+  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const { data: meData } = useMe();
   const isAdmin = meData?.me?.role === 'ADMIN';
@@ -23,17 +24,28 @@ export function TripsPage() {
 
   function handleEdit(trip: TripSummary) {
     setEditingTrip(trip);
+    setPendingCoords(trip.lat != null && trip.lng != null ? { lat: trip.lat, lng: trip.lng } : null);
     setFormOpen(true);
   }
 
   function handleCreate() {
     setEditingTrip(null);
+    setPendingCoords(null);
     setFormOpen(true);
   }
 
   function handleFormClose() {
     setFormOpen(false);
     setEditingTrip(null);
+    setPendingCoords(null);
+  }
+
+  function handleMapClick(coords: { lat: number; lng: number }) {
+    setPendingCoords(coords);
+    if (!formOpen) {
+      setEditingTrip(null);
+      setFormOpen(true);
+    }
   }
 
   if (error) {
@@ -46,7 +58,14 @@ export function TripsPage() {
 
   return (
     <main className={styles.page}>
-      {!fetching && <WorldMap trips={trips} />}
+      {!fetching && (
+        <WorldMap
+          trips={trips}
+          placementMode={isAdmin}
+          pendingCoords={formOpen ? pendingCoords : null}
+          onMapClick={isAdmin ? handleMapClick : undefined}
+        />
+      )}
 
       <button
         className={styles.listButton}
@@ -56,16 +75,6 @@ export function TripsPage() {
         <span className={styles.listButtonIcon}>≡</span>
         <span>Voyages</span>
       </button>
-
-      {isAdmin && (
-        <button
-          className={styles.createButton}
-          onClick={handleCreate}
-          aria-label="Créer un voyage"
-        >
-          +
-        </button>
-      )}
 
       <TripsDrawer
         trips={trips}
@@ -81,6 +90,8 @@ export function TripsPage() {
           open={formOpen}
           onClose={handleFormClose}
           trip={editingTrip}
+          pendingCoords={pendingCoords}
+          noBackdrop
         />
       )}
     </main>

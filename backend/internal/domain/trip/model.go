@@ -37,6 +37,8 @@ type Trip struct {
 	Country     string
 	Description string
 	CoverPhoto  string
+	Lat         float64
+	Lng         float64
 	StartDate   time.Time
 	EndDate     time.Time
 	Status      Status
@@ -45,7 +47,7 @@ type Trip struct {
 }
 
 // NewTrip creates a new Trip in draft status with validated fields.
-func NewTrip(id, title, country, description, coverPhoto string, startDate, endDate time.Time) (*Trip, error) {
+func NewTrip(id, title, country, description, coverPhoto string, lat, lng float64, startDate, endDate time.Time) (*Trip, error) {
 	if title == "" {
 		return nil, ErrTitleRequired
 	}
@@ -67,6 +69,8 @@ func NewTrip(id, title, country, description, coverPhoto string, startDate, endD
 		Country:     country,
 		Description: description,
 		CoverPhoto:  coverPhoto,
+		Lat:         lat,
+		Lng:         lng,
 		StartDate:   startDate,
 		EndDate:     endDate,
 		Status:      StatusDraft,
@@ -128,7 +132,7 @@ func (t *Trip) Reopen() error {
 }
 
 // Update modifies editable fields of the trip. Returns an error if the trip is closed.
-func (t *Trip) Update(title, country, description, coverPhoto string, startDate, endDate time.Time) error {
+func (t *Trip) Update(title, country, description, coverPhoto string, lat, lng float64, startDate, endDate time.Time) error {
 	if t.Status == StatusClosed {
 		return ErrClosed
 	}
@@ -148,6 +152,8 @@ func (t *Trip) Update(title, country, description, coverPhoto string, startDate,
 	if coverPhoto != "" {
 		t.CoverPhoto = coverPhoto
 	}
+	t.Lat = lat
+	t.Lng = lng
 	t.StartDate = startDate
 	t.EndDate = endDate
 	t.UpdatedAt = time.Now()

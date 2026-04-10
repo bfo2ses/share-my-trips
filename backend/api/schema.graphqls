@@ -4,6 +4,10 @@ type Trip {
   country: String!
   description: String!
   coverPhoto: String!
+  "Latitude for map placement. Null when not set."
+  lat: Float
+  "Longitude for map placement. Null when not set."
+  lng: Float
   "Date-only, format YYYY-MM-DD. Null when not set."
   startDate: String
   "Date-only, format YYYY-MM-DD. Null when not set."
@@ -41,6 +45,8 @@ input CreateTripInput {
   country: String!
   description: String
   coverPhoto: String
+  lat: Float
+  lng: Float
   startDate: String
   endDate: String
 }
@@ -50,6 +56,8 @@ input UpdateTripInput {
   country: String!
   description: String
   coverPhoto: String
+  lat: Float
+  lng: Float
   startDate: String
   endDate: String
 }

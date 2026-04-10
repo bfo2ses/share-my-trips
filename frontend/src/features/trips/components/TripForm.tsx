@@ -8,6 +8,8 @@ interface TripData {
   country: string;
   description?: string | null;
   coverPhoto?: string | null;
+  lat?: number | null;
+  lng?: number | null;
   startDate?: string | null;
   endDate?: string | null;
 }
@@ -16,22 +18,24 @@ interface TripFormProps {
   open: boolean;
   onClose: () => void;
   trip?: TripData | null;
+  pendingCoords?: { lat: number; lng: number } | null;
+  noBackdrop?: boolean;
 }
 
-export function TripForm({ open, onClose, trip }: TripFormProps) {
+export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop }: TripFormProps) {
   return (
     <>
-      {open && (
+      {open && !noBackdrop && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
       <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
-        {open && <TripFormContent trip={trip} onClose={onClose} />}
+        {open && <TripFormContent trip={trip} pendingCoords={pendingCoords} onClose={onClose} />}
       </aside>
     </>
   );
 }
 
-function TripFormContent({ trip, onClose }: { trip?: TripData | null; onClose: () => void }) {
+function TripFormContent({ trip, pendingCoords, onClose }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void }) {
   const isEdit = !!trip;
 
   const [title, setTitle] = useState(trip?.title ?? '');
@@ -44,6 +48,10 @@ function TripFormContent({ trip, onClose }: { trip?: TripData | null; onClose: (
   const [, createTrip] = useCreateTrip();
   const [, updateTrip] = useUpdateTrip();
 
+  // Use pending coords from map click, or existing trip coords
+  const lat = pendingCoords?.lat ?? trip?.lat ?? null;
+  const lng = pendingCoords?.lng ?? trip?.lng ?? null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors([]);
@@ -53,6 +61,8 @@ function TripFormContent({ trip, onClose }: { trip?: TripData | null; onClose: (
       country,
       description: description || undefined,
       coverPhoto: isEdit ? (trip!.coverPhoto || undefined) : undefined,
+      lat: lat ?? undefined,
+      lng: lng ?? undefined,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     };
@@ -137,6 +147,18 @@ function TripFormContent({ trip, onClose }: { trip?: TripData | null; onClose: (
             rows={3}
           />
         </label>
+
+        <div className={styles.coordInfo}>
+          {lat != null && lng != null ? (
+            <p className={styles.coordText}>
+              📍 {lat.toFixed(4)}, {lng.toFixed(4)}
+            </p>
+          ) : (
+            <p className={styles.coordHint}>
+              Cliquez sur la carte pour placer le voyage
+            </p>
+          )}
+        </div>
 
         <div className={styles.dateRow}>
           <label className={styles.label}>

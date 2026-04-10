@@ -156,6 +156,8 @@ type ComplexityRoot struct {
 		Description func(childComplexity int) int
 		EndDate     func(childComplexity int) int
 		ID          func(childComplexity int) int
+		Lat         func(childComplexity int) int
+		Lng         func(childComplexity int) int
 		StartDate   func(childComplexity int) int
 		Status      func(childComplexity int) int
 		Title       func(childComplexity int) int
@@ -853,6 +855,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Trip.ID(childComplexity), true
+	case "Trip.lat":
+		if e.ComplexityRoot.Trip.Lat == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Trip.Lat(childComplexity), true
+	case "Trip.lng":
+		if e.ComplexityRoot.Trip.Lng == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Trip.Lng(childComplexity), true
 	case "Trip.startDate":
 		if e.ComplexityRoot.Trip.StartDate == nil {
 			break
@@ -1004,6 +1018,10 @@ var sources = []*ast.Source{
   country: String!
   description: String!
   coverPhoto: String!
+  "Latitude for map placement. Null when not set."
+  lat: Float
+  "Longitude for map placement. Null when not set."
+  lng: Float
   "Date-only, format YYYY-MM-DD. Null when not set."
   startDate: String
   "Date-only, format YYYY-MM-DD. Null when not set."
@@ -1041,6 +1059,8 @@ input CreateTripInput {
   country: String!
   description: String
   coverPhoto: String
+  lat: Float
+  lng: Float
   startDate: String
   endDate: String
 }
@@ -1050,6 +1070,8 @@ input UpdateTripInput {
   country: String!
   description: String
   coverPhoto: String
+  lat: Float
+  lng: Float
   startDate: String
   endDate: String
 }
@@ -3661,6 +3683,10 @@ func (ec *executionContext) fieldContext_Query_trips(ctx context.Context, field 
 				return ec.fieldContext_Trip_description(ctx, field)
 			case "coverPhoto":
 				return ec.fieldContext_Trip_coverPhoto(ctx, field)
+			case "lat":
+				return ec.fieldContext_Trip_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Trip_lng(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Trip_startDate(ctx, field)
 			case "endDate":
@@ -3724,6 +3750,10 @@ func (ec *executionContext) fieldContext_Query_trip(ctx context.Context, field g
 				return ec.fieldContext_Trip_description(ctx, field)
 			case "coverPhoto":
 				return ec.fieldContext_Trip_coverPhoto(ctx, field)
+			case "lat":
+				return ec.fieldContext_Trip_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Trip_lng(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Trip_startDate(ctx, field)
 			case "endDate":
@@ -4769,6 +4799,64 @@ func (ec *executionContext) fieldContext_Trip_coverPhoto(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Trip_lat(ctx context.Context, field graphql.CollectedField, obj *Trip) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Trip_lat,
+		func(ctx context.Context) (any, error) {
+			return obj.Lat, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Trip_lat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Trip",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Trip_lng(ctx context.Context, field graphql.CollectedField, obj *Trip) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Trip_lng,
+		func(ctx context.Context) (any, error) {
+			return obj.Lng, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Trip_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Trip",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Trip_startDate(ctx context.Context, field graphql.CollectedField, obj *Trip) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4948,6 +5036,10 @@ func (ec *executionContext) fieldContext_TripPayload_trip(_ context.Context, fie
 				return ec.fieldContext_Trip_description(ctx, field)
 			case "coverPhoto":
 				return ec.fieldContext_Trip_coverPhoto(ctx, field)
+			case "lat":
+				return ec.fieldContext_Trip_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Trip_lng(ctx, field)
 			case "startDate":
 				return ec.fieldContext_Trip_startDate(ctx, field)
 			case "endDate":
@@ -6770,7 +6862,7 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "country", "description", "coverPhoto", "startDate", "endDate"}
+	fieldsInOrder := [...]string{"title", "country", "description", "coverPhoto", "lat", "lng", "startDate", "endDate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6805,6 +6897,20 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 				return it, err
 			}
 			it.CoverPhoto = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -7025,7 +7131,7 @@ func (ec *executionContext) unmarshalInputUpdateTripInput(ctx context.Context, o
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "country", "description", "coverPhoto", "startDate", "endDate"}
+	fieldsInOrder := [...]string{"title", "country", "description", "coverPhoto", "lat", "lng", "startDate", "endDate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7060,6 +7166,20 @@ func (ec *executionContext) unmarshalInputUpdateTripInput(ctx context.Context, o
 				return it, err
 			}
 			it.CoverPhoto = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
 		case "startDate":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("startDate"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
@@ -8151,6 +8271,10 @@ func (ec *executionContext) _Trip(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "lat":
+			out.Values[i] = ec._Trip_lat(ctx, field, obj)
+		case "lng":
+			out.Values[i] = ec._Trip_lng(ctx, field, obj)
 		case "startDate":
 			out.Values[i] = ec._Trip_startDate(ctx, field, obj)
 		case "endDate":
@@ -9232,6 +9356,23 @@ func (ec *executionContext) marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytrips
 		return graphql.Null
 	}
 	return ec._Day(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalOStage2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐStage(ctx context.Context, sel ast.SelectionSet, v *Stage) graphql.Marshaler {

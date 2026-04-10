@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"context"
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
@@ -18,6 +19,8 @@ func toGraphQLTrip(t *trip.Trip) *Trip {
 		Country:     t.Country,
 		Description: t.Description,
 		CoverPhoto:  t.CoverPhoto,
+		Lat:         nullableFloat64(t.Lat),
+		Lng:         nullableFloat64(t.Lng),
 		StartDate:   formatDate(t.StartDate),
 		EndDate:     formatDate(t.EndDate),
 		Status:      toGraphQLStatus(t.Status),
@@ -70,6 +73,20 @@ func derefString(s *string) string {
 	return *s
 }
 
+func derefFloat64(f *float64) float64 {
+	if f == nil {
+		return 0
+	}
+	return *f
+}
+
+func nullableFloat64(f float64) *float64 {
+	if f == 0 {
+		return nil
+	}
+	return &f
+}
+
 func toGraphQLStage(s *stage.Stage) *Stage {
 	var name *string
 	if s.Name != "" {
@@ -120,6 +137,19 @@ func toGraphQLAccount(u *auth.User) *Account {
 		Role:      toGraphQLRole(u.Role),
 		CreatedAt: u.CreatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+// currentUserID resolves the session token in the context to a user ID.
+func (r *Resolver) currentUserID(ctx context.Context) string {
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return ""
+	}
+	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
+	if err != nil {
+		return ""
+	}
+	return user.ID
 }
 
 func toGraphQLRole(r auth.Role) AccountRole {

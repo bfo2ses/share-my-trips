@@ -8,6 +8,8 @@ type CreateTripCommand struct {
 	Country     string
 	Description string
 	CoverPhoto  string
+	Lat         float64
+	Lng         float64
 	StartDate   time.Time
 	EndDate     time.Time
 }
@@ -19,6 +21,8 @@ type UpdateTripCommand struct {
 	Country     string
 	Description string
 	CoverPhoto  string
+	Lat         float64
+	Lng         float64
 	StartDate   time.Time
 	EndDate     time.Time
 }

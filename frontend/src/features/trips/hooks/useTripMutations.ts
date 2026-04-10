@@ -9,6 +9,8 @@ const CREATE_TRIP = gql(`
         title
         country
         description
+        lat
+        lng
         startDate
         endDate
         status
@@ -30,6 +32,8 @@ const UPDATE_TRIP = gql(`
         title
         country
         description
+        lat
+        lng
         startDate
         endDate
         status
