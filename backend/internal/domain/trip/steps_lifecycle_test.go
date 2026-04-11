@@ -33,6 +33,8 @@ func (tc *testContext) tripExistsAsDraft(title string) error {
 	cmd := trip.CreateTripCommand{
 		Title:     title,
 		Country:   "Islande",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
 	}

@@ -45,7 +45,7 @@ func (h *Handler) Add(ctx context.Context, cmd AddDayCommand) (*Day, error) {
 	}
 
 	id := uuid.New().String()
-	d, err := NewDay(id, cmd.TripID, cmd.StageID, cmd.Date, cmd.Title, cmd.Description)
+	d, err := NewDay(id, cmd.TripID, cmd.StageID, cmd.Date, cmd.Title, cmd.Description, cmd.Lat, cmd.Lng)
 	if err != nil {
 		return nil, fmt.Errorf("add day: %w", err)
 	}
@@ -72,7 +72,9 @@ func (h *Handler) Update(ctx context.Context, cmd UpdateDayCommand) (*Day, error
 		return nil, fmt.Errorf("update day: %w", ErrTripClosed)
 	}
 
-	d.Update(cmd.Title, cmd.Description)
+	if err := d.Update(cmd.Title, cmd.Description, cmd.Lat, cmd.Lng); err != nil {
+		return nil, fmt.Errorf("update day: %w", err)
+	}
 
 	if err := h.repo.Save(ctx, d); err != nil {
 		return nil, fmt.Errorf("update day: %w", err)

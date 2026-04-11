@@ -68,16 +68,24 @@ Fonctionnalité: Gestion des étapes et des jours d'un voyage
   Scénario: Ajouter un jour à une étape
     Etant donné qu'une étape "Reykjavik" existe dans le voyage
     Quand j'ajoute un jour avec les informations suivantes :
-      | champ       | valeur                          |
-      | date        | 2025-07-01                      |
+      | champ       | valeur                           |
+      | date        | 2025-07-01                       |
       | titre       | Arrivée et découverte du centre  |
       | description | Balade dans le centre historique |
+      | latitude    | 64.1466                          |
+      | longitude   | -21.9426                         |
     Alors le jour "2025-07-01" est ajouté à l'étape "Reykjavik"
 
   Scénario: La date du jour est obligatoire
     Etant donné qu'une étape "Reykjavik" existe dans le voyage
     Quand je tente d'ajouter un jour sans date
     Alors un message d'erreur m'indique que la date est obligatoire
+    Et le jour n'est pas créé
+
+  Scénario: Les coordonnées GPS du jour sont obligatoires
+    Etant donné qu'une étape "Reykjavik" existe dans le voyage
+    Quand je tente d'ajouter un jour sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du jour sont obligatoires
     Et le jour n'est pas créé
 
   Scénario: Modifier un jour

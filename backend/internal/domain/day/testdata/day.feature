@@ -11,22 +11,41 @@ Fonctionnalité: Gestion des jours d'un voyage
 
   Scénario: Ajouter un jour à une étape
     Quand j'ajoute un jour avec les informations suivantes :
-      | champ       | valeur                          |
-      | date        | 2025-07-01                      |
-      | titre       | Arrivée et découverte du centre |
+      | champ       | valeur                           |
+      | date        | 2025-07-01                       |
+      | titre       | Arrivée et découverte du centre  |
       | description | Balade dans le centre historique |
+      | latitude    | 64.1466                          |
+      | longitude   | -21.9426                         |
     Alors le jour est ajouté à l'étape
     Et la date du jour est "2025-07-01"
+    Et les coordonnées du jour sont 64.1466, -21.9426
 
   Scénario: La date du jour est obligatoire
     Quand je tente d'ajouter un jour sans date
     Alors un message d'erreur m'indique que la date est obligatoire
     Et le jour n'est pas créé
 
+  Scénario: Les coordonnées GPS du jour sont obligatoires
+    Quand je tente d'ajouter un jour sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du jour sont obligatoires
+    Et le jour n'est pas créé
+
   Scénario: Modifier un jour
     Etant donné qu'un jour "2025-07-01" existe dans l'étape
     Quand je modifie le titre du jour avec "Nouveau titre"
     Alors le jour est mis à jour avec le titre "Nouveau titre"
+
+  Scénario: Modifier les coordonnées d'un jour
+    Etant donné qu'un jour "2025-07-01" existe dans l'étape
+    Quand je modifie les coordonnées du jour en 63.4305, -19.1007
+    Alors les coordonnées du jour sont 63.4305, -19.1007
+
+  Scénario: Les coordonnées du jour restent obligatoires à la mise à jour
+    Etant donné qu'un jour "2025-07-01" existe dans l'étape
+    Quand je tente de modifier le jour sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du jour sont obligatoires
+    Et les coordonnées du jour sont 64.1466, -21.9426
 
   Scénario: Supprimer un jour
     Etant donné qu'un jour "2025-07-01" existe dans l'étape

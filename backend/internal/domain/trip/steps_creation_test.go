@@ -4,11 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cucumber/godog"
 
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+)
+
+// defaultLat / defaultLng are used by tests that don't care about GPS values
+// but still need valid (non-zero) coordinates to pass domain validation.
+const (
+	defaultLat = 64.1466
+	defaultLng = -21.9426
 )
 
 func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
@@ -20,8 +28,10 @@ func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^le voyage est créé avec une image par défaut$`, tc.tripHasDefaultCoverPhoto)
 	ctx.Step(`^je tente de créer un voyage sans renseigner le pays$`, tc.createTripWithoutCountry)
 	ctx.Step(`^je tente de créer un voyage sans renseigner le titre$`, tc.createTripWithoutTitle)
+	ctx.Step(`^je tente de créer un voyage sans coordonnées GPS$`, tc.createTripWithoutGPS)
 	ctx.Step(`^un message d\'erreur m\'indique que le pays est obligatoire$`, tc.errCountryRequired)
 	ctx.Step(`^un message d\'erreur m\'indique que le titre est obligatoire$`, tc.errTitleRequired)
+	ctx.Step(`^un message d\'erreur m\'indique que les coordonnées du voyage sont obligatoires$`, tc.errTripGPSRequired)
 	ctx.Step(`^le voyage n\'est pas créé$`, tc.tripIsNotCreated)
 	ctx.Step(`^je crée un voyage avec une date de fin antérieure à la date de début$`, tc.createTripWithEndBeforeStart)
 	ctx.Step(`^un message d\'erreur m\'indique que les dates sont incohérentes$`, tc.errInvalidDates)
@@ -41,6 +51,18 @@ func (tc *testContext) createTripWithDetails(table *godog.Table) error {
 			cmd.Title = value
 		case "pays":
 			cmd.Country = value
+		case "latitude":
+			v, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return fmt.Errorf("invalid latitude: %w", err)
+			}
+			cmd.Lat = v
+		case "longitude":
+			v, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return fmt.Errorf("invalid longitude: %w", err)
+			}
+			cmd.Lng = v
 		case "date_debut":
 			d, err := time.Parse("2006-01-02", value)
 			if err != nil {
@@ -107,6 +129,8 @@ func (tc *testContext) createTripWithoutCoverPhoto() error {
 	cmd := trip.CreateTripCommand{
 		Title:     "Voyage sans photo",
 		Country:   "France",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 6, 10, 0, 0, 0, 0, time.UTC),
 	}
@@ -127,6 +151,8 @@ func (tc *testContext) tripHasDefaultCoverPhoto() error {
 func (tc *testContext) createTripWithoutCountry() error {
 	cmd := trip.CreateTripCommand{
 		Title:     "Test",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
 	}
@@ -137,10 +163,30 @@ func (tc *testContext) createTripWithoutCountry() error {
 func (tc *testContext) createTripWithoutTitle() error {
 	cmd := trip.CreateTripCommand{
 		Country:   "France",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
 	}
 	tc.currentTrip, tc.lastErr = tc.handler.Create(context.Background(), cmd)
+	return nil
+}
+
+func (tc *testContext) createTripWithoutGPS() error {
+	cmd := trip.CreateTripCommand{
+		Title:     "Voyage sans GPS",
+		Country:   "France",
+		StartDate: time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),
+		EndDate:   time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC),
+	}
+	tc.currentTrip, tc.lastErr = tc.handler.Create(context.Background(), cmd)
+	return nil
+}
+
+func (tc *testContext) errTripGPSRequired() error {
+	if !errors.Is(tc.lastErr, trip.ErrGPSRequired) {
+		return fmt.Errorf("expected ErrGPSRequired, got: %v", tc.lastErr)
+	}
 	return nil
 }
 
@@ -169,6 +215,8 @@ func (tc *testContext) createTripWithEndBeforeStart() error {
 	cmd := trip.CreateTripCommand{
 		Title:     "Test",
 		Country:   "France",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC),
 	}
@@ -187,6 +235,8 @@ func (tc *testContext) createTrip() error {
 	cmd := trip.CreateTripCommand{
 		Title:     "Nouveau voyage",
 		Country:   "France",
+		Lat:       defaultLat,
+		Lng:       defaultLng,
 		StartDate: time.Date(2025, 6, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:   time.Date(2025, 6, 10, 0, 0, 0, 0, time.UTC),
 	}

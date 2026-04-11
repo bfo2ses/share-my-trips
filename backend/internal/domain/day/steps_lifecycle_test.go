@@ -29,6 +29,8 @@ func (tc *testContext) addDayToClosedTrip() error {
 		TripID:  "trip-japan",
 		StageID: tc.defaultStage,
 		Date:    time.Date(2024, 3, 15, 0, 0, 0, 0, time.UTC),
+		Lat:     defaultLat,
+		Lng:     defaultLng,
 	})
 	return nil
 }
@@ -50,6 +52,8 @@ func (tc *testContext) dayExistsInClosedTrip(dateStr string) error {
 		TripID:  tc.defaultTripID,
 		StageID: tc.defaultStage,
 		Date:    d,
+		Lat:     defaultLat,
+		Lng:     defaultLng,
 	})
 	if err != nil {
 		return fmt.Errorf("setup day: %w", err)
@@ -67,6 +71,8 @@ func (tc *testContext) updateDayInClosedTrip() error {
 	updated, err := tc.handler.Update(context.Background(), day.UpdateDayCommand{
 		ID:    tc.currentDay.ID,
 		Title: "Titre modifié",
+		Lat:   tc.currentDay.Lat,
+		Lng:   tc.currentDay.Lng,
 	})
 	tc.currentDay = updated
 	tc.lastErr = err

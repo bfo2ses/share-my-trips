@@ -12,6 +12,8 @@ Fonctionnalité: Gestion des voyages
       | champ             | valeur                     |
       | titre             | Road trip en Islande       |
       | pays              | Islande                    |
+      | latitude          | 64.1466                    |
+      | longitude         | -21.9426                   |
       | date_debut        | 2025-07-01                 |
       | date_fin          | 2025-07-14                 |
       | description       | 2 semaines autour de l'île |
@@ -32,6 +34,11 @@ Fonctionnalité: Gestion des voyages
   Scénario: Le titre est obligatoire
     Quand je tente de créer un voyage sans renseigner le titre
     Alors un message d'erreur m'indique que le titre est obligatoire
+    Et le voyage n'est pas créé
+
+  Scénario: Les coordonnées GPS sont obligatoires
+    Quand je tente de créer un voyage sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du voyage sont obligatoires
     Et le voyage n'est pas créé
 
   Scénario: Les dates doivent être cohérentes
@@ -104,6 +111,16 @@ Fonctionnalité: Gestion des voyages
     Etant donné qu'un voyage "Road trip en Islande" existe en brouillon
     Quand je modifie le pays en "Islande, Groenland"
     Alors le pays du voyage est "Islande, Groenland"
+
+  Scénario: Modifier les coordonnées d'un voyage
+    Etant donné qu'un voyage "Road trip en Islande" existe en brouillon
+    Quand je modifie les coordonnées du voyage en 35.6762, 139.6503
+    Alors les coordonnées du voyage sont 35.6762, 139.6503
+
+  Scénario: Les coordonnées restent obligatoires à la mise à jour
+    Etant donné qu'un voyage "Road trip en Islande" existe en brouillon
+    Quand je tente de modifier le voyage sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du voyage sont obligatoires
 
   # --- Suppression d'un voyage ---
 
