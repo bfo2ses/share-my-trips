@@ -10,6 +10,8 @@ export const DAYS_QUERY = gql(`
       date
       title
       description
+      lat
+      lng
     }
   }
 `);

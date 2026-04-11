@@ -8,8 +8,8 @@ interface TripData {
   country: string;
   description?: string | null;
   coverPhoto?: string | null;
-  lat?: number | null;
-  lng?: number | null;
+  lat: number;
+  lng: number;
   startDate?: string | null;
   endDate?: string | null;
 }
@@ -56,13 +56,18 @@ function TripFormContent({ trip, pendingCoords, onClose }: { trip?: TripData | n
     e.preventDefault();
     setErrors([]);
 
+    if (lat == null || lng == null) {
+      setErrors(['Cliquez sur la carte pour placer le voyage avant d\'enregistrer.']);
+      return;
+    }
+
     const input = {
       title,
       country,
       description: description || undefined,
       coverPhoto: isEdit ? (trip!.coverPhoto || undefined) : undefined,
-      lat: lat ?? undefined,
-      lng: lng ?? undefined,
+      lat,
+      lng,
       startDate: startDate || undefined,
       endDate: endDate || undefined,
     };
