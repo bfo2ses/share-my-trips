@@ -6,15 +6,15 @@ Format des statuts : `[ ]` à faire · `[~]` en cours · `[x]` terminé
 
 ## En cours
 
-_Aucune tâche en cours._
+| # | Tâche | Branche | PR |
+|---|-------|---------|-----|
+| 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | `feat/frontend-map-placement` | — |
 
 ---
 
 ## Backlog
 
-| # | Tâche | Notes |
-|---|-------|-------|
-| 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | Suit #5 ; mode placement contextuel selon la sélection (aucune → stage, stage → day) |
+_Aucune tâche en attente._
 
 ---
 

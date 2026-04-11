@@ -16,43 +16,61 @@ interface StageFormProps {
   onClose: () => void;
   tripID: string;
   stage?: StageData | null;
+  pendingCoords?: { lat: number; lng: number } | null;
+  noBackdrop?: boolean;
 }
 
-export function StageForm({ open, onClose, tripID, stage }: StageFormProps) {
+export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackdrop }: StageFormProps) {
   return (
     <>
-      {open && (
+      {open && !noBackdrop && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
       <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
-        {open && <StageFormContent tripID={tripID} stage={stage} onClose={onClose} />}
+        {open && (
+          <StageFormContent
+            tripID={tripID}
+            stage={stage}
+            pendingCoords={pendingCoords}
+            onClose={onClose}
+          />
+        )}
       </aside>
     </>
   );
 }
 
-function StageFormContent({ tripID, stage, onClose }: { tripID: string; stage?: StageData | null; onClose: () => void }) {
+function StageFormContent({
+  tripID,
+  stage,
+  pendingCoords,
+  onClose,
+}: {
+  tripID: string;
+  stage?: StageData | null;
+  pendingCoords?: { lat: number; lng: number } | null;
+  onClose: () => void;
+}) {
   const isEdit = !!stage;
 
   const [city, setCity] = useState(stage?.city ?? '');
   const [name, setName] = useState(isEdit && stage.displayName !== stage.city ? stage.displayName : '');
-  const [lat, setLat] = useState(stage?.lat?.toString() ?? '');
-  const [lng, setLng] = useState(stage?.lng?.toString() ?? '');
   const [description, setDescription] = useState(stage?.description ?? '');
   const [errors, setErrors] = useState<string[]>([]);
 
   const [, addStage] = useAddStage();
   const [, updateStage] = useUpdateStage();
 
+  // Live coords: pending from map click takes precedence over the existing stage.
+  const lat = pendingCoords?.lat ?? stage?.lat ?? null;
+  const lng = pendingCoords?.lng ?? stage?.lng ?? null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors([]);
 
-    const parsedLat = parseFloat(lat);
-    const parsedLng = parseFloat(lng);
-
-    if (isNaN(parsedLat) || isNaN(parsedLng)) {
-      setErrors(['Les coordonnées GPS doivent être des nombres valides.']);
+    if (lat == null || lng == null) {
+      setErrors(['Cliquez sur la carte pour placer l\u2019étape avant d\u2019enregistrer.']);
       return;
     }
 
@@ -61,7 +79,7 @@ function StageFormContent({ tripID, stage, onClose }: { tripID: string; stage?: 
     if (isEdit) {
       const result = await updateStage({
         id: stage!.id,
-        input: { city, name: name || undefined, lat: parsedLat, lng: parsedLng, description: description || undefined },
+        input: { city, name: name || undefined, lat, lng, description: description || undefined },
       }, context);
       if (result.error) {
         setErrors(['Une erreur est survenue.']);
@@ -74,7 +92,7 @@ function StageFormContent({ tripID, stage, onClose }: { tripID: string; stage?: 
       }
     } else {
       const result = await addStage({
-        input: { tripID, city, name: name || undefined, lat: parsedLat, lng: parsedLng, description: description || undefined },
+        input: { tripID, city, name: name || undefined, lat, lng, description: description || undefined },
       }, context);
       if (result.error) {
         setErrors(['Une erreur est survenue.']);
@@ -113,18 +131,25 @@ function StageFormContent({ tripID, stage, onClose }: { tripID: string; stage?: 
 
         <label className={styles.label}>
           Nom personnalisé
-          <input className={styles.input} type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={city || 'Nom affiché'} />
+          <input
+            className={styles.input}
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={city || 'Nom affiché'}
+          />
         </label>
 
-        <div className={styles.coordRow}>
-          <label className={styles.label}>
-            Latitude *
-            <input className={styles.input} type="text" inputMode="decimal" value={lat} onChange={(e) => setLat(e.target.value)} required placeholder="64.1466" />
-          </label>
-          <label className={styles.label}>
-            Longitude *
-            <input className={styles.input} type="text" inputMode="decimal" value={lng} onChange={(e) => setLng(e.target.value)} required placeholder="-21.9426" />
-          </label>
+        <div className={styles.coordInfo}>
+          {lat != null && lng != null ? (
+            <p className={styles.coordText}>
+              📍 {lat.toFixed(4)}, {lng.toFixed(4)}
+            </p>
+          ) : (
+            <p className={styles.coordHint}>
+              Cliquez sur la carte pour placer l&rsquo;étape
+            </p>
+          )}
         </div>
 
         <label className={styles.label}>

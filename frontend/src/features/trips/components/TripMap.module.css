@@ -1,4 +1,5 @@
 .wrapper {
+  position: relative;
   height: 100%;
   width: 100%;
 }
@@ -7,6 +8,57 @@
   height: 100%;
   width: 100%;
   background: var(--color-bg);
+}
+
+.placementMode .map,
+.placementMode :global(.leaflet-grab),
+.placementMode :global(.leaflet-interactive) {
+  cursor: crosshair !important;
+}
+
+/* Markers stage + day sont cliquables — affordance avant tout, même si draggable. */
+.map :global(.leaflet-marker-icon),
+.map :global(.leaflet-marker-draggable) {
+  cursor: pointer;
+}
+
+.placementMode :global(.leaflet-marker-icon),
+.placementMode :global(.leaflet-marker-draggable) {
+  cursor: crosshair !important;
+}
+
+.hint {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 16px;
+  background: rgba(14, 12, 9, 0.92);
+  border: 1px solid rgba(198, 163, 93, 0.4);
+  border-radius: var(--radius-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  font-size: 0.78rem;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
+  pointer-events: none;
+  animation: hintIn 0.25s ease;
+}
+
+@keyframes hintIn {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.hintDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-gold);
+  box-shadow: 0 0 0 4px rgba(198, 163, 93, 0.2);
 }
 
 /* Combine la classe module + la classe Leaflet pour gagner en spécificité */

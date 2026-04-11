@@ -17,44 +17,64 @@ interface DayFormProps {
   tripID: string;
   stageID: string;
   day?: DayData | null;
-  defaultCoords?: { lat: number; lng: number } | null;
+  pendingCoords?: { lat: number; lng: number } | null;
+  noBackdrop?: boolean;
 }
 
-export function DayForm({ open, onClose, tripID, stageID, day, defaultCoords }: DayFormProps) {
+export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, noBackdrop }: DayFormProps) {
   return (
     <>
-      {open && (
+      {open && !noBackdrop && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
       <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
-        {open && <DayFormContent tripID={tripID} stageID={stageID} day={day} defaultCoords={defaultCoords} onClose={onClose} />}
+        {open && (
+          <DayFormContent
+            tripID={tripID}
+            stageID={stageID}
+            day={day}
+            pendingCoords={pendingCoords}
+            onClose={onClose}
+          />
+        )}
       </aside>
     </>
   );
 }
 
-function DayFormContent({ tripID, stageID, day, defaultCoords, onClose }: { tripID: string; stageID: string; day?: DayData | null; defaultCoords?: { lat: number; lng: number } | null; onClose: () => void }) {
+function DayFormContent({
+  tripID,
+  stageID,
+  day,
+  pendingCoords,
+  onClose,
+}: {
+  tripID: string;
+  stageID: string;
+  day?: DayData | null;
+  pendingCoords?: { lat: number; lng: number } | null;
+  onClose: () => void;
+}) {
   const isEdit = !!day;
 
   const [date, setDate] = useState(day?.date ?? '');
   const [title, setTitle] = useState(day?.title ?? '');
   const [description, setDescription] = useState(day?.description ?? '');
-  const [lat, setLat] = useState(day?.lat?.toString() ?? defaultCoords?.lat?.toString() ?? '');
-  const [lng, setLng] = useState(day?.lng?.toString() ?? defaultCoords?.lng?.toString() ?? '');
   const [errors, setErrors] = useState<string[]>([]);
 
   const [, addDay] = useAddDay();
   const [, updateDay] = useUpdateDay();
 
+  // Live coords: pending from map click takes precedence over the existing day.
+  const lat = pendingCoords?.lat ?? day?.lat ?? null;
+  const lng = pendingCoords?.lng ?? day?.lng ?? null;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors([]);
 
-    const parsedLat = parseFloat(lat);
-    const parsedLng = parseFloat(lng);
-
-    if (isNaN(parsedLat) || isNaN(parsedLng)) {
-      setErrors(['Les coordonnées GPS doivent être des nombres valides.']);
+    if (lat == null || lng == null) {
+      setErrors(['Cliquez sur la carte pour placer le jour avant d\u2019enregistrer.']);
       return;
     }
 
@@ -66,8 +86,8 @@ function DayFormContent({ tripID, stageID, day, defaultCoords, onClose }: { trip
         input: {
           title: title || undefined,
           description: description || undefined,
-          lat: parsedLat,
-          lng: parsedLng,
+          lat,
+          lng,
         },
       }, context);
       if (result.error) {
@@ -87,8 +107,8 @@ function DayFormContent({ tripID, stageID, day, defaultCoords, onClose }: { trip
           date,
           title: title || undefined,
           description: description || undefined,
-          lat: parsedLat,
-          lng: parsedLng,
+          lat,
+          lng,
         },
       }, context);
       if (result.error) {
@@ -138,37 +158,22 @@ function DayFormContent({ tripID, stageID, day, defaultCoords, onClose }: { trip
           <input className={styles.input} type="text" value={title} onChange={(e) => setTitle(e.target.value)} />
         </label>
 
+        <div className={styles.coordInfo}>
+          {lat != null && lng != null ? (
+            <p className={styles.coordText}>
+              📍 {lat.toFixed(4)}, {lng.toFixed(4)}
+            </p>
+          ) : (
+            <p className={styles.coordHint}>
+              Cliquez sur la carte pour placer le jour
+            </p>
+          )}
+        </div>
+
         <label className={styles.label}>
           Description
           <textarea className={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </label>
-
-        <div className={styles.coordRow}>
-          <label className={styles.label}>
-            Latitude *
-            <input
-              className={styles.input}
-              type="text"
-              inputMode="decimal"
-              value={lat}
-              onChange={(e) => setLat(e.target.value)}
-              required
-              placeholder="64.1466"
-            />
-          </label>
-          <label className={styles.label}>
-            Longitude *
-            <input
-              className={styles.input}
-              type="text"
-              inputMode="decimal"
-              value={lng}
-              onChange={(e) => setLng(e.target.value)}
-              required
-              placeholder="-21.9426"
-            />
-          </label>
-        </div>
 
         <button type="submit" className={styles.submit}>
           {isEdit ? 'Enregistrer' : 'Ajouter le jour'}
