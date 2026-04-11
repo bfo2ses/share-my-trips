@@ -106,78 +106,6 @@
   margin: 0;
 }
 
-/* ── Admin bar ── */
-.adminBar {
-  display: flex;
-  gap: 6px;
-  padding: 10px 24px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.adminBtn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-family: var(--font-body);
-  font-size: 0.72rem;
-  font-weight: 500;
-  padding: 5px 12px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.adminBtn:hover {
-  color: var(--color-text);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.adminBtnDanger {
-  color: #e55;
-  border-color: rgba(238, 85, 85, 0.3);
-}
-
-.adminBtnDanger:hover {
-  background: rgba(238, 85, 85, 0.08);
-  color: #e55;
-}
-
-.confirmBar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 24px;
-  background: rgba(238, 85, 85, 0.06);
-  border-bottom: 1px solid rgba(238, 85, 85, 0.2);
-  font-size: 0.78rem;
-  color: var(--color-text);
-  flex-shrink: 0;
-}
-
-.confirmBar span {
-  flex: 1;
-}
-
-.addDayBtn {
-  background: none;
-  border: 1px dashed var(--color-border);
-  color: var(--color-text-muted);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  width: 100%;
-  margin-bottom: 12px;
-  transition: all 0.15s ease;
-}
-
-.addDayBtn:hover {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-}
-
 /* ── Liste des jours ── */
 .dayList {
   display: flex;
@@ -186,12 +114,8 @@
   margin-top: 4px;
 }
 
-.dayRow {
-  display: flex;
-  align-items: center;
-}
-
 .dayItem {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 14px;
@@ -201,34 +125,12 @@
   border-radius: var(--radius-md);
   cursor: pointer;
   text-align: left;
-  flex: 1;
   min-width: 0;
   transition: background 0.15s;
 }
 
 .dayItem:hover {
   background: var(--color-bg-subtle);
-}
-
-.dayEditBtn {
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-  opacity: 0;
-  transition: opacity 0.15s, color 0.15s;
-}
-
-.dayRow:hover .dayEditBtn {
-  opacity: 1;
-}
-
-.dayEditBtn:hover {
-  color: var(--color-gold);
 }
 
 .dayDate {

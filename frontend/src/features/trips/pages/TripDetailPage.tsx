@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
 import { useStages } from '../../stages/hooks/useStages';
@@ -10,12 +10,15 @@ import { TripForm } from '../components/TripForm';
 import { DetailPanel } from '../components/DetailPanel';
 import { StageForm } from '../../stages/components/StageForm';
 import { DayForm } from '../../stages/components/DayForm';
+import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
 
 type Stage = StagesQuery['stages'][number];
 type Day = DaysQuery['days'][number];
+type StageDateRangeMap = Record<string, { start: string; end: string }>;
 
 type View = 'timeline' | 'stages';
 
@@ -39,7 +42,7 @@ export function TripDetailPage() {
   const [view, setView] = useState<View>('timeline');
   const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<Day | null>(null);
-  const [stageDateRanges, setStageDateRanges] = useState<Record<string, { start: string; end: string }>>({});
+  const [stageDateRanges, setStageDateRanges] = useState<StageDateRangeMap>({});
   const [formOpen, setFormOpen] = useState(false);
   const [stageFormOpen, setStageFormOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
@@ -47,6 +50,8 @@ export function TripDetailPage() {
   const [editingDay, setEditingDay] = useState<Day | null>(null);
   const [dayFormStageId, setDayFormStageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
@@ -56,6 +61,49 @@ export function TripDetailPage() {
 
   const refetchContext = { additionalTypenames: ['Trip'] };
 
+  const trip = tripData?.trip ?? null;
+  const stages = useMemo(() => stagesData?.stages ?? [], [stagesData?.stages]);
+
+  // Derive live ranges, dropping entries for stages that no longer exist
+  // (addresses residual risk R1 on stale canCloseTrip / handleClose payload).
+  const liveStageDateRanges = useMemo<StageDateRangeMap>(() => {
+    if (stages.length === 0) return {};
+    const liveIds = new Set(stages.map((s) => s.id));
+    const filtered: StageDateRangeMap = {};
+    for (const [k, v] of Object.entries(stageDateRanges)) {
+      if (liveIds.has(k)) filtered[k] = v;
+    }
+    return filtered;
+  }, [stages, stageDateRanges]);
+
+  const handleDaysLoaded = useCallback((stageId: string, start: string, end: string) => {
+    setStageDateRanges((prev) => {
+      const existing = prev[stageId];
+      if (existing && existing.start === start && existing.end === end) return prev;
+      return { ...prev, [stageId]: { start, end } };
+    });
+  }, []);
+
+  const handleStageClick = useCallback((stageId: string) => {
+    setSelectedStageId(stageId);
+    setSelectedDay(null);
+    document.getElementById(`stage-${stageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
+  const handleDayClickFromTimeline = useCallback((stageId: string, day: Day) => {
+    setSelectedStageId(stageId);
+    setSelectedDay(day);
+  }, []);
+
+  const handleDetailClose = useCallback(() => {
+    setSelectedStageId(null);
+    setSelectedDay(null);
+  }, []);
+
+  const handleBackToStage = useCallback(() => {
+    setSelectedDay(null);
+  }, []);
+
   async function handlePublish() {
     await publishTrip({ id: id! }, refetchContext);
   }
@@ -64,8 +112,8 @@ export function TripDetailPage() {
     await unpublishTrip({ id: id! }, refetchContext);
   }
 
-  async function handleClose() {
-    const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
+  async function handleCloseTripAction() {
+    const allDates = Object.values(liveStageDateRanges).flatMap((r) => [r.start, r.end]).sort();
     if (allDates.length === 0) return;
     const firstDay = allDates[0];
     const lastDay = allDates[allDates.length - 1];
@@ -77,13 +125,17 @@ export function TripDetailPage() {
   }
 
   async function handleDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
     const result = await deleteTrip({ id: id! }, refetchContext);
-    if (!result.error && result.data?.deleteTrip.success) {
-      navigate('/');
+    if (result.error || !result.data?.deleteTrip.success) {
+      setDeleting(false);
+      setDeleteError('Impossible de supprimer le voyage. Réessayez.');
+      return;
     }
+    navigate('/');
   }
-
-  const isModifiable = tripData?.trip?.status !== 'CLOSED';
 
   function handleAddStage() {
     setEditingStage(null);
@@ -107,43 +159,41 @@ export function TripDetailPage() {
     setDayFormOpen(true);
   }
 
-  const trip = tripData?.trip;
-  const stages = stagesData?.stages ?? [];
-
-  const handleDaysLoaded = useCallback((stageId: string, start: string, end: string) => {
-    setStageDateRanges((prev) => {
-      if (prev[stageId]) return prev;
-      return { ...prev, [stageId]: { start, end } };
-    });
-  }, []);
-
-  function handleStageClick(stageId: string) {
-    setSelectedStageId(stageId);
-    setSelectedDay(null);
-    document.getElementById(`stage-${stageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function handleDayClickFromTimeline(stageId: string, day: Day) {
-    setSelectedStageId(stageId);
-    setSelectedDay(day);
-  }
-
-  function handleDetailClose() {
-    setSelectedStageId(null);
-    setSelectedDay(null);
-  }
-
-  if (!tripFetching && !trip) {
-    return <div className={styles.notFound}>Voyage introuvable.</div>;
-  }
-
   if (tripFetching) {
     return <div className={styles.notFound} style={{ color: 'var(--color-text-muted)' }}>Chargement…</div>;
   }
 
-  const color = tripColor(trip!.id);
+  if (!trip) {
+    return <div className={styles.notFound}>Voyage introuvable.</div>;
+  }
+
+  const isModifiable = trip.status !== 'CLOSED';
+  const color = tripColor(trip.id);
   const detailOpen = selectedStageId !== null;
   const selectedStage = selectedStageId ? (stages.find((s) => s.id === selectedStageId) ?? null) : null;
+  // Only allow closing once every stage has reported its day range, otherwise
+  // handleCloseTripAction would compute firstDay/lastDay from a partial set.
+  const canCloseTrip =
+    stages.length > 0 && Object.keys(liveStageDateRanges).length === stages.length;
+
+  const tripMenuItems: ActionMenuItem[] = isAdmin
+    ? [
+        { label: 'Modifier', onClick: () => setFormOpen(true) },
+        ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
+        ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
+        ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir', onClick: handleReopen }] : []),
+        { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
+      ]
+    : [];
+
+  const detailPanelCommon = {
+    stage: selectedStage,
+    day: selectedDay,
+    open: detailOpen,
+    onClose: handleDetailClose,
+    onDayClick: setSelectedDay,
+    onBackToStage: handleBackToStage,
+  };
 
   return (
     <>
@@ -151,48 +201,24 @@ export function TripDetailPage() {
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
-          <Link to="/" viewTransition className={styles.backLink}>← Tous les voyages</Link>
-          <p className={styles.country}>{trip!.country}</p>
-          <h1 className={styles.tripTitle}>{trip!.title}</h1>
-          <p className={styles.tripDates}>{formatDateRange(trip!.startDate, trip!.endDate)}</p>
-          {isAdmin && (
-            <div className={styles.adminActions}>
-              <button className={styles.adminBtn} onClick={() => setFormOpen(true)}>
-                Modifier
-              </button>
-              {trip!.status === 'DRAFT' && (
-                <button className={`${styles.adminBtn} ${styles.adminBtnPrimary}`} onClick={handlePublish}>
-                  Publier
-                </button>
-              )}
-              {trip!.status === 'PUBLISHED' && (
-                <>
-                  <button className={styles.adminBtn} onClick={handleUnpublish}>
-                    Brouillon
-                  </button>
-                  {Object.keys(stageDateRanges).length > 0 && (
-                    <button className={styles.adminBtn} onClick={handleClose}>
-                      Clôturer
-                    </button>
-                  )}
-                </>
-              )}
-              {trip!.status === 'CLOSED' && (
-                <button className={styles.adminBtn} onClick={handleReopen}>
-                  Réouvrir
-                </button>
-              )}
-              <button className={`${styles.adminBtn} ${styles.adminBtnDanger}`} onClick={() => setConfirmDelete(true)}>
-                Supprimer
-              </button>
-            </div>
+          <div className={styles.headerTop}>
+            <Link to="/" viewTransition className={styles.backLink}>← Tous les voyages</Link>
+            {tripMenuItems.length > 0 && (
+              <ActionMenu items={tripMenuItems} ariaLabel="Actions sur le voyage" />
+            )}
+          </div>
+          <p className={styles.country}>{trip.country}</p>
+          <h1 className={styles.tripTitle}>{trip.title}</h1>
+          <p className={styles.tripDates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
+          {isAdmin && trip.status === 'DRAFT' && (
+            <button className={styles.primaryCta} onClick={handlePublish}>
+              Publier le voyage
+            </button>
           )}
-          {confirmDelete && (
-            <div className={styles.confirmBar}>
-              <span>Supprimer ce voyage ?</span>
-              <button className={styles.adminBtn} onClick={() => setConfirmDelete(false)}>Annuler</button>
-              <button className={`${styles.adminBtn} ${styles.adminBtnDanger}`} onClick={handleDelete}>Confirmer</button>
-            </div>
+          {isAdmin && trip.status === 'PUBLISHED' && canCloseTrip && (
+            <button className={styles.primaryCta} onClick={handleCloseTripAction}>
+              Clôturer le voyage
+            </button>
           )}
         </div>
 
@@ -214,16 +240,14 @@ export function TripDetailPage() {
         <div className={styles.content}>
           {stagesFetching ? (
             <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
+          ) : stages.length === 0 ? (
+            <p className={styles.emptyStages}>
+              {isAdmin && isModifiable
+                ? 'Aucune étape pour l\u2019instant. Utilisez le menu ⋮ pour en ajouter une.'
+                : 'Aucune étape pour ce voyage.'}
+            </p>
           ) : (
             <>
-              {isAdmin && isModifiable && (
-                <div className={styles.addStageBar}>
-                  <button className={styles.addStageBtn} onClick={handleAddStage}>
-                    + Ajouter une étape
-                  </button>
-                </div>
-              )}
-
               {view === 'timeline' && (
                 <div className={styles.timeline}>
                   {stages.map((stage, i) => (
@@ -262,19 +286,17 @@ export function TripDetailPage() {
       </aside>
 
       {/* ── Panneau détail ── */}
-      <DetailPanel
-        stage={selectedStage}
-        day={selectedDay}
-        open={detailOpen}
-        onClose={handleDetailClose}
-        onDayClick={setSelectedDay}
-        onBackToStage={() => setSelectedDay(null)}
-        isAdmin={isAdmin}
-        isModifiable={isModifiable}
-        onEditStage={handleEditStage}
-        onAddDay={handleAddDay}
-        onEditDay={handleEditDay}
-      />
+      {isAdmin && isModifiable ? (
+        <DetailPanel
+          {...detailPanelCommon}
+          canEdit
+          onEditStage={handleEditStage}
+          onAddDay={handleAddDay}
+          onEditDay={handleEditDay}
+        />
+      ) : (
+        <DetailPanel {...detailPanelCommon} canEdit={false} />
+      )}
 
       {/* ── Carte droite ── */}
       <div className={styles.mapArea}>
@@ -282,7 +304,7 @@ export function TripDetailPage() {
           <TripMapWithActiveDays
             stages={stages}
             activeStageId={selectedStageId}
-            stageDateRanges={stageDateRanges}
+            stageDateRanges={liveStageDateRanges}
             onStageClick={handleStageClick}
             onDayClick={handleDayClickFromTimeline}
           />
@@ -315,6 +337,16 @@ export function TripDetailPage() {
             day={editingDay}
           />
         )}
+        <ConfirmModal
+          open={confirmDelete}
+          title="Supprimer ce voyage ?"
+          message={deleteError ?? 'Toutes les étapes et tous les jours associés seront définitivement perdus.'}
+          confirmLabel="Supprimer"
+          danger
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
+        />
       </>
     )}
     </>
@@ -339,7 +371,7 @@ function StageSection({ stage, index, view, active, onStageClick, onDayClick, on
     if (data?.days && data.days.length > 0) {
       onDaysLoaded(stage.id, data.days[0].date, data.days[data.days.length - 1].date);
     }
-  }, [stage.id, data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stage.id, data, onDaysLoaded]);
 
   // COR-008 : un jour multi-étapes n'est affiché que dans son étape principale (premier stageID)
   const primaryDays = days.filter((day) => day.stageIDs[0] === stage.id);
@@ -377,7 +409,7 @@ function StageSection({ stage, index, view, active, onStageClick, onDayClick, on
 interface TripMapWithActiveDaysProps {
   stages: Stage[];
   activeStageId: string | null;
-  stageDateRanges: Record<string, { start: string; end: string }>;
+  stageDateRanges: StageDateRangeMap;
   onStageClick: (stageId: string) => void;
   onDayClick: (stageId: string, day: Day) => void;
 }

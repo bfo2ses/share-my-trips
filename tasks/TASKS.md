@@ -6,13 +6,17 @@ Format des statuts : `[ ]` à faire · `[~]` en cours · `[x]` terminé
 
 ## En cours
 
-_Aucune tâche en cours._
+| # | Tâche | Branche | PR |
+|---|-------|---------|-----|
+| 5 | Menu kebab pour les actions admin (trip, stage, day) + ConfirmModal | `feat/frontend-admin-action-menu` | — |
 
 ---
 
 ## Backlog
 
-_Aucune tâche en attente._
+| # | Tâche | Notes |
+|---|-------|-------|
+| 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | Suit #5 ; mode placement contextuel selon la sélection (aucune → stage, stage → day) |
 
 ---
 
