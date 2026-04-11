@@ -11,6 +11,8 @@ const ADD_DAY = gql(`
         date
         title
         description
+        lat
+        lng
       }
       errors {
         field
@@ -30,6 +32,8 @@ const UPDATE_DAY = gql(`
         date
         title
         description
+        lat
+        lng
       }
       errors {
         field

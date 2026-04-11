@@ -30,6 +30,8 @@ func (tc *testContext) stageContainsDays(table *godog.Table) error {
 			StageID: tc.defaultStage,
 			Date:    d,
 			Title:   title,
+			Lat:     defaultLat,
+			Lng:     defaultLng,
 		})
 		if err != nil {
 			return fmt.Errorf("setup day %q: %w", dateStr, err)

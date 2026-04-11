@@ -63,6 +63,8 @@ func (tc *testContext) dayAttachedToTwoStages(dateStr, stage1Name, stage2Name st
 		TripID:  tc.defaultTripID,
 		StageID: stage1ID,
 		Date:    d,
+		Lat:     defaultLat,
+		Lng:     defaultLng,
 	})
 	if err != nil {
 		return fmt.Errorf("setup day: %w", err)

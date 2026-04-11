@@ -13,6 +13,8 @@ Fonctionnalité: Gestion des voyages
       | champ             | valeur                     |
       | titre             | Road trip en Islande       |
       | pays              | Islande                    |
+      | latitude          | 64.1466                    |
+      | longitude         | -21.9426                   |
       | date_debut        | 2025-07-01                 |
       | date_fin          | 2025-07-14                 |
       | description       | 2 semaines autour de l'île |
@@ -36,6 +38,12 @@ Fonctionnalité: Gestion des voyages
     Etant donné que je suis connecté en tant qu'administrateur
     Quand je tente de créer un voyage sans renseigner le titre
     Alors un message d'erreur m'indique que le titre est obligatoire
+    Et le voyage n'est pas créé
+
+  Scénario: Les coordonnées GPS sont obligatoires
+    Etant donné que je suis connecté en tant qu'administrateur
+    Quand je tente de créer un voyage sans coordonnées GPS
+    Alors un message d'erreur m'indique que les coordonnées du voyage sont obligatoires
     Et le voyage n'est pas créé
 
   Scénario: Les dates doivent être cohérentes

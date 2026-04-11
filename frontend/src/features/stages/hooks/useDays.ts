@@ -10,11 +10,17 @@ export const DAYS_QUERY = gql(`
       date
       title
       description
+      lat
+      lng
     }
   }
 `);
 
-export function useDays(stageID: string) {
-  const [result] = useQuery({ query: DAYS_QUERY, variables: { stageID } });
+export function useDays(stageID: string, options?: { pause?: boolean }) {
+  const [result] = useQuery({
+    query: DAYS_QUERY,
+    variables: { stageID },
+    pause: options?.pause ?? false,
+  });
   return result;
 }

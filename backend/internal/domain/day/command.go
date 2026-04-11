@@ -9,6 +9,8 @@ type AddDayCommand struct {
 	Date        time.Time
 	Title       string
 	Description string
+	Lat         float64
+	Lng         float64
 }
 
 // UpdateDayCommand contains the data needed to update an existing day.
@@ -16,6 +18,8 @@ type UpdateDayCommand struct {
 	ID          string
 	Title       string
 	Description string
+	Lat         float64
+	Lng         float64
 }
 
 // DeleteDayCommand identifies the day to delete.

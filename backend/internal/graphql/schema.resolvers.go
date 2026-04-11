@@ -29,8 +29,8 @@ func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput
 		Country:     input.Country,
 		Description: derefString(input.Description),
 		CoverPhoto:  derefString(input.CoverPhoto),
-		Lat:         derefFloat64(input.Lat),
-		Lng:         derefFloat64(input.Lng),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
 		StartDate:   startDate,
 		EndDate:     endDate,
 	})
@@ -57,8 +57,8 @@ func (r *mutationResolver) UpdateTrip(ctx context.Context, id string, input Upda
 		Country:     input.Country,
 		Description: derefString(input.Description),
 		CoverPhoto:  derefString(input.CoverPhoto),
-		Lat:         derefFloat64(input.Lat),
-		Lng:         derefFloat64(input.Lng),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
 		StartDate:   startDate,
 		EndDate:     endDate,
 	})
@@ -174,6 +174,8 @@ func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayP
 		Date:        date,
 		Title:       derefString(input.Title),
 		Description: derefString(input.Description),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
 	})
 	if err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
@@ -187,6 +189,8 @@ func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input Updat
 		ID:          id,
 		Title:       derefString(input.Title),
 		Description: derefString(input.Description),
+		Lat:         input.Lat,
+		Lng:         input.Lng,
 	})
 	if err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil

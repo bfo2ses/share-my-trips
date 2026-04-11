@@ -26,6 +26,8 @@ func (tc *testContext) tripsExist(table *godog.Table) error {
 		cmd := trip.CreateTripCommand{
 			Title:     title,
 			Country:   "Pays",
+			Lat:       defaultLat,
+			Lng:       defaultLng,
 			StartDate: d,
 			EndDate:   d.AddDate(0, 0, 14),
 		}

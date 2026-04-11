@@ -19,6 +19,7 @@ const (
 var (
 	ErrTitleRequired      = errors.New("title is required")
 	ErrCountryRequired    = errors.New("country is required")
+	ErrGPSRequired        = errors.New("GPS coordinates are required")
 	ErrInvalidDates       = errors.New("end date must be after start date")
 	ErrNotFound           = errors.New("trip not found")
 	ErrAlreadyPublished   = errors.New("trip is already published")
@@ -53,6 +54,11 @@ func NewTrip(id, title, country, description, coverPhoto string, lat, lng float6
 	}
 	if country == "" {
 		return nil, ErrCountryRequired
+	}
+	// Phase 1: (0, 0) is used as a sentinel for "not provided". The geographic
+	// origin (Gulf of Guinea) is excluded. Phase 2 will use *float64 pointers.
+	if lat == 0 && lng == 0 {
+		return nil, ErrGPSRequired
 	}
 	if !endDate.IsZero() && !startDate.IsZero() && endDate.Before(startDate) {
 		return nil, ErrInvalidDates
@@ -141,6 +147,10 @@ func (t *Trip) Update(title, country, description, coverPhoto string, lat, lng f
 	}
 	if country == "" {
 		return ErrCountryRequired
+	}
+	// Same sentinel as NewTrip — see note there.
+	if lat == 0 && lng == 0 {
+		return ErrGPSRequired
 	}
 	if !endDate.IsZero() && !startDate.IsZero() && endDate.Before(startDate) {
 		return ErrInvalidDates

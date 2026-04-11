@@ -4,11 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/cucumber/godog"
 
 	"github.com/bfosses/sharemytrips/internal/domain/day"
+)
+
+// defaultLat / defaultLng are used by tests that don't care about GPS values
+// but still need valid (non-zero) coordinates to pass domain validation.
+const (
+	defaultLat = 64.1466
+	defaultLng = -21.9426
 )
 
 func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
@@ -17,8 +25,11 @@ func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^j'ajoute un jour avec les informations suivantes :$`, tc.addDayWithDetails)
 	ctx.Step(`^le jour est ajouté à l'étape$`, tc.dayIsAdded)
 	ctx.Step(`^la date du jour est "([^"]*)"$`, tc.dayDateIs)
+	ctx.Step(`^les coordonnées du jour sont ([\-0-9.]+), ([\-0-9.]+)$`, tc.dayCoordsAre)
 	ctx.Step(`^je tente d'ajouter un jour sans date$`, tc.addDayWithoutDate)
+	ctx.Step(`^je tente d'ajouter un jour sans coordonnées GPS$`, tc.addDayWithoutGPS)
 	ctx.Step(`^un message d'erreur m'indique que la date est obligatoire$`, tc.errDateRequired)
+	ctx.Step(`^un message d'erreur m'indique que les coordonnées du jour sont obligatoires$`, tc.errDayGPSRequired)
 	ctx.Step(`^le jour n'est pas créé$`, tc.dayIsNotCreated)
 	ctx.Step(`^une étape "([^"]*)" appartient à un autre voyage$`, tc.stageExistsInAnotherTrip)
 	ctx.Step(`^je tente d'ajouter un jour avec l'étape de l'autre voyage$`, tc.addDayWithForeignStage)
@@ -62,6 +73,18 @@ func (tc *testContext) addDayWithDetails(table *godog.Table) error {
 			cmd.Title = value
 		case "description":
 			cmd.Description = value
+		case "latitude":
+			v, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return fmt.Errorf("invalid latitude: %w", err)
+			}
+			cmd.Lat = v
+		case "longitude":
+			v, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return fmt.Errorf("invalid longitude: %w", err)
+			}
+			cmd.Lng = v
 		}
 	}
 
@@ -90,11 +113,41 @@ func (tc *testContext) dayDateIs(dateStr string) error {
 	return nil
 }
 
+func (tc *testContext) dayCoordsAre(latStr, lngStr string) error {
+	lat, err := strconv.ParseFloat(latStr, 64)
+	if err != nil {
+		return fmt.Errorf("invalid latitude: %w", err)
+	}
+	lng, err := strconv.ParseFloat(lngStr, 64)
+	if err != nil {
+		return fmt.Errorf("invalid longitude: %w", err)
+	}
+	if tc.currentDay.Lat != lat {
+		return fmt.Errorf("expected lat %v, got %v", lat, tc.currentDay.Lat)
+	}
+	if tc.currentDay.Lng != lng {
+		return fmt.Errorf("expected lng %v, got %v", lng, tc.currentDay.Lng)
+	}
+	return nil
+}
+
 func (tc *testContext) addDayWithoutDate() error {
 	tc.currentDay, tc.lastErr = tc.handler.Add(context.Background(), day.AddDayCommand{
 		TripID:  tc.defaultTripID,
 		StageID: tc.defaultStage,
 		Title:   "Jour sans date",
+		Lat:     defaultLat,
+		Lng:     defaultLng,
+	})
+	return nil
+}
+
+func (tc *testContext) addDayWithoutGPS() error {
+	tc.currentDay, tc.lastErr = tc.handler.Add(context.Background(), day.AddDayCommand{
+		TripID:  tc.defaultTripID,
+		StageID: tc.defaultStage,
+		Date:    time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC),
+		Title:   "Jour sans GPS",
 	})
 	return nil
 }
@@ -102,6 +155,13 @@ func (tc *testContext) addDayWithoutDate() error {
 func (tc *testContext) errDateRequired() error {
 	if !errors.Is(tc.lastErr, day.ErrDateRequired) {
 		return fmt.Errorf("expected ErrDateRequired, got: %v", tc.lastErr)
+	}
+	return nil
+}
+
+func (tc *testContext) errDayGPSRequired() error {
+	if !errors.Is(tc.lastErr, day.ErrGPSRequired) {
+		return fmt.Errorf("expected ErrGPSRequired, got: %v", tc.lastErr)
 	}
 	return nil
 }
@@ -125,6 +185,8 @@ func (tc *testContext) addDayWithForeignStage() error {
 		TripID:  tc.defaultTripID,
 		StageID: tc.foreignStage,
 		Date:    time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC),
+		Lat:     defaultLat,
+		Lng:     defaultLng,
 	})
 	return nil
 }
