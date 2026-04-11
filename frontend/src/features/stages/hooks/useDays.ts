@@ -17,10 +17,9 @@ export const DAYS_QUERY = gql(`
 `);
 
 export function useDays(stageID: string, options?: { pause?: boolean }) {
-  const [result] = useQuery({
+  return useQuery({
     query: DAYS_QUERY,
     variables: { stageID },
     pause: options?.pause ?? false,
   });
-  return result;
 }

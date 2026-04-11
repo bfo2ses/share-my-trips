@@ -16,6 +16,5 @@ export const STAGES_QUERY = gql(`
 `);
 
 export function useStages(tripID: string) {
-  const [result] = useQuery({ query: STAGES_QUERY, variables: { tripID } });
-  return result;
+  return useQuery({ query: STAGES_QUERY, variables: { tripID } });
 }

@@ -110,10 +110,25 @@
   min-height: 60px;
 }
 
-.coordRow {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+.coordInfo {
+  padding: 10px 14px;
+  background: var(--color-bg-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.coordText {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.coordHint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  font-style: italic;
 }
 
 .submit {

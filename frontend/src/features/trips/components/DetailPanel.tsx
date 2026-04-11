@@ -97,7 +97,7 @@ type StageDetailProps = {
 
 function StageDetail(props: StageDetailProps) {
   const { stage, onClose, onDayClick } = props;
-  const { data, fetching } = useDays(stage.id);
+  const [{ data, fetching }] = useDays(stage.id);
   const days = data?.days ?? [];
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);

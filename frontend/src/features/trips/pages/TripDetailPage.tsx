@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTrip } from '../hooks/useTrip';
 import { useStages } from '../../stages/hooks/useStages';
 import { useDays } from '../../stages/hooks/useDays';
 import { useMe } from '../../auth/hooks/useMe';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
-import { TripMap } from '../components/TripMap';
+import { useUpdateStage } from '../../stages/hooks/useStageMutations';
+import { useUpdateDay } from '../../stages/hooks/useDayMutations';
+import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm } from '../components/TripForm';
 import { DetailPanel } from '../components/DetailPanel';
 import { StageForm } from '../../stages/components/StageForm';
@@ -19,6 +21,7 @@ import styles from './TripDetailPage.module.css';
 type Stage = StagesQuery['stages'][number];
 type Day = DaysQuery['days'][number];
 type StageDateRangeMap = Record<string, { start: string; end: string }>;
+type PanTarget = { lat: number; lng: number; seq: number } | null;
 
 type View = 'timeline' | 'stages';
 
@@ -35,7 +38,7 @@ export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: tripData, fetching: tripFetching } = useTrip(id!);
-  const { data: stagesData, fetching: stagesFetching } = useStages(id!);
+  const [{ data: stagesData, fetching: stagesFetching }, reexecuteStages] = useStages(id!);
   const { data: meData } = useMe();
   const isAdmin = meData?.me?.role === 'ADMIN';
 
@@ -52,12 +55,25 @@ export function TripDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pendingDayCoords, setPendingDayCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [panTarget, setPanTarget] = useState<PanTarget>(null);
+
+  // Days-query refetch handle, shared upward from TripMapWithActiveDays.
+  // Ref (not state) avoids an effect storm if urql ever re-creates reexecute.
+  const daysRefetchRef = useRef<(() => void) | null>(null);
+  // Per-entity in-flight drag mutation guard. Ref-based so updates don't
+  // re-render the map and lose Leaflet's drag state.
+  const savingStagesRef = useRef<Set<string>>(new Set());
+  const savingDaysRef = useRef<Set<string>>(new Set());
 
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
   const [, closeTrip] = useCloseTrip();
   const [, deleteTrip] = useDeleteTrip();
   const [, reopenTrip] = useReopenTrip();
+  const [, updateStage] = useUpdateStage();
+  const [, updateDay] = useUpdateDay();
 
   const refetchContext = { additionalTypenames: ['Trip'] };
 
@@ -137,27 +153,131 @@ export function TripDetailPage() {
     navigate('/');
   }
 
-  function handleAddStage() {
+  // Closing helpers — centralised so the "mutually exclusive forms" rule is
+  // easy to enforce in the openers below.
+  const closeStageForm = useCallback(() => {
+    setStageFormOpen(false);
     setEditingStage(null);
+    setPendingStageCoords(null);
+  }, []);
+
+  const closeDayForm = useCallback(() => {
+    setDayFormOpen(false);
+    setEditingDay(null);
+    setDayFormStageId(null);
+    setPendingDayCoords(null);
+  }, []);
+
+  function handleAddStage() {
+    closeDayForm();
+    setEditingStage(null);
+    setPendingStageCoords(null);
     setStageFormOpen(true);
   }
 
   function handleEditStage(stage: Stage) {
+    closeDayForm();
     setEditingStage(stage);
+    setPendingStageCoords(null);
     setStageFormOpen(true);
   }
 
   function handleAddDay(stageId: string) {
+    closeStageForm();
     setEditingDay(null);
     setDayFormStageId(stageId);
+    setPendingDayCoords(null);
     setDayFormOpen(true);
   }
 
   function handleEditDay(stageId: string, day: Day) {
+    closeStageForm();
     setEditingDay(day);
     setDayFormStageId(stageId);
+    setPendingDayCoords(null);
     setDayFormOpen(true);
   }
+
+  // Drag handlers — F3 single-writer policy: if the edit form for this exact
+  // entity is open, propagate the coords into the form's pending state and
+  // skip the immediate mutation (the form submit is the single writer).
+  // F8 in-flight guard: ignore subsequent drags on the same entity until the
+  // first save resolves, and revert the marker via the provided closure.
+  const handleStageDragEnd = useCallback(
+    async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
+      if (stageFormOpen && editingStage?.id === stage.id) {
+        setPendingStageCoords(coords);
+        return;
+      }
+      if (savingStagesRef.current.has(stage.id)) {
+        revert();
+        return;
+      }
+      savingStagesRef.current.add(stage.id);
+      try {
+        const customName = stage.displayName !== stage.city ? stage.displayName : undefined;
+        const result = await updateStage(
+          {
+            id: stage.id,
+            input: {
+              city: stage.city,
+              name: customName,
+              lat: coords.lat,
+              lng: coords.lng,
+              description: stage.description || undefined,
+            },
+          },
+          { additionalTypenames: ['Stage'] },
+        );
+        if (result.error || (result.data?.updateStage.errors ?? []).length > 0) {
+          revert();
+          reexecuteStages({ requestPolicy: 'network-only' });
+          return;
+        }
+        setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
+      } finally {
+        savingStagesRef.current.delete(stage.id);
+      }
+    },
+    [stageFormOpen, editingStage, updateStage, reexecuteStages],
+  );
+
+  const handleDayDragEnd = useCallback(
+    async (day: Day, coords: { lat: number; lng: number }, revert: () => void) => {
+      if (dayFormOpen && editingDay?.id === day.id) {
+        setPendingDayCoords(coords);
+        return;
+      }
+      if (savingDaysRef.current.has(day.id)) {
+        revert();
+        return;
+      }
+      savingDaysRef.current.add(day.id);
+      try {
+        const result = await updateDay(
+          {
+            id: day.id,
+            input: {
+              title: day.title || undefined,
+              description: day.description || undefined,
+              lat: coords.lat,
+              lng: coords.lng,
+            },
+          },
+          { additionalTypenames: ['Day'] },
+        );
+        if (result.error || (result.data?.updateDay.errors ?? []).length > 0) {
+          revert();
+          daysRefetchRef.current?.();
+          return;
+        }
+        setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
+      } finally {
+        savingDaysRef.current.delete(day.id);
+      }
+    },
+    [dayFormOpen, editingDay, updateDay],
+  );
 
   if (tripFetching) {
     return <div className={styles.notFound} style={{ color: 'var(--color-text-muted)' }}>Chargement…</div>;
@@ -168,13 +288,62 @@ export function TripDetailPage() {
   }
 
   const isModifiable = trip.status !== 'CLOSED';
+  const canEditMarkers = !!isAdmin && isModifiable;
   const color = tripColor(trip.id);
   const detailOpen = selectedStageId !== null;
   const selectedStage = selectedStageId ? (stages.find((s) => s.id === selectedStageId) ?? null) : null;
-  // Only allow closing once every stage has reported its day range, otherwise
-  // handleCloseTripAction would compute firstDay/lastDay from a partial set.
   const canCloseTrip =
     stages.length > 0 && Object.keys(liveStageDateRanges).length === stages.length;
+
+  // F4: suppress placement mode whenever a modal/overlay is blocking the map.
+  const overlayActive = confirmDelete || formOpen;
+
+  const placementMode: PlacementMode = !canEditMarkers || overlayActive
+    ? null
+    : stageFormOpen
+    ? 'stage'
+    : dayFormOpen
+    ? 'day'
+    : selectedDay
+    ? null
+    : selectedStageId
+    ? 'day'
+    : 'stage';
+
+  // Only render the golden "pending" marker while CREATING (edit forms already
+  // have the dragged marker visible at the dropped position).
+  const pendingMapCoords =
+    stageFormOpen && !editingStage
+      ? pendingStageCoords
+      : dayFormOpen && !editingDay
+      ? pendingDayCoords
+      : null;
+
+  const handleMapClick = (coords: { lat: number; lng: number }) => {
+    if (stageFormOpen) {
+      setPendingStageCoords(coords);
+      return;
+    }
+    if (dayFormOpen) {
+      setPendingDayCoords(coords);
+      return;
+    }
+    if (!canEditMarkers || overlayActive) return;
+    if (!selectedStageId) {
+      closeDayForm();
+      setEditingStage(null);
+      setPendingStageCoords(coords);
+      setStageFormOpen(true);
+      return;
+    }
+    if (!selectedDay) {
+      closeStageForm();
+      setEditingDay(null);
+      setDayFormStageId(selectedStageId);
+      setPendingDayCoords(coords);
+      setDayFormOpen(true);
+    }
+  };
 
   const tripMenuItems: ActionMenuItem[] = isAdmin
     ? [
@@ -243,7 +412,7 @@ export function TripDetailPage() {
           ) : stages.length === 0 ? (
             <p className={styles.emptyStages}>
               {isAdmin && isModifiable
-                ? 'Aucune étape pour l\u2019instant. Utilisez le menu ⋮ pour en ajouter une.'
+                ? 'Aucune étape pour l\u2019instant. Cliquez sur la carte ou utilisez le menu ⋮ pour en ajouter une.'
                 : 'Aucune étape pour ce voyage.'}
             </p>
           ) : (
@@ -300,13 +469,21 @@ export function TripDetailPage() {
 
       {/* ── Carte droite ── */}
       <div className={styles.mapArea}>
-        {stages.length > 0 ? (
+        {stages.length > 0 || canEditMarkers ? (
           <TripMapWithActiveDays
             stages={stages}
             activeStageId={selectedStageId}
             stageDateRanges={liveStageDateRanges}
             onStageClick={handleStageClick}
             onDayClick={handleDayClickFromTimeline}
+            placementMode={placementMode}
+            pendingCoords={pendingMapCoords}
+            onMapClick={handleMapClick}
+            canEditMarkers={canEditMarkers}
+            onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
+            onDayDragEnd={canEditMarkers ? handleDayDragEnd : undefined}
+            daysRefetchRef={daysRefetchRef}
+            panTarget={panTarget}
           />
         ) : (
           !stagesFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
@@ -323,18 +500,24 @@ export function TripDetailPage() {
           trip={trip}
         />
         <StageForm
+          key={editingStage?.id ?? 'new-stage'}
           open={stageFormOpen}
-          onClose={() => { setStageFormOpen(false); setEditingStage(null); }}
+          onClose={closeStageForm}
           tripID={id!}
           stage={editingStage}
+          pendingCoords={pendingStageCoords}
+          noBackdrop
         />
         {dayFormStageId && (
           <DayForm
+            key={`${dayFormStageId}-${editingDay?.id ?? 'new-day'}`}
             open={dayFormOpen}
-            onClose={() => { setDayFormOpen(false); setEditingDay(null); setDayFormStageId(null); }}
+            onClose={closeDayForm}
             tripID={id!}
             stageID={dayFormStageId}
             day={editingDay}
+            pendingCoords={pendingDayCoords}
+            noBackdrop
           />
         )}
         <ConfirmModal
@@ -364,7 +547,7 @@ interface StageSectionProps {
 }
 
 function StageSection({ stage, index, view, active, onStageClick, onDayClick, onDaysLoaded }: StageSectionProps) {
-  const { data } = useDays(stage.id);
+  const [{ data }] = useDays(stage.id);
   const days = data?.days ?? [];
 
   useEffect(() => {
@@ -412,6 +595,14 @@ interface TripMapWithActiveDaysProps {
   stageDateRanges: StageDateRangeMap;
   onStageClick: (stageId: string) => void;
   onDayClick: (stageId: string, day: Day) => void;
+  placementMode: PlacementMode;
+  pendingCoords: { lat: number; lng: number } | null;
+  onMapClick?: (coords: { lat: number; lng: number }) => void;
+  canEditMarkers: boolean;
+  onStageDragEnd?: (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => void;
+  onDayDragEnd?: (day: Day, coords: { lat: number; lng: number }, revert: () => void) => void;
+  daysRefetchRef: React.MutableRefObject<(() => void) | null>;
+  panTarget: PanTarget;
 }
 
 function TripMapWithActiveDays({
@@ -420,12 +611,28 @@ function TripMapWithActiveDays({
   stageDateRanges,
   onStageClick,
   onDayClick,
+  placementMode,
+  pendingCoords,
+  onMapClick,
+  canEditMarkers,
+  onStageDragEnd,
+  onDayDragEnd,
+  daysRefetchRef,
+  panTarget,
 }: TripMapWithActiveDaysProps) {
   // Only fetch days when a stage is active; pause the query otherwise.
-  const { data: activeStageData } = useDays(activeStageId ?? '', { pause: !activeStageId });
+  const [{ data: activeStageData }, reexecuteDays] = useDays(activeStageId ?? '', { pause: !activeStageId });
   const activeStageDays = activeStageId
     ? (activeStageData?.days ?? []).filter((d) => d.stageIDs[0] === activeStageId)
     : [];
+
+  // Share the refetch handle upward via ref (no re-render on identity change).
+  useEffect(() => {
+    daysRefetchRef.current = () => reexecuteDays({ requestPolicy: 'network-only' });
+    return () => {
+      daysRefetchRef.current = null;
+    };
+  }, [daysRefetchRef, reexecuteDays]);
 
   return (
     <TripMap
@@ -435,6 +642,13 @@ function TripMapWithActiveDays({
       stageDateRanges={stageDateRanges}
       onStageClick={onStageClick}
       onDayClick={onDayClick}
+      placementMode={placementMode}
+      pendingCoords={pendingCoords}
+      onMapClick={onMapClick}
+      canEditMarkers={canEditMarkers}
+      onStageDragEnd={onStageDragEnd}
+      onDayDragEnd={onDayDragEnd}
+      panTarget={panTarget}
     />
   );
 }

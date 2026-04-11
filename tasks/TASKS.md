@@ -12,9 +12,7 @@ _Aucune tâche en cours._
 
 ## Backlog
 
-| # | Tâche | Notes |
-|---|-------|-------|
-| 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | Suit #5 ; mode placement contextuel selon la sélection (aucune → stage, stage → day) |
+_Aucune tâche en attente._
 
 ---
 
@@ -22,6 +20,7 @@ _Aucune tâche en cours._
 
 | # | Tâche | Branche | PR |
 |---|-------|---------|-----|
+| 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | `feat/frontend-map-placement` | [#18](https://github.com/bfo2ses/share-my-trips/pull/18) |
 | 5 | Menu kebab pour les actions admin (trip, stage, day) + ConfirmModal | `feat/frontend-admin-action-menu` | [#17](https://github.com/bfo2ses/share-my-trips/pull/17) |
 | 4 | Coordonnées GPS obligatoires sur Trip et Day + zoom étape avec marqueurs de jours | `feat/trip-day-coordinates` | [#16](https://github.com/bfo2ses/share-my-trips/pull/16) |
 | 3 | Infos utilisateur depuis `me` + menu user avec déconnexion | `feat/frontend-user-menu` | [#12](https://github.com/bfo2ses/share-my-trips/pull/12) |
