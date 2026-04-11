@@ -30,6 +30,8 @@ type AddDayInput struct {
 	Date        string  `json:"date"`
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
 }
 
 type AddStageInput struct {
@@ -67,14 +69,14 @@ type CreateAccountInput struct {
 }
 
 type CreateTripInput struct {
-	Title       string   `json:"title"`
-	Country     string   `json:"country"`
-	Description *string  `json:"description,omitempty"`
-	CoverPhoto  *string  `json:"coverPhoto,omitempty"`
-	Lat         *float64 `json:"lat,omitempty"`
-	Lng         *float64 `json:"lng,omitempty"`
-	StartDate   *string  `json:"startDate,omitempty"`
-	EndDate     *string  `json:"endDate,omitempty"`
+	Title       string  `json:"title"`
+	Country     string  `json:"country"`
+	Description *string `json:"description,omitempty"`
+	CoverPhoto  *string `json:"coverPhoto,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	StartDate   *string `json:"startDate,omitempty"`
+	EndDate     *string `json:"endDate,omitempty"`
 }
 
 type Day struct {
@@ -87,6 +89,10 @@ type Day struct {
 	Title *string `json:"title,omitempty"`
 	// Null when not provided.
 	Description *string `json:"description,omitempty"`
+	// Latitude for map placement.
+	Lat float64 `json:"lat"`
+	// Longitude for map placement.
+	Lng float64 `json:"lng"`
 	// RFC 3339 timestamp.
 	CreatedAt string `json:"createdAt"`
 	// RFC 3339 timestamp.
@@ -169,10 +175,10 @@ type Trip struct {
 	Country     string `json:"country"`
 	Description string `json:"description"`
 	CoverPhoto  string `json:"coverPhoto"`
-	// Latitude for map placement. Null when not set.
-	Lat *float64 `json:"lat,omitempty"`
-	// Longitude for map placement. Null when not set.
-	Lng *float64 `json:"lng,omitempty"`
+	// Latitude for map placement.
+	Lat float64 `json:"lat"`
+	// Longitude for map placement.
+	Lng float64 `json:"lng"`
 	// Date-only, format YYYY-MM-DD. Null when not set.
 	StartDate *string `json:"startDate,omitempty"`
 	// Date-only, format YYYY-MM-DD. Null when not set.
@@ -193,6 +199,8 @@ type TripPayload struct {
 type UpdateDayInput struct {
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
 }
 
 type UpdateStageInput struct {
@@ -204,14 +212,14 @@ type UpdateStageInput struct {
 }
 
 type UpdateTripInput struct {
-	Title       string   `json:"title"`
-	Country     string   `json:"country"`
-	Description *string  `json:"description,omitempty"`
-	CoverPhoto  *string  `json:"coverPhoto,omitempty"`
-	Lat         *float64 `json:"lat,omitempty"`
-	Lng         *float64 `json:"lng,omitempty"`
-	StartDate   *string  `json:"startDate,omitempty"`
-	EndDate     *string  `json:"endDate,omitempty"`
+	Title       string  `json:"title"`
+	Country     string  `json:"country"`
+	Description *string `json:"description,omitempty"`
+	CoverPhoto  *string `json:"coverPhoto,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	StartDate   *string `json:"startDate,omitempty"`
+	EndDate     *string `json:"endDate,omitempty"`
 }
 
 type UserError struct {

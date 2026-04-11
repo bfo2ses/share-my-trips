@@ -4,10 +4,10 @@ type Trip {
   country: String!
   description: String!
   coverPhoto: String!
-  "Latitude for map placement. Null when not set."
-  lat: Float
-  "Longitude for map placement. Null when not set."
-  lng: Float
+  "Latitude for map placement."
+  lat: Float!
+  "Longitude for map placement."
+  lng: Float!
   "Date-only, format YYYY-MM-DD. Null when not set."
   startDate: String
   "Date-only, format YYYY-MM-DD. Null when not set."
@@ -45,8 +45,8 @@ input CreateTripInput {
   country: String!
   description: String
   coverPhoto: String
-  lat: Float
-  lng: Float
+  lat: Float!
+  lng: Float!
   startDate: String
   endDate: String
 }
@@ -56,8 +56,8 @@ input UpdateTripInput {
   country: String!
   description: String
   coverPhoto: String
-  lat: Float
-  lng: Float
+  lat: Float!
+  lng: Float!
   startDate: String
   endDate: String
 }
@@ -121,6 +121,10 @@ type Day {
   title: String
   "Null when not provided."
   description: String
+  "Latitude for map placement."
+  lat: Float!
+  "Longitude for map placement."
+  lng: Float!
   "RFC 3339 timestamp."
   createdAt: String!
   "RFC 3339 timestamp."
@@ -144,12 +148,16 @@ input AddDayInput {
   date: String!
   title: String
   description: String
+  lat: Float!
+  lng: Float!
 }
 
 "The date of a day is immutable after creation. To change the date, delete and recreate the day."
 input UpdateDayInput {
   title: String
   description: String
+  lat: Float!
+  lng: Float!
 }
 
 enum AccountRole {

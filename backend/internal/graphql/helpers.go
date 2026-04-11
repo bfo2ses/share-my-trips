@@ -19,8 +19,8 @@ func toGraphQLTrip(t *trip.Trip) *Trip {
 		Country:     t.Country,
 		Description: t.Description,
 		CoverPhoto:  t.CoverPhoto,
-		Lat:         nullableFloat64(t.Lat),
-		Lng:         nullableFloat64(t.Lng),
+		Lat:         t.Lat,
+		Lng:         t.Lng,
 		StartDate:   formatDate(t.StartDate),
 		EndDate:     formatDate(t.EndDate),
 		Status:      toGraphQLStatus(t.Status),
@@ -73,20 +73,6 @@ func derefString(s *string) string {
 	return *s
 }
 
-func derefFloat64(f *float64) float64 {
-	if f == nil {
-		return 0
-	}
-	return *f
-}
-
-func nullableFloat64(f float64) *float64 {
-	if f == 0 {
-		return nil
-	}
-	return &f
-}
-
 func toGraphQLStage(s *stage.Stage) *Stage {
 	var name *string
 	if s.Name != "" {
@@ -117,6 +103,8 @@ func toGraphQLDay(d *day.Day) *Day {
 		Date:        d.Date.Format(dateFormat),
 		Title:       nullableString(d.Title),
 		Description: nullableString(d.Description),
+		Lat:         d.Lat,
+		Lng:         d.Lng,
 		CreatedAt:   d.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   d.UpdatedAt.UTC().Format(time.RFC3339),
 	}

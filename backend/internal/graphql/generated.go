@@ -58,6 +58,8 @@ type ComplexityRoot struct {
 		Date        func(childComplexity int) int
 		Description func(childComplexity int) int
 		ID          func(childComplexity int) int
+		Lat         func(childComplexity int) int
+		Lng         func(childComplexity int) int
 		StageIDs    func(childComplexity int) int
 		Title       func(childComplexity int) int
 		TripID      func(childComplexity int) int
@@ -313,6 +315,18 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Day.ID(childComplexity), true
+	case "Day.lat":
+		if e.ComplexityRoot.Day.Lat == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Day.Lat(childComplexity), true
+	case "Day.lng":
+		if e.ComplexityRoot.Day.Lng == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Day.Lng(childComplexity), true
 	case "Day.stageIDs":
 		if e.ComplexityRoot.Day.StageIDs == nil {
 			break
@@ -1018,10 +1032,10 @@ var sources = []*ast.Source{
   country: String!
   description: String!
   coverPhoto: String!
-  "Latitude for map placement. Null when not set."
-  lat: Float
-  "Longitude for map placement. Null when not set."
-  lng: Float
+  "Latitude for map placement."
+  lat: Float!
+  "Longitude for map placement."
+  lng: Float!
   "Date-only, format YYYY-MM-DD. Null when not set."
   startDate: String
   "Date-only, format YYYY-MM-DD. Null when not set."
@@ -1059,8 +1073,8 @@ input CreateTripInput {
   country: String!
   description: String
   coverPhoto: String
-  lat: Float
-  lng: Float
+  lat: Float!
+  lng: Float!
   startDate: String
   endDate: String
 }
@@ -1070,8 +1084,8 @@ input UpdateTripInput {
   country: String!
   description: String
   coverPhoto: String
-  lat: Float
-  lng: Float
+  lat: Float!
+  lng: Float!
   startDate: String
   endDate: String
 }
@@ -1135,6 +1149,10 @@ type Day {
   title: String
   "Null when not provided."
   description: String
+  "Latitude for map placement."
+  lat: Float!
+  "Longitude for map placement."
+  lng: Float!
   "RFC 3339 timestamp."
   createdAt: String!
   "RFC 3339 timestamp."
@@ -1158,12 +1176,16 @@ input AddDayInput {
   date: String!
   title: String
   description: String
+  lat: Float!
+  lng: Float!
 }
 
 "The date of a day is immutable after creation. To change the date, delete and recreate the day."
 input UpdateDayInput {
   title: String
   description: String
+  lat: Float!
+  lng: Float!
 }
 
 enum AccountRole {
@@ -2191,6 +2213,64 @@ func (ec *executionContext) fieldContext_Day_description(_ context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Day_lat(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Day_lat,
+		func(ctx context.Context) (any, error) {
+			return obj.Lat, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Day_lat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Day",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Day_lng(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Day_lng,
+		func(ctx context.Context) (any, error) {
+			return obj.Lng, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Day_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Day",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Day_createdAt(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2285,6 +2365,10 @@ func (ec *executionContext) fieldContext_DayPayload_day(_ context.Context, field
 				return ec.fieldContext_Day_title(ctx, field)
 			case "description":
 				return ec.fieldContext_Day_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Day_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Day_lng(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Day_createdAt(ctx, field)
 			case "updatedAt":
@@ -3945,6 +4029,10 @@ func (ec *executionContext) fieldContext_Query_day(ctx context.Context, field gr
 				return ec.fieldContext_Day_title(ctx, field)
 			case "description":
 				return ec.fieldContext_Day_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Day_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Day_lng(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Day_createdAt(ctx, field)
 			case "updatedAt":
@@ -4004,6 +4092,10 @@ func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field g
 				return ec.fieldContext_Day_title(ctx, field)
 			case "description":
 				return ec.fieldContext_Day_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Day_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Day_lng(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Day_createdAt(ctx, field)
 			case "updatedAt":
@@ -4809,9 +4901,9 @@ func (ec *executionContext) _Trip_lat(ctx context.Context, field graphql.Collect
 			return obj.Lat, nil
 		},
 		nil,
-		ec.marshalOFloat2ᚖfloat64,
+		ec.marshalNFloat2float64,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -4838,9 +4930,9 @@ func (ec *executionContext) _Trip_lng(ctx context.Context, field graphql.Collect
 			return obj.Lng, nil
 		},
 		nil,
-		ec.marshalOFloat2ᚖfloat64,
+		ec.marshalNFloat2float64,
 		true,
-		false,
+		true,
 	)
 }
 
@@ -6607,7 +6699,7 @@ func (ec *executionContext) unmarshalInputAddDayInput(ctx context.Context, obj a
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"tripID", "stageID", "date", "title", "description"}
+	fieldsInOrder := [...]string{"tripID", "stageID", "date", "title", "description", "lat", "lng"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -6649,6 +6741,20 @@ func (ec *executionContext) unmarshalInputAddDayInput(ctx context.Context, obj a
 				return it, err
 			}
 			it.Description = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
 		}
 	}
 	return it, nil
@@ -6899,14 +7005,14 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 			it.CoverPhoto = data
 		case "lat":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Lat = data
 		case "lng":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7036,7 +7142,7 @@ func (ec *executionContext) unmarshalInputUpdateDayInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description"}
+	fieldsInOrder := [...]string{"title", "description", "lat", "lng"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -7057,6 +7163,20 @@ func (ec *executionContext) unmarshalInputUpdateDayInput(ctx context.Context, ob
 				return it, err
 			}
 			it.Description = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
 		}
 	}
 	return it, nil
@@ -7168,14 +7288,14 @@ func (ec *executionContext) unmarshalInputUpdateTripInput(ctx context.Context, o
 			it.CoverPhoto = data
 		case "lat":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Lat = data
 		case "lng":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
-			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -7385,6 +7505,16 @@ func (ec *executionContext) _Day(ctx context.Context, sel ast.SelectionSet, obj 
 			out.Values[i] = ec._Day_title(ctx, field, obj)
 		case "description":
 			out.Values[i] = ec._Day_description(ctx, field, obj)
+		case "lat":
+			out.Values[i] = ec._Day_lat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lng":
+			out.Values[i] = ec._Day_lng(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createdAt":
 			out.Values[i] = ec._Day_createdAt(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -8273,8 +8403,14 @@ func (ec *executionContext) _Trip(ctx context.Context, sel ast.SelectionSet, obj
 			}
 		case "lat":
 			out.Values[i] = ec._Trip_lat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "lng":
 			out.Values[i] = ec._Trip_lng(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "startDate":
 			out.Values[i] = ec._Trip_startDate(ctx, field, obj)
 		case "endDate":
@@ -9356,23 +9492,6 @@ func (ec *executionContext) marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytrips
 		return graphql.Null
 	}
 	return ec._Day(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalFloatContext(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	_ = sel
-	res := graphql.MarshalFloatContext(*v)
-	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) marshalOStage2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐStage(ctx context.Context, sel ast.SelectionSet, v *Stage) graphql.Marshaler {
