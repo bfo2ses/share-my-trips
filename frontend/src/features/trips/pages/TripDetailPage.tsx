@@ -279,11 +279,12 @@ export function TripDetailPage() {
       {/* ── Carte droite ── */}
       <div className={styles.mapArea}>
         {stages.length > 0 ? (
-          <TripMap
+          <TripMapWithActiveDays
             stages={stages}
             activeStageId={selectedStageId}
             stageDateRanges={stageDateRanges}
             onStageClick={handleStageClick}
+            onDayClick={handleDayClickFromTimeline}
           />
         ) : (
           !stagesFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
@@ -370,6 +371,39 @@ function StageSection({ stage, index, view, active, onStageClick, onDayClick, on
         <p className={styles.stageMeta}>{stage.city} · {primaryDays.length} jour{primaryDays.length > 1 ? 's' : ''}</p>
       </div>
     </button>
+  );
+}
+
+interface TripMapWithActiveDaysProps {
+  stages: Stage[];
+  activeStageId: string | null;
+  stageDateRanges: Record<string, { start: string; end: string }>;
+  onStageClick: (stageId: string) => void;
+  onDayClick: (stageId: string, day: Day) => void;
+}
+
+function TripMapWithActiveDays({
+  stages,
+  activeStageId,
+  stageDateRanges,
+  onStageClick,
+  onDayClick,
+}: TripMapWithActiveDaysProps) {
+  // Only fetch days when a stage is active; pause the query otherwise.
+  const { data: activeStageData } = useDays(activeStageId ?? '', { pause: !activeStageId });
+  const activeStageDays = activeStageId
+    ? (activeStageData?.days ?? []).filter((d) => d.stageIDs[0] === activeStageId)
+    : [];
+
+  return (
+    <TripMap
+      stages={stages}
+      activeStageId={activeStageId}
+      activeStageDays={activeStageDays}
+      stageDateRanges={stageDateRanges}
+      onStageClick={onStageClick}
+      onDayClick={onDayClick}
+    />
   );
 }
 
