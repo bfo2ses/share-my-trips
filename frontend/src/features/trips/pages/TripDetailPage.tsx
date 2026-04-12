@@ -37,7 +37,8 @@ export function TripDetailPage() {
   const navigate = useNavigate();
   const [{ data, fetching: detailFetching }, reexecuteDetail] = useTripDetail(id!);
   const { data: meData } = useMe();
-  const isAdmin = meData?.me?.role === 'ADMIN';
+  const role = meData?.me?.role;
+  const isAdmin = role === 'ADMIN' || role === 'EDITOR';
 
   const [searchParams, setSearchParams] = useSearchParams();
 

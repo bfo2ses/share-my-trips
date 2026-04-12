@@ -67,6 +67,8 @@ type CreateAccountInput struct {
 	// Optional. When omitted the account is created without a password — the user must use password reset to set one.
 	Password        *string `json:"password,omitempty"`
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
+	// Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed.
+	Role *AccountRole `json:"role,omitempty"`
 }
 
 type CreateTripInput struct {
@@ -258,17 +260,19 @@ type AccountRole string
 
 const (
 	AccountRoleAdmin  AccountRole = "ADMIN"
+	AccountRoleEditor AccountRole = "EDITOR"
 	AccountRoleFamily AccountRole = "FAMILY"
 )
 
 var AllAccountRole = []AccountRole{
 	AccountRoleAdmin,
+	AccountRoleEditor,
 	AccountRoleFamily,
 }
 
 func (e AccountRole) IsValid() bool {
 	switch e {
-	case AccountRoleAdmin, AccountRoleFamily:
+	case AccountRoleAdmin, AccountRoleEditor, AccountRoleFamily:
 		return true
 	}
 	return false

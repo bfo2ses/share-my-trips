@@ -105,12 +105,23 @@ func (h *Handler) Logout(ctx context.Context, cmd LogoutCommand) error {
 	return nil
 }
 
-// CreateAccount creates a new family account. Actor must be an admin.
+// CreateAccount creates a new account. Actor must be an admin.
 // When Password is empty the account is created without a usable password;
 // the user must go through the password-reset flow to set one.
+// Role defaults to "family" when empty. Only "family" and "editor" are accepted.
 func (h *Handler) CreateAccount(ctx context.Context, cmd CreateAccountCommand) (*User, error) {
 	if err := h.requireAdmin(ctx, cmd.ActorID); err != nil {
 		return nil, fmt.Errorf("create account: %w", err)
+	}
+
+	role := RoleFamily
+	if cmd.Role != "" {
+		switch Role(cmd.Role) {
+		case RoleFamily, RoleEditor:
+			role = Role(cmd.Role)
+		default:
+			return nil, fmt.Errorf("create account: %w", ErrInvalidRole)
+		}
 	}
 
 	if cmd.Password != "" {
@@ -139,7 +150,7 @@ func (h *Handler) CreateAccount(ctx context.Context, cmd CreateAccountCommand) (
 		}
 	}
 
-	user, err := NewUser(uuid.New().String(), cmd.Name, cmd.Email, hash, RoleFamily)
+	user, err := NewUser(uuid.New().String(), cmd.Name, cmd.Email, hash, role)
 	if err != nil {
 		return nil, fmt.Errorf("create account: %w", err)
 	}

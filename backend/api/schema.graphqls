@@ -162,6 +162,7 @@ input UpdateDayInput {
 
 enum AccountRole {
   ADMIN
+  EDITOR
   FAMILY
 }
 
@@ -208,6 +209,8 @@ input CreateAccountInput {
   "Optional. When omitted the account is created without a password — the user must use password reset to set one."
   password: String
   passwordConfirm: String
+  "Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed."
+  role: AccountRole
 }
 
 input ResetPasswordInput {

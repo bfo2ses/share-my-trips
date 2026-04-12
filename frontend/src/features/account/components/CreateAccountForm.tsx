@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useCreateAccount } from '../hooks/useAccountMutations';
+import type { AccountRole } from '../../../graphql/generated/graphql';
 import styles from './CreateAccountForm.module.css';
 
 interface CreateAccountFormProps {
@@ -9,6 +10,7 @@ interface CreateAccountFormProps {
 export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [role, setRole] = useState<AccountRole>('FAMILY');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [, executeCreate] = useCreateAccount();
@@ -19,7 +21,7 @@ export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
     setSuccessMessage(null);
 
     const result = await executeCreate({
-      input: { name, email },
+      input: { name, email, role },
     }, { additionalTypenames: ['Account'] });
 
     if (result.error) {
@@ -35,6 +37,7 @@ export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
 
     setName('');
     setEmail('');
+    setRole('FAMILY');
     setSuccessMessage(`Compte "${account.name}" créé. La personne pourra définir son mot de passe via "Mot de passe oublié".`);
     onSuccess();
   }
@@ -69,6 +72,18 @@ export function CreateAccountForm({ onSuccess }: CreateAccountFormProps) {
           />
         </label>
       </div>
+
+      <label className={styles.label}>
+        Rôle
+        <select
+          className={styles.select}
+          value={role}
+          onChange={(e) => setRole(e.target.value as AccountRole)}
+        >
+          <option value="FAMILY">Famille — lecture seule</option>
+          <option value="EDITOR">Éditeur — peut gérer les voyages</option>
+        </select>
+      </label>
 
       <button className={styles.submit} type="submit">
         Créer le compte

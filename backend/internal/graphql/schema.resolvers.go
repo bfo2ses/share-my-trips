@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
@@ -17,7 +18,7 @@ import (
 
 // CreateTrip is the resolver for the createTrip field.
 func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	startDate, startErr := parseOptionalDate(input.StartDate)
@@ -47,7 +48,7 @@ func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput
 
 // UpdateTrip is the resolver for the updateTrip field.
 func (r *mutationResolver) UpdateTrip(ctx context.Context, id string, input UpdateTripInput) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	startDate, startErr := parseOptionalDate(input.StartDate)
@@ -78,7 +79,7 @@ func (r *mutationResolver) UpdateTrip(ctx context.Context, id string, input Upda
 
 // PublishTrip is the resolver for the publishTrip field.
 func (r *mutationResolver) PublishTrip(ctx context.Context, id string) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	t, err := r.tripHandler.Publish(ctx, trip.PublishTripCommand{ID: id})
@@ -90,7 +91,7 @@ func (r *mutationResolver) PublishTrip(ctx context.Context, id string) (*TripPay
 
 // UnpublishTrip is the resolver for the unpublishTrip field.
 func (r *mutationResolver) UnpublishTrip(ctx context.Context, id string) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	t, err := r.tripHandler.Unpublish(ctx, trip.UnpublishTripCommand{ID: id})
@@ -102,7 +103,7 @@ func (r *mutationResolver) UnpublishTrip(ctx context.Context, id string) (*TripP
 
 // CloseTrip is the resolver for the closeTrip field.
 func (r *mutationResolver) CloseTrip(ctx context.Context, id string, input CloseTripInput) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	firstDay, err := time.Parse(time.DateOnly, input.FirstDay)
@@ -123,7 +124,7 @@ func (r *mutationResolver) CloseTrip(ctx context.Context, id string, input Close
 
 // ReopenTrip is the resolver for the reopenTrip field.
 func (r *mutationResolver) ReopenTrip(ctx context.Context, id string) (*TripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	t, err := r.tripHandler.Reopen(ctx, trip.ReopenTripCommand{ID: id})
@@ -135,7 +136,7 @@ func (r *mutationResolver) ReopenTrip(ctx context.Context, id string) (*TripPayl
 
 // DeleteTrip is the resolver for the deleteTrip field.
 func (r *mutationResolver) DeleteTrip(ctx context.Context, id string) (*DeleteTripPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteTripPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	err := r.tripHandler.Delete(ctx, trip.DeleteTripCommand{ID: id})
@@ -147,7 +148,7 @@ func (r *mutationResolver) DeleteTrip(ctx context.Context, id string) (*DeleteTr
 
 // AddStage is the resolver for the addStage field.
 func (r *mutationResolver) AddStage(ctx context.Context, input AddStageInput) (*StagePayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	s, err := r.stageHandler.Add(ctx, stage.AddStageCommand{
@@ -166,7 +167,7 @@ func (r *mutationResolver) AddStage(ctx context.Context, input AddStageInput) (*
 
 // UpdateStage is the resolver for the updateStage field.
 func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input UpdateStageInput) (*StagePayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	s, err := r.stageHandler.Update(ctx, stage.UpdateStageCommand{
@@ -185,7 +186,7 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input Upd
 
 // DeleteStage is the resolver for the deleteStage field.
 func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*DeleteStagePayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	if err := r.stageHandler.Delete(ctx, stage.DeleteStageCommand{ID: id}); err != nil {
@@ -196,7 +197,7 @@ func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*DeleteS
 
 // AddDay is the resolver for the addDay field.
 func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	date, err := time.Parse(dateFormat, input.Date)
@@ -220,7 +221,7 @@ func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayP
 
 // UpdateDay is the resolver for the updateDay field.
 func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input UpdateDayInput) (*DayPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	d, err := r.dayHandler.Update(ctx, day.UpdateDayCommand{
@@ -238,7 +239,7 @@ func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input Updat
 
 // DeleteDay is the resolver for the deleteDay field.
 func (r *mutationResolver) DeleteDay(ctx context.Context, id string) (*DeleteDayPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteDayPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	if err := r.dayHandler.Delete(ctx, day.DeleteDayCommand{ID: id}); err != nil {
@@ -249,7 +250,7 @@ func (r *mutationResolver) DeleteDay(ctx context.Context, id string) (*DeleteDay
 
 // AttachDayToStage is the resolver for the attachDayToStage field.
 func (r *mutationResolver) AttachDayToStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	d, err := r.dayHandler.AttachToStage(ctx, day.AttachToStageCommand{DayID: dayID, StageID: stageID})
@@ -261,7 +262,7 @@ func (r *mutationResolver) AttachDayToStage(ctx context.Context, dayID string, s
 
 // DetachDayFromStage is the resolver for the detachDayFromStage field.
 func (r *mutationResolver) DetachDayFromStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	d, err := r.dayHandler.DetachFromStage(ctx, day.DetachFromStageCommand{DayID: dayID, StageID: stageID})
@@ -304,12 +305,17 @@ func (r *mutationResolver) Logout(ctx context.Context) (bool, error) {
 // CreateAccount is the resolver for the createAccount field.
 func (r *mutationResolver) CreateAccount(ctx context.Context, input CreateAccountInput) (*AccountPayload, error) {
 	actorID := r.currentUserID(ctx)
+	var role string
+	if input.Role != nil {
+		role = strings.ToLower(string(*input.Role))
+	}
 	user, err := r.authHandler.CreateAccount(ctx, auth.CreateAccountCommand{
 		ActorID:         actorID,
 		Name:            input.Name,
 		Email:           input.Email,
 		Password:        derefString(input.Password),
 		PasswordConfirm: derefString(input.PasswordConfirm),
+		Role:            role,
 	})
 	if err != nil {
 		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
@@ -362,7 +368,7 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input ChangePassw
 
 // UpdateMediaCaption is the resolver for the updateMediaCaption field.
 func (r *mutationResolver) UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &MediaPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	m, err := r.mediaHandler.UpdateCaption(ctx, media.UpdateCaptionCommand{
@@ -377,7 +383,7 @@ func (r *mutationResolver) UpdateMediaCaption(ctx context.Context, id string, ca
 
 // ReorderMedia is the resolver for the reorderMedia field.
 func (r *mutationResolver) ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	list, err := r.mediaHandler.Reorder(ctx, media.ReorderCommand{
@@ -392,7 +398,7 @@ func (r *mutationResolver) ReorderMedia(ctx context.Context, dayID string, media
 
 // DeleteMedia is the resolver for the deleteMedia field.
 func (r *mutationResolver) DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
+	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteMediaPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	err := r.mediaHandler.Delete(ctx, media.DeleteMediaCommand{ID: id})

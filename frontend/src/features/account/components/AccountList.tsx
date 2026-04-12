@@ -10,7 +10,9 @@ interface AccountListProps {
 }
 
 function roleBadge(role: string) {
-  return role === 'ADMIN' ? 'Admin' : 'Famille';
+  if (role === 'ADMIN') return 'Admin';
+  if (role === 'EDITOR') return 'Éditeur';
+  return 'Famille';
 }
 
 function formatDate(iso: string) {
@@ -34,7 +36,7 @@ export function AccountList({ accounts, currentUserId, onDelete }: AccountListPr
             <span className={styles.name}>{account.name}</span>
             <span className={styles.email}>{account.email}</span>
           </div>
-          <span className={`${styles.badge} ${account.role === 'ADMIN' ? styles.badgeAdmin : styles.badgeFamily}`}>
+          <span className={`${styles.badge} ${account.role === 'ADMIN' ? styles.badgeAdmin : account.role === 'EDITOR' ? styles.badgeEditor : styles.badgeFamily}`}>
             {roleBadge(account.role)}
           </span>
           <span className={styles.date}>{formatDate(account.createdAt)}</span>

@@ -34,6 +34,7 @@ export type AccountPayload = {
 
 export type AccountRole =
   | 'ADMIN'
+  | 'EDITOR'
   | 'FAMILY';
 
 export type AddDayInput = {
@@ -81,6 +82,8 @@ export type CreateAccountInput = {
   /** Optional. When omitted the account is created without a password — the user must use password reset to set one. */
   password?: InputMaybe<Scalars['String']['input']>;
   passwordConfirm?: InputMaybe<Scalars['String']['input']>;
+  /** Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed. */
+  role?: InputMaybe<AccountRole>;
 };
 
 export type CreateTripInput = {
