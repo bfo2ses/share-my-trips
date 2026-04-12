@@ -71,7 +71,7 @@
   transition: opacity 0.15s;
 }
 
-.thumb:hover .deleteBtn {
+.thumbWrapper:hover .deleteBtn {
   opacity: 1;
 }
 
@@ -80,6 +80,7 @@
 }
 
 .thumbWrapper {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 4px;

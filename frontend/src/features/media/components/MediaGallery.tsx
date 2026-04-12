@@ -110,16 +110,16 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
               {m.contentType.startsWith('video/') && (
                 <span className={styles.playBadge}>▶</span>
               )}
-              {isAdmin && (
-                <button
-                  className={styles.deleteBtn}
-                  onClick={(e) => handleDelete(e, m.id)}
-                  aria-label="Supprimer"
-                >
-                  ✕
-                </button>
-              )}
             </button>
+            {isAdmin && (
+              <button
+                className={styles.deleteBtn}
+                onClick={(e) => handleDelete(e, m.id)}
+                aria-label="Supprimer"
+              >
+                ✕
+              </button>
+            )}
             {isAdmin && editingCaption === m.id ? (
               <input
                 className={styles.captionInput}
