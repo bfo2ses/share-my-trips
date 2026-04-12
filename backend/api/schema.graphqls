@@ -205,8 +205,9 @@ input SetupAdminInput {
 input CreateAccountInput {
   name: String!
   email: String!
-  password: String!
-  passwordConfirm: String!
+  "Optional. When omitted the account is created without a password — the user must use password reset to set one."
+  password: String
+  passwordConfirm: String
 }
 
 input ResetPasswordInput {

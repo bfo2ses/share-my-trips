@@ -308,8 +308,8 @@ func (r *mutationResolver) CreateAccount(ctx context.Context, input CreateAccoun
 		ActorID:         actorID,
 		Name:            input.Name,
 		Email:           input.Email,
-		Password:        input.Password,
-		PasswordConfirm: input.PasswordConfirm,
+		Password:        derefString(input.Password),
+		PasswordConfirm: derefString(input.PasswordConfirm),
 	})
 	if err != nil {
 		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
@@ -358,6 +358,48 @@ func (r *mutationResolver) ChangePassword(ctx context.Context, input ChangePassw
 		return &AccountPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	return &AccountPayload{Account: toGraphQLAccount(user), Errors: []*UserError{}}, nil
+}
+
+// UpdateMediaCaption is the resolver for the updateMediaCaption field.
+func (r *mutationResolver) UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error) {
+	if err := r.requireAdmin(ctx); err != nil {
+		return &MediaPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	m, err := r.mediaHandler.UpdateCaption(ctx, media.UpdateCaptionCommand{
+		ID:      id,
+		Caption: derefString(caption),
+	})
+	if err != nil {
+		return &MediaPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &MediaPayload{Media: toGraphQLMedia(m), Errors: []*UserError{}}, nil
+}
+
+// ReorderMedia is the resolver for the reorderMedia field.
+func (r *mutationResolver) ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error) {
+	if err := r.requireAdmin(ctx); err != nil {
+		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	list, err := r.mediaHandler.Reorder(ctx, media.ReorderCommand{
+		DayID:    dayID,
+		MediaIDs: mediaIDs,
+	})
+	if err != nil {
+		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &ReorderMediaPayload{Media: toGraphQLMediaList(list), Errors: []*UserError{}}, nil
+}
+
+// DeleteMedia is the resolver for the deleteMedia field.
+func (r *mutationResolver) DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error) {
+	if err := r.requireAdmin(ctx); err != nil {
+		return &DeleteMediaPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	err := r.mediaHandler.Delete(ctx, media.DeleteMediaCommand{ID: id})
+	if err != nil {
+		return &DeleteMediaPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DeleteMediaPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
 // Trips is the resolver for the trips field.
@@ -472,6 +514,28 @@ func (r *queryResolver) Days(ctx context.Context, stageID string) ([]*Day, error
 	return result, nil
 }
 
+// TripDays is the resolver for the tripDays field.
+func (r *queryResolver) TripDays(ctx context.Context, tripID string) ([]*Day, error) {
+	days, err := r.dayHandler.ListByTrip(ctx, day.ListByTripQuery{TripID: tripID})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]*Day, 0, len(days))
+	for _, d := range days {
+		result = append(result, toGraphQLDay(d))
+	}
+	return result, nil
+}
+
+// DayMedia is the resolver for the dayMedia field.
+func (r *queryResolver) DayMedia(ctx context.Context, dayID string) ([]*Media, error) {
+	list, err := r.mediaHandler.ListByDay(ctx, media.ListByDayQuery{DayID: dayID})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLMediaList(list), nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*Account, error) {
 	token := sessionTokenFromContext(ctx)
@@ -506,70 +570,6 @@ func (r *queryResolver) Accounts(ctx context.Context) ([]*Account, error) {
 		result = append(result, toGraphQLAccount(u))
 	}
 	return result, nil
-}
-
-// TripDays is the resolver for the tripDays field.
-func (r *queryResolver) TripDays(ctx context.Context, tripID string) ([]*Day, error) {
-	days, err := r.dayHandler.ListByTrip(ctx, day.ListByTripQuery{TripID: tripID})
-	if err != nil {
-		return nil, err
-	}
-	result := make([]*Day, 0, len(days))
-	for _, d := range days {
-		result = append(result, toGraphQLDay(d))
-	}
-	return result, nil
-}
-
-// DayMedia is the resolver for the dayMedia field.
-func (r *queryResolver) DayMedia(ctx context.Context, dayID string) ([]*Media, error) {
-	list, err := r.mediaHandler.ListByDay(ctx, media.ListByDayQuery{DayID: dayID})
-	if err != nil {
-		return nil, err
-	}
-	return toGraphQLMediaList(list), nil
-}
-
-// UpdateMediaCaption is the resolver for the updateMediaCaption field.
-func (r *mutationResolver) UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
-		return &MediaPayload{Errors: domainErrorToUserErrors(err)}, nil
-	}
-	m, err := r.mediaHandler.UpdateCaption(ctx, media.UpdateCaptionCommand{
-		ID:      id,
-		Caption: derefString(caption),
-	})
-	if err != nil {
-		return &MediaPayload{Errors: domainErrorToUserErrors(err)}, nil
-	}
-	return &MediaPayload{Media: toGraphQLMedia(m), Errors: []*UserError{}}, nil
-}
-
-// ReorderMedia is the resolver for the reorderMedia field.
-func (r *mutationResolver) ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
-		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
-	}
-	list, err := r.mediaHandler.Reorder(ctx, media.ReorderCommand{
-		DayID:    dayID,
-		MediaIDs: mediaIDs,
-	})
-	if err != nil {
-		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
-	}
-	return &ReorderMediaPayload{Media: toGraphQLMediaList(list), Errors: []*UserError{}}, nil
-}
-
-// DeleteMedia is the resolver for the deleteMedia field.
-func (r *mutationResolver) DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error) {
-	if err := r.requireAdmin(ctx); err != nil {
-		return &DeleteMediaPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
-	}
-	err := r.mediaHandler.Delete(ctx, media.DeleteMediaCommand{ID: id})
-	if err != nil {
-		return &DeleteMediaPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
-	}
-	return &DeleteMediaPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
 // Mutation returns MutationResolver implementation.
