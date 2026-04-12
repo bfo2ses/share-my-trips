@@ -7,7 +7,6 @@ import (
 
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/bfosses/sharemytrips/internal/adapter/memory"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
@@ -16,10 +15,10 @@ import (
 
 func seedData(
 	ctx context.Context,
-	userRepo *memory.UserRepository,
-	tripRepo *memory.TripRepository,
-	stageRepo *memory.StageRepository,
-	dayRepo *memory.DayRepository,
+	userRepo auth.UserRepository,
+	tripRepo trip.Repository,
+	stageRepo stage.Repository,
+	dayRepo day.Repository,
 ) {
 	hash, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 	if err != nil {
