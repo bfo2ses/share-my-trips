@@ -2,10 +2,12 @@ package graph
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
@@ -138,6 +140,29 @@ func (r *Resolver) currentUserID(ctx context.Context) string {
 		return ""
 	}
 	return user.ID
+}
+
+func toGraphQLMedia(m *media.Media) *Media {
+	return &Media{
+		ID:          m.ID,
+		DayID:       m.DayID,
+		TripID:      m.TripID,
+		Filename:    m.Filename,
+		ContentType: m.ContentType,
+		Caption:     nullableString(m.Caption),
+		URL:         fmt.Sprintf("/media/%s", m.ID),
+		ThumbURL:    fmt.Sprintf("/media/%s/thumb", m.ID),
+		Position:    m.Position,
+		CreatedAt:   m.CreatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGraphQLMediaList(list []*media.Media) []*Media {
+	result := make([]*Media, len(list))
+	for i, m := range list {
+		result[i] = toGraphQLMedia(m)
+	}
+	return result
 }
 
 func toGraphQLRole(r auth.Role) AccountRole {

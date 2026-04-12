@@ -81,6 +81,11 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	DeleteMediaPayload struct {
+		Errors  func(childComplexity int) int
+		Success func(childComplexity int) int
+	}
+
 	DeleteStagePayload struct {
 		Errors  func(childComplexity int) int
 		Success func(childComplexity int) int
@@ -89,6 +94,24 @@ type ComplexityRoot struct {
 	DeleteTripPayload struct {
 		Errors  func(childComplexity int) int
 		Success func(childComplexity int) int
+	}
+
+	Media struct {
+		Caption     func(childComplexity int) int
+		ContentType func(childComplexity int) int
+		CreatedAt   func(childComplexity int) int
+		DayID       func(childComplexity int) int
+		Filename    func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Position    func(childComplexity int) int
+		ThumbURL    func(childComplexity int) int
+		TripID      func(childComplexity int) int
+		URL         func(childComplexity int) int
+	}
+
+	MediaPayload struct {
+		Errors func(childComplexity int) int
+		Media  func(childComplexity int) int
 	}
 
 	Mutation struct {
@@ -101,6 +124,7 @@ type ComplexityRoot struct {
 		CreateTrip           func(childComplexity int, input CreateTripInput) int
 		DeleteAccount        func(childComplexity int, id string) int
 		DeleteDay            func(childComplexity int, id string) int
+		DeleteMedia          func(childComplexity int, id string) int
 		DeleteStage          func(childComplexity int, id string) int
 		DeleteTrip           func(childComplexity int, id string) int
 		DetachDayFromStage   func(childComplexity int, dayID string, stageID string) int
@@ -108,11 +132,13 @@ type ComplexityRoot struct {
 		Logout               func(childComplexity int) int
 		PublishTrip          func(childComplexity int, id string) int
 		ReopenTrip           func(childComplexity int, id string) int
+		ReorderMedia         func(childComplexity int, dayID string, mediaIDs []string) int
 		RequestPasswordReset func(childComplexity int, email string) int
 		ResetPassword        func(childComplexity int, input ResetPasswordInput) int
 		SetupAdmin           func(childComplexity int, input SetupAdminInput) int
 		UnpublishTrip        func(childComplexity int, id string) int
 		UpdateDay            func(childComplexity int, id string, input UpdateDayInput) int
+		UpdateMediaCaption   func(childComplexity int, id string, caption *string) int
 		UpdateStage          func(childComplexity int, id string, input UpdateStageInput) int
 		UpdateTrip           func(childComplexity int, id string, input UpdateTripInput) int
 	}
@@ -120,13 +146,20 @@ type ComplexityRoot struct {
 	Query struct {
 		Accounts    func(childComplexity int) int
 		Day         func(childComplexity int, id string) int
+		DayMedia    func(childComplexity int, dayID string) int
 		Days        func(childComplexity int, stageID string) int
 		Me          func(childComplexity int) int
 		SetupStatus func(childComplexity int) int
 		Stage       func(childComplexity int, id string) int
 		Stages      func(childComplexity int, tripID string) int
 		Trip        func(childComplexity int, id string) int
+		TripDays    func(childComplexity int, tripID string) int
 		Trips       func(childComplexity int, status []TripStatus) int
+	}
+
+	ReorderMediaPayload struct {
+		Errors func(childComplexity int) int
+		Media  func(childComplexity int) int
 	}
 
 	SetupStatusPayload struct {
@@ -201,6 +234,9 @@ type MutationResolver interface {
 	RequestPasswordReset(ctx context.Context, email string) (bool, error)
 	ResetPassword(ctx context.Context, input ResetPasswordInput) (*AccountPayload, error)
 	ChangePassword(ctx context.Context, input ChangePasswordInput) (*AccountPayload, error)
+	UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error)
+	ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error)
+	DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error)
 }
 type QueryResolver interface {
 	Trips(ctx context.Context, status []TripStatus) ([]*Trip, error)
@@ -209,6 +245,8 @@ type QueryResolver interface {
 	Stages(ctx context.Context, tripID string) ([]*Stage, error)
 	Day(ctx context.Context, id string) (*Day, error)
 	Days(ctx context.Context, stageID string) ([]*Day, error)
+	TripDays(ctx context.Context, tripID string) ([]*Day, error)
+	DayMedia(ctx context.Context, dayID string) ([]*Media, error)
 	Me(ctx context.Context) (*Account, error)
 	SetupStatus(ctx context.Context) (*SetupStatusPayload, error)
 	Accounts(ctx context.Context) ([]*Account, error)
@@ -391,6 +429,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DeleteDayPayload.Success(childComplexity), true
 
+	case "DeleteMediaPayload.errors":
+		if e.ComplexityRoot.DeleteMediaPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteMediaPayload.Errors(childComplexity), true
+	case "DeleteMediaPayload.success":
+		if e.ComplexityRoot.DeleteMediaPayload.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteMediaPayload.Success(childComplexity), true
+
 	case "DeleteStagePayload.errors":
 		if e.ComplexityRoot.DeleteStagePayload.Errors == nil {
 			break
@@ -416,6 +467,80 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeleteTripPayload.Success(childComplexity), true
+
+	case "Media.caption":
+		if e.ComplexityRoot.Media.Caption == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.Caption(childComplexity), true
+	case "Media.contentType":
+		if e.ComplexityRoot.Media.ContentType == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.ContentType(childComplexity), true
+	case "Media.createdAt":
+		if e.ComplexityRoot.Media.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.CreatedAt(childComplexity), true
+	case "Media.dayID":
+		if e.ComplexityRoot.Media.DayID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.DayID(childComplexity), true
+	case "Media.filename":
+		if e.ComplexityRoot.Media.Filename == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.Filename(childComplexity), true
+	case "Media.id":
+		if e.ComplexityRoot.Media.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.ID(childComplexity), true
+	case "Media.position":
+		if e.ComplexityRoot.Media.Position == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.Position(childComplexity), true
+	case "Media.thumbUrl":
+		if e.ComplexityRoot.Media.ThumbURL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.ThumbURL(childComplexity), true
+	case "Media.tripID":
+		if e.ComplexityRoot.Media.TripID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.TripID(childComplexity), true
+	case "Media.url":
+		if e.ComplexityRoot.Media.URL == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.URL(childComplexity), true
+
+	case "MediaPayload.errors":
+		if e.ComplexityRoot.MediaPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaPayload.Errors(childComplexity), true
+	case "MediaPayload.media":
+		if e.ComplexityRoot.MediaPayload.Media == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MediaPayload.Media(childComplexity), true
 
 	case "Mutation.addDay":
 		if e.ComplexityRoot.Mutation.AddDay == nil {
@@ -516,6 +641,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteDay(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteMedia":
+		if e.ComplexityRoot.Mutation.DeleteMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteMedia(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteStage":
 		if e.ComplexityRoot.Mutation.DeleteStage == nil {
 			break
@@ -588,6 +724,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ReopenTrip(childComplexity, args["id"].(string)), true
+	case "Mutation.reorderMedia":
+		if e.ComplexityRoot.Mutation.ReorderMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reorderMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReorderMedia(childComplexity, args["dayID"].(string), args["mediaIDs"].([]string)), true
 	case "Mutation.requestPasswordReset":
 		if e.ComplexityRoot.Mutation.RequestPasswordReset == nil {
 			break
@@ -643,6 +790,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateDay(childComplexity, args["id"].(string), args["input"].(UpdateDayInput)), true
+	case "Mutation.updateMediaCaption":
+		if e.ComplexityRoot.Mutation.UpdateMediaCaption == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateMediaCaption_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateMediaCaption(childComplexity, args["id"].(string), args["caption"].(*string)), true
 	case "Mutation.updateStage":
 		if e.ComplexityRoot.Mutation.UpdateStage == nil {
 			break
@@ -683,6 +841,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Day(childComplexity, args["id"].(string)), true
+	case "Query.dayMedia":
+		if e.ComplexityRoot.Query.DayMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Query_dayMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.DayMedia(childComplexity, args["dayID"].(string)), true
 	case "Query.days":
 		if e.ComplexityRoot.Query.Days == nil {
 			break
@@ -740,6 +909,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Trip(childComplexity, args["id"].(string)), true
+	case "Query.tripDays":
+		if e.ComplexityRoot.Query.TripDays == nil {
+			break
+		}
+
+		args, err := ec.field_Query_tripDays_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.TripDays(childComplexity, args["tripID"].(string)), true
 	case "Query.trips":
 		if e.ComplexityRoot.Query.Trips == nil {
 			break
@@ -751,6 +931,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Trips(childComplexity, args["status"].([]TripStatus)), true
+
+	case "ReorderMediaPayload.errors":
+		if e.ComplexityRoot.ReorderMediaPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderMediaPayload.Errors(childComplexity), true
+	case "ReorderMediaPayload.media":
+		if e.ComplexityRoot.ReorderMediaPayload.Media == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderMediaPayload.Media(childComplexity), true
 
 	case "SetupStatusPayload.done":
 		if e.ComplexityRoot.SetupStatusPayload.Done == nil {
@@ -1249,6 +1442,38 @@ input ChangePasswordInput {
   newPasswordConfirm: String!
 }
 
+type Media {
+  id: ID!
+  dayID: ID!
+  tripID: ID!
+  filename: String!
+  contentType: String!
+  "Null when not set."
+  caption: String
+  "URL to serve the original file."
+  url: String!
+  "URL to serve the thumbnail."
+  thumbUrl: String!
+  position: Int!
+  "RFC 3339 timestamp."
+  createdAt: String!
+}
+
+type MediaPayload {
+  media: Media
+  errors: [UserError!]!
+}
+
+type ReorderMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
+type DeleteMediaPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -1262,6 +1487,10 @@ type Query {
   day(id: ID!): Day
   "Returns all days for a stage, sorted by date ascending."
   days(stageID: ID!): [Day!]!
+  "Returns all days for a trip, sorted by date ascending."
+  tripDays(tripID: ID!): [Day!]!
+  "Returns all media for a day, sorted by position ascending."
+  dayMedia(dayID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
   me: Account
   "Returns true if the admin account has already been created."
@@ -1298,6 +1527,12 @@ type Mutation {
   requestPasswordReset(email: String!): Boolean!
   resetPassword(input: ResetPasswordInput!): AccountPayload!
   changePassword(input: ChangePasswordInput!): AccountPayload!
+  "Updates a media's caption. Requires admin role."
+  updateMediaCaption(id: ID!, caption: String): MediaPayload!
+  "Reorders media within a day. Requires admin role."
+  reorderMedia(dayID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Deletes a media and its files. Requires admin role."
+  deleteMedia(id: ID!): DeleteMediaPayload!
 }
 `, BuiltIn: false},
 }
@@ -1416,6 +1651,17 @@ func (ec *executionContext) field_Mutation_deleteDay_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_deleteMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_deleteStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1492,6 +1738,22 @@ func (ec *executionContext) field_Mutation_reopenTrip_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_reorderMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["dayID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaIDs", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaIDs"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_requestPasswordReset_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1552,6 +1814,22 @@ func (ec *executionContext) field_Mutation_updateDay_args(ctx context.Context, r
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateMediaCaption_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "caption", ec.unmarshalOString2ᚖstring)
+	if err != nil {
+		return nil, err
+	}
+	args["caption"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1595,6 +1873,17 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
+func (ec *executionContext) field_Query_dayMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["dayID"] = arg0
+	return args, nil
+}
+
 func (ec *executionContext) field_Query_day_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1629,6 +1918,17 @@ func (ec *executionContext) field_Query_stage_args(ctx context.Context, rawArgs 
 }
 
 func (ec *executionContext) field_Query_stages_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["tripID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_tripDays_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
@@ -2543,6 +2843,70 @@ func (ec *executionContext) fieldContext_DeleteDayPayload_errors(_ context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _DeleteMediaPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteMediaPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteMediaPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteMediaPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DeleteMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteMediaPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteStagePayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteStagePayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2655,6 +3019,382 @@ func (ec *executionContext) _DeleteTripPayload_errors(ctx context.Context, field
 func (ec *executionContext) fieldContext_DeleteTripPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteTripPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_id(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_dayID(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_dayID,
+		func(ctx context.Context) (any, error) {
+			return obj.DayID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_dayID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_tripID(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_tripID,
+		func(ctx context.Context) (any, error) {
+			return obj.TripID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_tripID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_filename(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_filename,
+		func(ctx context.Context) (any, error) {
+			return obj.Filename, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_filename(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_contentType(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_contentType,
+		func(ctx context.Context) (any, error) {
+			return obj.ContentType, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_contentType(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_caption(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_caption,
+		func(ctx context.Context) (any, error) {
+			return obj.Caption, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_caption(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_url(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_url,
+		func(ctx context.Context) (any, error) {
+			return obj.URL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_url(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_thumbUrl(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_thumbUrl,
+		func(ctx context.Context) (any, error) {
+			return obj.ThumbURL, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_thumbUrl(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_position(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_position,
+		func(ctx context.Context) (any, error) {
+			return obj.Position, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_createdAt(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaPayload_media(ctx context.Context, field graphql.CollectedField, obj *MediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MediaPayload_media,
+		func(ctx context.Context) (any, error) {
+			return obj.Media, nil
+		},
+		nil,
+		ec.marshalOMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_MediaPayload_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "dayID":
+				return ec.fieldContext_Media_dayID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MediaPayload_errors(ctx context.Context, field graphql.CollectedField, obj *MediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MediaPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MediaPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3732,6 +4472,147 @@ func (ec *executionContext) fieldContext_Mutation_changePassword(ctx context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateMediaCaption(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateMediaCaption,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateMediaCaption(ctx, fc.Args["id"].(string), fc.Args["caption"].(*string))
+		},
+		nil,
+		ec.marshalNMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateMediaCaption(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_MediaPayload_media(ctx, field)
+			case "errors":
+				return ec.fieldContext_MediaPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MediaPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateMediaCaption_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_reorderMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reorderMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReorderMedia(ctx, fc.Args["dayID"].(string), fc.Args["mediaIDs"].([]string))
+		},
+		nil,
+		ec.marshalNReorderMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderMediaPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reorderMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_ReorderMediaPayload_media(ctx, field)
+			case "errors":
+				return ec.fieldContext_ReorderMediaPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReorderMediaPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reorderMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteMedia(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNDeleteMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteMediaPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteMediaPayload_success(ctx, field)
+			case "errors":
+				return ec.fieldContext_DeleteMediaPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteMediaPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_trips(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4118,6 +4999,132 @@ func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field g
 	return fc, nil
 }
 
+func (ec *executionContext) _Query_tripDays(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_tripDays,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().TripDays(ctx, fc.Args["tripID"].(string))
+		},
+		nil,
+		ec.marshalNDay2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_tripDays(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Day_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Day_tripID(ctx, field)
+			case "stageIDs":
+				return ec.fieldContext_Day_stageIDs(ctx, field)
+			case "date":
+				return ec.fieldContext_Day_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Day_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Day_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Day_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Day_lng(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Day_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Day_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Day", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_tripDays_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_dayMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_dayMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().DayMedia(ctx, fc.Args["dayID"].(string))
+		},
+		nil,
+		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_dayMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "dayID":
+				return ec.fieldContext_Media_dayID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_dayMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Query_me(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4336,6 +5343,92 @@ func (ec *executionContext) fieldContext_Query___schema(_ context.Context, field
 				return ec.fieldContext___Schema_directives(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type __Schema", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderMediaPayload_media(ctx context.Context, field graphql.CollectedField, obj *ReorderMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderMediaPayload_media,
+		func(ctx context.Context) (any, error) {
+			return obj.Media, nil
+		},
+		nil,
+		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderMediaPayload_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "dayID":
+				return ec.fieldContext_Media_dayID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderMediaPayload_errors(ctx context.Context, field graphql.CollectedField, obj *ReorderMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderMediaPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
 		},
 	}
 	return fc, nil
@@ -7677,6 +8770,50 @@ func (ec *executionContext) _DeleteDayPayload(ctx context.Context, sel ast.Selec
 	return out
 }
 
+var deleteMediaPayloadImplementors = []string{"DeleteMediaPayload"}
+
+func (ec *executionContext) _DeleteMediaPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteMediaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteMediaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteMediaPayload")
+		case "success":
+			out.Values[i] = ec._DeleteMediaPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DeleteMediaPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteStagePayloadImplementors = []string{"DeleteStagePayload"}
 
 func (ec *executionContext) _DeleteStagePayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteStagePayload) graphql.Marshaler {
@@ -7739,6 +8876,128 @@ func (ec *executionContext) _DeleteTripPayload(ctx context.Context, sel ast.Sele
 			}
 		case "errors":
 			out.Values[i] = ec._DeleteTripPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaImplementors = []string{"Media"}
+
+func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, obj *Media) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Media")
+		case "id":
+			out.Values[i] = ec._Media_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "dayID":
+			out.Values[i] = ec._Media_dayID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tripID":
+			out.Values[i] = ec._Media_tripID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "filename":
+			out.Values[i] = ec._Media_filename(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "contentType":
+			out.Values[i] = ec._Media_contentType(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "caption":
+			out.Values[i] = ec._Media_caption(ctx, field, obj)
+		case "url":
+			out.Values[i] = ec._Media_url(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "thumbUrl":
+			out.Values[i] = ec._Media_thumbUrl(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "position":
+			out.Values[i] = ec._Media_position(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Media_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var mediaPayloadImplementors = []string{"MediaPayload"}
+
+func (ec *executionContext) _MediaPayload(ctx context.Context, sel ast.SelectionSet, obj *MediaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mediaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MediaPayload")
+		case "media":
+			out.Values[i] = ec._MediaPayload_media(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._MediaPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -7945,6 +9204,27 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateMediaCaption":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateMediaCaption(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reorderMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reorderMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -8110,6 +9390,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "tripDays":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tripDays(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "dayMedia":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_dayMedia(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "me":
 			field := field
 
@@ -8181,6 +9505,50 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___schema(ctx, field)
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var reorderMediaPayloadImplementors = []string{"ReorderMediaPayload"}
+
+func (ec *executionContext) _ReorderMediaPayload(ctx context.Context, sel ast.SelectionSet, obj *ReorderMediaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reorderMediaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReorderMediaPayload")
+		case "media":
+			out.Values[i] = ec._ReorderMediaPayload_media(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._ReorderMediaPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -9048,6 +10416,20 @@ func (ec *executionContext) marshalNDeleteDayPayload2ᚖgithubᚗcomᚋbfosses�
 	return ec._DeleteDayPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNDeleteMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteMediaPayload(ctx context.Context, sel ast.SelectionSet, v DeleteMediaPayload) graphql.Marshaler {
+	return ec._DeleteMediaPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteMediaPayload(ctx context.Context, sel ast.SelectionSet, v *DeleteMediaPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteMediaPayload(ctx, sel, v)
+}
+
 func (ec *executionContext) marshalNDeleteStagePayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteStagePayload(ctx context.Context, sel ast.SelectionSet, v DeleteStagePayload) graphql.Marshaler {
 	return ec._DeleteStagePayload(ctx, sel, &v)
 }
@@ -9136,6 +10518,76 @@ func (ec *executionContext) marshalNID2ᚕstringᚄ(ctx context.Context, sel ast
 	}
 
 	return ret
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v any) (int, error) {
+	res, err := graphql.UnmarshalInt(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	_ = sel
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ(ctx context.Context, sel ast.SelectionSet, v []*Media) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia(ctx context.Context, sel ast.SelectionSet, v *Media) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Media(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaPayload(ctx context.Context, sel ast.SelectionSet, v MediaPayload) graphql.Marshaler {
+	return ec._MediaPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaPayload(ctx context.Context, sel ast.SelectionSet, v *MediaPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MediaPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReorderMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderMediaPayload(ctx context.Context, sel ast.SelectionSet, v ReorderMediaPayload) graphql.Marshaler {
+	return ec._ReorderMediaPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReorderMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderMediaPayload(ctx context.Context, sel ast.SelectionSet, v *ReorderMediaPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReorderMediaPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNResetPasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐResetPasswordInput(ctx context.Context, v any) (ResetPasswordInput, error) {
@@ -9492,6 +10944,13 @@ func (ec *executionContext) marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytrips
 		return graphql.Null
 	}
 	return ec._Day(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia(ctx context.Context, sel ast.SelectionSet, v *Media) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Media(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOStage2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐStage(ctx context.Context, sel ast.SelectionSet, v *Stage) graphql.Marshaler {

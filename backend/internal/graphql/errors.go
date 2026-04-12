@@ -6,6 +6,7 @@ import (
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
@@ -93,6 +94,19 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("currentPassword"), Message: auth.ErrInvalidCurrentPassword.Error()}}
 	case errors.Is(err, auth.ErrPasswordTooLong):
 		return []*UserError{{Field: strPtr("password"), Message: auth.ErrPasswordTooLong.Error()}}
+	// media errors
+	case errors.Is(err, media.ErrNotFound):
+		return []*UserError{{Message: media.ErrNotFound.Error()}}
+	case errors.Is(err, media.ErrFilenameRequired):
+		return []*UserError{{Field: strPtr("filename"), Message: media.ErrFilenameRequired.Error()}}
+	case errors.Is(err, media.ErrInvalidContentType):
+		return []*UserError{{Field: strPtr("contentType"), Message: media.ErrInvalidContentType.Error()}}
+	case errors.Is(err, media.ErrTripClosed):
+		return []*UserError{{Message: media.ErrTripClosed.Error()}}
+	case errors.Is(err, media.ErrDayNotFound):
+		return []*UserError{{Field: strPtr("dayID"), Message: media.ErrDayNotFound.Error()}}
+	case errors.Is(err, media.ErrIDMismatch):
+		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrIDMismatch.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}
