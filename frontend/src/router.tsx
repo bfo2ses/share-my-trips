@@ -7,6 +7,7 @@ const SetupPage = lazy(() => import('./features/auth/pages/SetupPage').then((m) 
 const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
 const TripsPage = lazy(() => import('./features/trips/pages/TripsPage').then((m) => ({ default: m.TripsPage })));
 const TripDetailPage = lazy(() => import('./features/trips/pages/TripDetailPage').then((m) => ({ default: m.TripDetailPage })));
+const AccountPage = lazy(() => import('./features/account/pages/AccountPage').then((m) => ({ default: m.AccountPage })));
 
 export const router = createBrowserRouter([
   {
@@ -31,6 +32,10 @@ export const router = createBrowserRouter([
       {
         path: '/trips/:id',
         element: <TripDetailPage />,
+      },
+      {
+        path: '/account',
+        element: <AccountPage />,
       },
     ],
   },

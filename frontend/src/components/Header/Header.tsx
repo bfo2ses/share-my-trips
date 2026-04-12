@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLogout } from '../../features/auth/hooks/useLogout';
 import type { MeQuery } from '../../graphql/generated/graphql';
 import styles from './Header.module.css';
@@ -12,6 +13,7 @@ interface HeaderProps {
 export function Header({ user }: HeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   const logout = useLogout();
 
   useEffect(() => {
@@ -53,6 +55,13 @@ export function Header({ user }: HeaderProps) {
                 <p className={styles.menuEmail}>{user?.email}</p>
               </div>
               <div className={styles.menuDivider} />
+              <button
+                className={styles.menuItem}
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); navigate('/account'); }}
+              >
+                {user?.role === 'ADMIN' ? 'Gestion des comptes' : 'Mon profil'}
+              </button>
               <button
                 className={styles.menuItem}
                 role="menuitem"

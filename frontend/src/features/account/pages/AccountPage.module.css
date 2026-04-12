@@ -1,0 +1,118 @@
+.page {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.backLink {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.backLink:hover {
+  color: var(--color-text);
+}
+
+.loading {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+/* ── Sections ── */
+.section {
+  background: var(--color-bg-panel);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 28px 24px;
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 24px;
+}
+
+.subTitle {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 28px 0 16px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.subTitle:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+/* ── Profile card ── */
+.profileInfo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profileAvatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(210, 165, 100, 0.15);
+  color: rgba(210, 165, 100, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.profileName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.profileEmail {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin: 2px 0 6px;
+}
+
+.profileRole {
+  font-size: 0.65rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(210, 165, 100, 0.9);
+  background: rgba(210, 165, 100, 0.1);
+  border: 1px solid rgba(210, 165, 100, 0.25);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .page {
+    padding: 20px 16px 48px;
+  }
+
+  .section {
+    padding: 20px 16px;
+  }
+}
