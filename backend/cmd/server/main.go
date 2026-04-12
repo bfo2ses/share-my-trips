@@ -54,7 +54,22 @@ func main() {
 	if resetURLBase == "" {
 		resetURLBase = "http://localhost:5173/reset-password"
 	}
-	logMailer := mailer.NewLogMailer(resetURLBase)
+
+	var mailSender auth.Mailer
+	if smtpHost := os.Getenv("SMTP_HOST"); smtpHost != "" {
+		mailSender = mailer.NewSMTPMailer(mailer.SMTPConfig{
+			Host:         smtpHost,
+			Port:         os.Getenv("SMTP_PORT"),
+			From:         os.Getenv("SMTP_FROM"),
+			Username:     os.Getenv("SMTP_USERNAME"),
+			Password:     os.Getenv("SMTP_PASSWORD"),
+			ResetURLBase: resetURLBase,
+		})
+		log.Println("Using SMTP mailer")
+	} else {
+		mailSender = mailer.NewLogMailer(resetURLBase)
+		log.Println("Using log mailer (set SMTP_HOST for real emails)")
+	}
 
 	mediaBasePath := os.Getenv("MEDIA_PATH")
 	if mediaBasePath == "" {
@@ -96,7 +111,7 @@ func main() {
 		userRepo := pg.NewUserRepository(pool)
 		sessionRepo := pg.NewSessionRepository(pool)
 		resetRepo := pg.NewResetRepository(pool)
-		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
+		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, mailSender)
 
 		mediaRepo := pg.NewMediaRepository(pool)
 		dayChecker := pg.NewDayChecker(pool)
@@ -118,7 +133,7 @@ func main() {
 		userRepo := memory.NewUserRepository()
 		sessionRepo := memory.NewSessionRepository()
 		resetRepo := memory.NewPasswordResetRepository()
-		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
+		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, mailSender)
 
 		mediaRepo := memory.NewMediaRepository()
 		dayChecker := memory.NewDayChecker(dayRepo)

@@ -26,6 +26,11 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
       RESET_URL_BASE: ${RESET_URL_BASE:-http://localhost/reset-password}
       MEDIA_PATH: /data/media
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_FROM: ${SMTP_FROM:-}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
     volumes:
       - media_data:/data/media
 
