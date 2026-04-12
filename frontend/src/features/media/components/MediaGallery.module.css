@@ -7,25 +7,50 @@
 
 .gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 16px;
 }
 
+/* ── Polaroid wrapper ── */
+.thumbWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  padding: 6px;
+  border-radius: 2px;
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thumbWrapper:hover {
+  transform: scale(1.03) rotate(-0.5deg);
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.thumbWrapper[draggable='true'] {
+  cursor: grab;
+}
+
+.thumbWrapper[draggable='true']:active {
+  cursor: grabbing;
+  opacity: 0.6;
+}
+
+/* ── Photo ── */
 .thumb {
   position: relative;
   aspect-ratio: 4/3;
   overflow: hidden;
-  border-radius: var(--radius-md);
   border: none;
+  border-radius: 0;
   padding: 0;
   cursor: pointer;
-  background: var(--color-surface);
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.thumb:hover {
-  opacity: 0.85;
-  transform: scale(1.02);
+  background: #f0f0f0;
 }
 
 .thumb img {
@@ -52,56 +77,48 @@
   pointer-events: none;
 }
 
+/* ── Delete button ── */
 .deleteBtn {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 22px;
-  height: 22px;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.55);
   border: none;
   color: white;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.15s;
+  z-index: 1;
 }
 
-.thumb:hover .deleteBtn {
+.thumbWrapper:hover .deleteBtn {
   opacity: 1;
 }
 
 .deleteBtn:hover {
-  background: rgba(238, 85, 85, 0.8);
+  background: rgba(238, 85, 85, 0.85);
 }
 
-.thumbWrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.thumbWrapper[draggable='true'] {
-  cursor: grab;
-}
-
-.thumbWrapper[draggable='true']:active {
-  cursor: grabbing;
-  opacity: 0.6;
-}
-
+/* ── Caption in the polaroid bottom area ── */
 .captionText {
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
+  font-size: 1rem;
+  font-weight: 500;
+  color: #555;
+  font-family: 'Caveat', cursive;
+  text-align: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 1.2em;
+  min-height: 1em;
   display: block;
+  padding: 6px 2px;
 }
 
 .captionEditable {
@@ -109,16 +126,19 @@
 }
 
 .captionEditable:hover {
-  color: var(--color-text);
+  color: #222;
 }
 
 .captionInput {
-  font-size: 0.7rem;
-  color: var(--color-text);
-  background: var(--color-bg-subtle);
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: 'Caveat', cursive;
+  color: #333;
+  text-align: center;
+  background: transparent;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  padding: 2px 6px;
+  padding: 2px 4px;
   outline: none;
   width: 100%;
 }
@@ -130,6 +150,11 @@
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .gallery {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+  }
+
+  .thumbWrapper {
+    padding: 4px;
   }
 }

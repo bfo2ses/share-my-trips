@@ -1,5 +1,7 @@
 import Lightbox, { type Slide } from 'yet-another-react-lightbox';
+import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/styles.css';
+import 'yet-another-react-lightbox/plugins/captions.css';
 import type { DayMediaQuery } from '../../../graphql/generated/graphql';
 
 type Media = DayMediaQuery['dayMedia'][number];
@@ -19,11 +21,13 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
         src: m.url,
         contentType: m.contentType,
         caption: m.caption ?? undefined,
+        description: m.caption ?? undefined,
       } as Slide;
     }
     return {
       src: m.url,
       alt: m.caption ?? m.filename,
+      description: m.caption ?? undefined,
     };
   });
 
@@ -33,6 +37,7 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
       close={onClose}
       index={index}
       slides={slides}
+      plugins={[Captions]}
       render={{
         slide: ({ slide }) => {
           const s = slide as Slide & { contentType?: string };
