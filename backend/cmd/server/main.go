@@ -15,6 +15,8 @@ import (
 	imaging "github.com/bfosses/sharemytrips/internal/adapter/imaging"
 	"github.com/bfosses/sharemytrips/internal/adapter/mailer"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
+	pg "github.com/bfosses/sharemytrips/internal/adapter/postgres"
+	"github.com/bfosses/sharemytrips/migrations"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
@@ -23,6 +25,7 @@ import (
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
 	mediahttp "github.com/bfosses/sharemytrips/internal/http"
 )
+
 
 func corsMiddleware(origin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,20 +41,9 @@ func corsMiddleware(origin string, next http.Handler) http.Handler {
 }
 
 func main() {
-	// Trip / Stage / Day
-	tripRepo := memory.NewTripRepository()
-	stageRepo := memory.NewStageRepository()
-	dayRepo := memory.NewDayRepository()
-	tripChecker := memory.NewTripChecker(tripRepo)
+	ctx := context.Background()
 
-	tripHandler := trip.NewHandler(tripRepo)
-	stageHandler := stage.NewHandler(stageRepo, tripChecker, dayRepo)
-	dayHandler := day.NewHandler(dayRepo, tripChecker, stageRepo)
-
-	// Auth
-	userRepo := memory.NewUserRepository()
-	sessionRepo := memory.NewSessionRepository()
-	resetRepo := memory.NewPasswordResetRepository()
+	// Shared adapters.
 	hasher, err := crypto.NewBcryptHasher(bcrypt.DefaultCost)
 	if err != nil {
 		log.Fatalf("failed to create hasher: %v", err)
@@ -64,20 +56,77 @@ func main() {
 	}
 	logMailer := mailer.NewLogMailer(resetURLBase)
 
-	authHandler := auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
-
-	// Media
-	mediaRepo := memory.NewMediaRepository()
-	dayChecker := memory.NewDayChecker(dayRepo)
 	mediaBasePath := os.Getenv("MEDIA_PATH")
 	if mediaBasePath == "" {
 		mediaBasePath = "./media_data"
 	}
 	mediaStorage := filesystem.NewStorage(mediaBasePath)
-	mediaHandler := media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
 	thumbnailer := imaging.NewThumbnailer()
 
-	seedData(context.Background(), userRepo, tripRepo, stageRepo, dayRepo)
+	// Domain handlers — wired with either postgres or in-memory adapters.
+	var tripHandler *trip.Handler
+	var stageHandler *stage.Handler
+	var dayHandler *day.Handler
+	var authHandler *auth.Handler
+	var mediaHandler *media.Handler
+
+	dsn := os.Getenv("DATABASE_URL")
+
+	if dsn != "" {
+		// ── PostgreSQL ──
+		pool, err := pg.NewPool(ctx, dsn)
+		if err != nil {
+			log.Fatalf("postgres: %v", err)
+		}
+		defer pool.Close()
+
+		if err := pg.RunMigrations(dsn, migrations.FS); err != nil {
+			log.Fatalf("migrations: %v", err)
+		}
+
+		tripRepo := pg.NewTripRepository(pool)
+		stageRepo := pg.NewStageRepository(pool)
+		dayRepo := pg.NewDayRepository(pool)
+		tripChecker := pg.NewTripChecker(pool)
+
+		tripHandler = trip.NewHandler(tripRepo)
+		stageHandler = stage.NewHandler(stageRepo, tripChecker, dayRepo)
+		dayHandler = day.NewHandler(dayRepo, tripChecker, stageRepo)
+
+		userRepo := pg.NewUserRepository(pool)
+		sessionRepo := pg.NewSessionRepository(pool)
+		resetRepo := pg.NewResetRepository(pool)
+		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
+
+		mediaRepo := pg.NewMediaRepository(pool)
+		dayChecker := pg.NewDayChecker(pool)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
+
+		seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+		log.Println("Using PostgreSQL storage")
+	} else {
+		// ── In-memory (dev without DB) ──
+		tripRepo := memory.NewTripRepository()
+		stageRepo := memory.NewStageRepository()
+		dayRepo := memory.NewDayRepository()
+		tripChecker := memory.NewTripChecker(tripRepo)
+
+		tripHandler = trip.NewHandler(tripRepo)
+		stageHandler = stage.NewHandler(stageRepo, tripChecker, dayRepo)
+		dayHandler = day.NewHandler(dayRepo, tripChecker, stageRepo)
+
+		userRepo := memory.NewUserRepository()
+		sessionRepo := memory.NewSessionRepository()
+		resetRepo := memory.NewPasswordResetRepository()
+		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
+
+		mediaRepo := memory.NewMediaRepository()
+		dayChecker := memory.NewDayChecker(dayRepo)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
+
+		seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+		log.Println("Using in-memory storage (set DATABASE_URL for PostgreSQL)")
+	}
 
 	// GraphQL
 	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler, authHandler, mediaHandler)
