@@ -74,7 +74,7 @@ export function AccountPage() {
             <p className={styles.profileName}>{user.name}</p>
             <p className={styles.profileEmail}>{user.email}</p>
             <span className={styles.profileRole}>
-              {user.role === 'ADMIN' ? 'Administrateur' : 'Famille'}
+              {user.role === 'ADMIN' ? 'Administrateur' : user.role === 'EDITOR' ? 'Éditeur' : 'Famille'}
             </span>
           </div>
         </div>

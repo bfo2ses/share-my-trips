@@ -16,7 +16,8 @@ export function TripsPage() {
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const { data: meData } = useMe();
-  const isAdmin = meData?.me?.role === 'ADMIN';
+  const role = meData?.me?.role;
+  const isAdmin = role === 'ADMIN' || role === 'EDITOR';
 
   const { data, fetching, error } = useTrips(isAdmin ? undefined : ['PUBLISHED', 'CLOSED']);
 
