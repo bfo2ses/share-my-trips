@@ -142,6 +142,24 @@ func (r *Resolver) currentUserID(ctx context.Context) string {
 	return user.ID
 }
 
+// requireAdmin resolves the current user from the session and verifies they
+// have the admin role. It returns auth.ErrForbidden when not authenticated or
+// not an admin.
+func (r *Resolver) requireAdmin(ctx context.Context) error {
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return auth.ErrForbidden
+	}
+	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
+	if err != nil {
+		return auth.ErrForbidden
+	}
+	if user.Role != auth.RoleAdmin {
+		return auth.ErrForbidden
+	}
+	return nil
+}
+
 func toGraphQLMedia(m *media.Media) *Media {
 	return &Media{
 		ID:          m.ID,
