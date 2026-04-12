@@ -1,0 +1,78 @@
+.uploader {
+  margin-top: 16px;
+}
+
+.input {
+  display: none;
+}
+
+.addBtn {
+  width: 100%;
+  padding: 12px;
+  background: var(--color-bg-subtle);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.addBtn:hover:not(:disabled) {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.addBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.filename {
+  color: var(--color-text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar {
+  width: 80px;
+  height: 4px;
+  background: var(--color-bg-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--color-gold);
+  transition: width 0.2s ease;
+}
+
+.done {
+  color: #78dc78;
+  font-weight: 600;
+}
+
+.error {
+  color: #e55;
+  font-weight: 600;
+}

@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useDeleteStage } from '../../stages/hooks/useStageMutations';
 import { useDeleteDay } from '../../stages/hooks/useDayMutations';
+import { useDayMedia } from '../../media/hooks/useMediaQueries';
+import { MediaGallery } from '../../media/components/MediaGallery';
+import { MediaUploader } from '../../media/components/MediaUploader';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
@@ -200,6 +203,9 @@ function DayDetail(props: DayDetailProps) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, deleteDay] = useDeleteDay();
+  const [{ data: mediaData }, reexecuteMedia] = useDayMedia(day.id);
+  const media = mediaData?.dayMedia ?? [];
+  const refetchMedia = useCallback(() => reexecuteMedia({ requestPolicy: 'network-only' }), [reexecuteMedia]);
 
   async function handleDelete() {
     if (deleting) return;
@@ -241,6 +247,12 @@ function DayDetail(props: DayDetailProps) {
           <p className={styles.description}>{day.description}</p>
         ) : (
           <p className={styles.muted} style={{ fontStyle: 'italic' }}>Aucune description pour ce jour.</p>
+        )}
+
+        <MediaGallery media={media} isAdmin={props.canEdit} onDeleted={refetchMedia} />
+
+        {props.canEdit && (
+          <MediaUploader dayID={day.id} tripID={day.tripID} onUploadComplete={refetchMedia} />
         )}
       </div>
 
