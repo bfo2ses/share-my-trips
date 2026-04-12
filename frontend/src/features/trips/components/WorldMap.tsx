@@ -21,6 +21,7 @@ interface TripMarker {
 }
 
 const GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
+const topology = await fetch(GEO_URL).then((r) => r.json());
 const MAP_SCALE = 185;
 
 interface WorldMapProps {
@@ -70,7 +71,7 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
         projectionConfig={{ scale: MAP_SCALE }}
         style={{ width: '100%', height: '100%' }}
       >
-        <Geographies geography={GEO_URL}>
+        <Geographies geography={topology}>
           {({ geographies }) =>
             geographies.map((geo) => (
               <Geography
@@ -89,7 +90,7 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
           }
         </Geographies>
 
-        {placementMode && onMapClick && <GeoClickLayer onMapClick={onMapClick} />}
+        {placementMode && onMapClick && <MapClickCapture onMapClick={onMapClick} />}
 
         {[...groups.values()].map((group) => {
           const first = group[0];
@@ -140,14 +141,14 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
 }
 
 /**
- * Transparent geography overlay that captures clicks on country shapes
- * and converts them to geo coordinates using the real projection from context.
+ * Transparent rect overlay that captures clicks anywhere on the map
+ * and converts screen coordinates to geo coordinates via the projection.
  */
-function GeoClickLayer({ onMapClick }: { onMapClick: (coords: { lat: number; lng: number }) => void }) {
+function MapClickCapture({ onMapClick }: { onMapClick: (coords: { lat: number; lng: number }) => void }) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { projection } = useContext<any>(MapContext);
 
-  function handleClick(e: React.MouseEvent<SVGPathElement>) {
+  function handleClick(e: React.MouseEvent<SVGRectElement>) {
     const svg = e.currentTarget.ownerSVGElement as SVGSVGElement | null;
     if (!svg) return;
 
@@ -165,23 +166,11 @@ function GeoClickLayer({ onMapClick }: { onMapClick: (coords: { lat: number; lng
   }
 
   return (
-    <Geographies geography={GEO_URL}>
-      {({ geographies }) =>
-        geographies.map((geo) => (
-          <Geography
-            key={`click-${geo.rsmKey}`}
-            geography={geo}
-            fill="transparent"
-            stroke="transparent"
-            style={{
-              default: { outline: 'none', cursor: 'crosshair' },
-              hover: { outline: 'none', cursor: 'crosshair', fill: 'rgba(198,163,93,0.1)' },
-              pressed: { outline: 'none' },
-            }}
-            {...{ onClick: handleClick } as Record<string, unknown>}
-          />
-        ))
-      }
-    </Geographies>
+    <rect
+      x="0" y="0" width="9999" height="9999"
+      fill="transparent"
+      style={{ cursor: 'crosshair' }}
+      onClick={handleClick}
+    />
   );
 }

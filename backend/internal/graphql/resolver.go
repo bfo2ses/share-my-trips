@@ -5,6 +5,7 @@ import (
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
@@ -31,6 +32,7 @@ type Resolver struct {
 	stageHandler *stage.Handler
 	dayHandler   *day.Handler
 	authHandler  *auth.Handler
+	mediaHandler *media.Handler
 }
 
 // NewResolver creates a new root Resolver.
@@ -39,11 +41,13 @@ func NewResolver(
 	stageHandler *stage.Handler,
 	dayHandler *day.Handler,
 	authHandler *auth.Handler,
+	mediaHandler *media.Handler,
 ) *Resolver {
 	return &Resolver{
 		tripHandler:  tripHandler,
 		stageHandler: stageHandler,
 		dayHandler:   dayHandler,
 		authHandler:  authHandler,
+		mediaHandler: mediaHandler,
 	}
 }

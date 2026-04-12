@@ -1,8 +1,6 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useTrip } from '../hooks/useTrip';
-import { useStages } from '../../stages/hooks/useStages';
-import { useDays } from '../../stages/hooks/useDays';
+import { useState, useCallback, useMemo, useRef } from 'react';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useTripDetail } from '../hooks/useTripDetail';
 import { useMe } from '../../auth/hooks/useMe';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useUpdateStage } from '../../stages/hooks/useStageMutations';
@@ -15,11 +13,11 @@ import { DayForm } from '../../stages/components/DayForm';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
-import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
+import type { TripDetailQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
 
-type Stage = StagesQuery['stages'][number];
-type Day = DaysQuery['days'][number];
+type Stage = TripDetailQuery['stages'][number];
+type Day = TripDetailQuery['tripDays'][number];
 type StageDateRangeMap = Record<string, { start: string; end: string }>;
 type PanTarget = { lat: number; lng: number; seq: number } | null;
 
@@ -37,15 +35,15 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
 export function TripDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: tripData, fetching: tripFetching } = useTrip(id!);
-  const [{ data: stagesData, fetching: stagesFetching }, reexecuteStages] = useStages(id!);
+  const [{ data, fetching: detailFetching }, reexecuteDetail] = useTripDetail(id!);
   const { data: meData } = useMe();
   const isAdmin = meData?.me?.role === 'ADMIN';
 
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [view, setView] = useState<View>('timeline');
-  const [selectedStageId, setSelectedStageId] = useState<string | null>(null);
-  const [selectedDay, setSelectedDay] = useState<Day | null>(null);
-  const [stageDateRanges, setStageDateRanges] = useState<StageDateRangeMap>({});
+  const selectedStageId = searchParams.get('stage');
+  const selectedDayId = searchParams.get('day');
   const [formOpen, setFormOpen] = useState(false);
   const [stageFormOpen, setStageFormOpen] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
@@ -59,9 +57,7 @@ export function TripDetailPage() {
   const [pendingDayCoords, setPendingDayCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
 
-  // Days-query refetch handle, shared upward from TripMapWithActiveDays.
-  // Ref (not state) avoids an effect storm if urql ever re-creates reexecute.
-  const daysRefetchRef = useRef<(() => void) | null>(null);
+  const refetchAll = useCallback(() => reexecuteDetail({ requestPolicy: 'network-only' }), [reexecuteDetail]);
   // Per-entity in-flight drag mutation guard. Ref-based so updates don't
   // re-render the map and lose Leaflet's drag state.
   const savingStagesRef = useRef<Set<string>>(new Set());
@@ -75,50 +71,65 @@ export function TripDetailPage() {
   const [, updateStage] = useUpdateStage();
   const [, updateDay] = useUpdateDay();
 
-  const refetchContext = { additionalTypenames: ['Trip'] };
+  const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
 
-  const trip = tripData?.trip ?? null;
-  const stages = useMemo(() => stagesData?.stages ?? [], [stagesData?.stages]);
+  const trip = data?.trip ?? null;
+  const stages = useMemo(() => data?.stages ?? [], [data?.stages]);
+  const allDays = useMemo(() => data?.tripDays ?? [], [data?.tripDays]);
 
-  // Derive live ranges, dropping entries for stages that no longer exist
-  // (addresses residual risk R1 on stale canCloseTrip / handleClose payload).
-  const liveStageDateRanges = useMemo<StageDateRangeMap>(() => {
-    if (stages.length === 0) return {};
-    const liveIds = new Set(stages.map((s) => s.id));
-    const filtered: StageDateRangeMap = {};
-    for (const [k, v] of Object.entries(stageDateRanges)) {
-      if (liveIds.has(k)) filtered[k] = v;
+  const selectedDay = useMemo(
+    () => (selectedDayId ? allDays.find((d) => d.id === selectedDayId) ?? null : null),
+    [selectedDayId, allDays],
+  );
+
+  const daysByStage = useMemo(() => {
+    const map = new Map<string, Day[]>();
+    for (const d of allDays) {
+      for (const stageId of d.stageIDs) {
+        const existing = map.get(stageId);
+        if (existing) existing.push(d);
+        else map.set(stageId, [d]);
+      }
     }
-    return filtered;
-  }, [stages, stageDateRanges]);
+    return map;
+  }, [allDays]);
 
-  const handleDaysLoaded = useCallback((stageId: string, start: string, end: string) => {
-    setStageDateRanges((prev) => {
-      const existing = prev[stageId];
-      if (existing && existing.start === start && existing.end === end) return prev;
-      return { ...prev, [stageId]: { start, end } };
-    });
-  }, []);
+  const stageDateRanges = useMemo<StageDateRangeMap>(() => {
+    const ranges: StageDateRangeMap = {};
+    for (const [stageId, days] of daysByStage) {
+      const primary = days.filter((d) => d.stageIDs[0] === stageId);
+      if (primary.length > 0) {
+        const sorted = [...primary].sort((a, b) => a.date.localeCompare(b.date));
+        ranges[stageId] = { start: sorted[0].date, end: sorted[sorted.length - 1].date };
+      }
+    }
+    return ranges;
+  }, [daysByStage]);
+
+  const activeStageDays = useMemo(() => {
+    if (!selectedStageId) return [];
+    return (daysByStage.get(selectedStageId) ?? []).filter((d) => d.stageIDs[0] === selectedStageId);
+  }, [selectedStageId, daysByStage]);
 
   const handleStageClick = useCallback((stageId: string) => {
-    setSelectedStageId(stageId);
-    setSelectedDay(null);
+    setSearchParams({ stage: stageId }, { replace: true });
     document.getElementById(`stage-${stageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  }, [setSearchParams]);
 
   const handleDayClickFromTimeline = useCallback((stageId: string, day: Day) => {
-    setSelectedStageId(stageId);
-    setSelectedDay(day);
-  }, []);
+    setSearchParams({ stage: stageId, day: day.id }, { replace: true });
+  }, [setSearchParams]);
 
   const handleDetailClose = useCallback(() => {
-    setSelectedStageId(null);
-    setSelectedDay(null);
-  }, []);
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
 
   const handleBackToStage = useCallback(() => {
-    setSelectedDay(null);
-  }, []);
+    setSearchParams((prev) => {
+      prev.delete('day');
+      return prev;
+    }, { replace: true });
+  }, [setSearchParams]);
 
   async function handlePublish() {
     await publishTrip({ id: id! }, refetchContext);
@@ -129,7 +140,7 @@ export function TripDetailPage() {
   }
 
   async function handleCloseTripAction() {
-    const allDates = Object.values(liveStageDateRanges).flatMap((r) => [r.start, r.end]).sort();
+    const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
     if (allDates.length === 0) return;
     const firstDay = allDates[0];
     const lastDay = allDates[allDates.length - 1];
@@ -231,7 +242,7 @@ export function TripDetailPage() {
         );
         if (result.error || (result.data?.updateStage.errors ?? []).length > 0) {
           revert();
-          reexecuteStages({ requestPolicy: 'network-only' });
+          refetchAll();
           return;
         }
         setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
@@ -239,7 +250,7 @@ export function TripDetailPage() {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [stageFormOpen, editingStage, updateStage, reexecuteStages],
+    [stageFormOpen, editingStage, updateStage, refetchAll],
   );
 
   const handleDayDragEnd = useCallback(
@@ -268,7 +279,7 @@ export function TripDetailPage() {
         );
         if (result.error || (result.data?.updateDay.errors ?? []).length > 0) {
           revert();
-          daysRefetchRef.current?.();
+          refetchAll();
           return;
         }
         setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
@@ -276,10 +287,10 @@ export function TripDetailPage() {
         savingDaysRef.current.delete(day.id);
       }
     },
-    [dayFormOpen, editingDay, updateDay],
+    [dayFormOpen, editingDay, updateDay, refetchAll],
   );
 
-  if (tripFetching) {
+  if (detailFetching) {
     return <div className={styles.notFound} style={{ color: 'var(--color-text-muted)' }}>Chargement…</div>;
   }
 
@@ -293,7 +304,7 @@ export function TripDetailPage() {
   const detailOpen = selectedStageId !== null;
   const selectedStage = selectedStageId ? (stages.find((s) => s.id === selectedStageId) ?? null) : null;
   const canCloseTrip =
-    stages.length > 0 && Object.keys(liveStageDateRanges).length === stages.length;
+    stages.length > 0 && Object.keys(stageDateRanges).length === stages.length;
 
   // F4: suppress placement mode whenever a modal/overlay is blocking the map.
   const overlayActive = confirmDelete || formOpen;
@@ -357,10 +368,11 @@ export function TripDetailPage() {
 
   const detailPanelCommon = {
     stage: selectedStage,
+    stageDays: selectedStageId ? (daysByStage.get(selectedStageId) ?? []) : [],
     day: selectedDay,
     open: detailOpen,
     onClose: handleDetailClose,
-    onDayClick: setSelectedDay,
+    onDayClick: (day: Day) => setSearchParams({ stage: selectedStageId!, day: day.id }, { replace: true }),
     onBackToStage: handleBackToStage,
   };
 
@@ -407,7 +419,7 @@ export function TripDetailPage() {
         </div>
 
         <div className={styles.content}>
-          {stagesFetching ? (
+          {detailFetching ? (
             <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
           ) : stages.length === 0 ? (
             <p className={styles.emptyStages}>
@@ -423,12 +435,12 @@ export function TripDetailPage() {
                     <StageSection
                       key={stage.id}
                       stage={stage}
+                      days={daysByStage.get(stage.id) ?? []}
                       index={i}
                       view="timeline"
                       active={selectedStageId === stage.id}
                       onStageClick={handleStageClick}
                       onDayClick={handleDayClickFromTimeline}
-                      onDaysLoaded={handleDaysLoaded}
                     />
                   ))}
                 </div>
@@ -440,11 +452,11 @@ export function TripDetailPage() {
                     <StageSection
                       key={stage.id}
                       stage={stage}
+                      days={daysByStage.get(stage.id) ?? []}
                       index={i}
                       view="stages"
                       active={selectedStageId === stage.id}
                       onStageClick={handleStageClick}
-                      onDaysLoaded={handleDaysLoaded}
                     />
                   ))}
                 </div>
@@ -470,10 +482,11 @@ export function TripDetailPage() {
       {/* ── Carte droite ── */}
       <div className={styles.mapArea}>
         {stages.length > 0 || canEditMarkers ? (
-          <TripMapWithActiveDays
+          <TripMap
             stages={stages}
             activeStageId={selectedStageId}
-            stageDateRanges={liveStageDateRanges}
+            activeStageDays={activeStageDays}
+            stageDateRanges={stageDateRanges}
             onStageClick={handleStageClick}
             onDayClick={handleDayClickFromTimeline}
             placementMode={placementMode}
@@ -482,11 +495,10 @@ export function TripDetailPage() {
             canEditMarkers={canEditMarkers}
             onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
             onDayDragEnd={canEditMarkers ? handleDayDragEnd : undefined}
-            daysRefetchRef={daysRefetchRef}
             panTarget={panTarget}
           />
         ) : (
-          !stagesFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
+          !detailFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
         )}
       </div>
 
@@ -538,24 +550,15 @@ export function TripDetailPage() {
 
 interface StageSectionProps {
   stage: Stage;
+  days: Day[];
   index: number;
   view: View;
   active: boolean;
   onStageClick: (stageId: string) => void;
   onDayClick?: (stageId: string, day: Day) => void;
-  onDaysLoaded: (stageId: string, start: string, end: string) => void;
 }
 
-function StageSection({ stage, index, view, active, onStageClick, onDayClick, onDaysLoaded }: StageSectionProps) {
-  const [{ data }] = useDays(stage.id);
-  const days = data?.days ?? [];
-
-  useEffect(() => {
-    if (data?.days && data.days.length > 0) {
-      onDaysLoaded(stage.id, data.days[0].date, data.days[data.days.length - 1].date);
-    }
-  }, [stage.id, data, onDaysLoaded]);
-
+function StageSection({ stage, days, index, view, active, onStageClick, onDayClick }: StageSectionProps) {
   // COR-008 : un jour multi-étapes n'est affiché que dans son étape principale (premier stageID)
   const primaryDays = days.filter((day) => day.stageIDs[0] === stage.id);
 
@@ -589,69 +592,6 @@ function StageSection({ stage, index, view, active, onStageClick, onDayClick, on
   );
 }
 
-interface TripMapWithActiveDaysProps {
-  stages: Stage[];
-  activeStageId: string | null;
-  stageDateRanges: StageDateRangeMap;
-  onStageClick: (stageId: string) => void;
-  onDayClick: (stageId: string, day: Day) => void;
-  placementMode: PlacementMode;
-  pendingCoords: { lat: number; lng: number } | null;
-  onMapClick?: (coords: { lat: number; lng: number }) => void;
-  canEditMarkers: boolean;
-  onStageDragEnd?: (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => void;
-  onDayDragEnd?: (day: Day, coords: { lat: number; lng: number }, revert: () => void) => void;
-  daysRefetchRef: React.MutableRefObject<(() => void) | null>;
-  panTarget: PanTarget;
-}
-
-function TripMapWithActiveDays({
-  stages,
-  activeStageId,
-  stageDateRanges,
-  onStageClick,
-  onDayClick,
-  placementMode,
-  pendingCoords,
-  onMapClick,
-  canEditMarkers,
-  onStageDragEnd,
-  onDayDragEnd,
-  daysRefetchRef,
-  panTarget,
-}: TripMapWithActiveDaysProps) {
-  // Only fetch days when a stage is active; pause the query otherwise.
-  const [{ data: activeStageData }, reexecuteDays] = useDays(activeStageId ?? '', { pause: !activeStageId });
-  const activeStageDays = activeStageId
-    ? (activeStageData?.days ?? []).filter((d) => d.stageIDs[0] === activeStageId)
-    : [];
-
-  // Share the refetch handle upward via ref (no re-render on identity change).
-  useEffect(() => {
-    daysRefetchRef.current = () => reexecuteDays({ requestPolicy: 'network-only' });
-    return () => {
-      daysRefetchRef.current = null;
-    };
-  }, [daysRefetchRef, reexecuteDays]);
-
-  return (
-    <TripMap
-      stages={stages}
-      activeStageId={activeStageId}
-      activeStageDays={activeStageDays}
-      stageDateRanges={stageDateRanges}
-      onStageClick={onStageClick}
-      onDayClick={onDayClick}
-      placementMode={placementMode}
-      pendingCoords={pendingCoords}
-      onMapClick={onMapClick}
-      canEditMarkers={canEditMarkers}
-      onStageDragEnd={onStageDragEnd}
-      onDayDragEnd={onDayDragEnd}
-      panTarget={panTarget}
-    />
-  );
-}
 
 function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
   return (

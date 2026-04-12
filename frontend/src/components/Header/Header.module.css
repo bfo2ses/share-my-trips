@@ -136,3 +136,19 @@
   background: var(--color-bg-subtle);
   color: var(--color-text);
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .inner {
+    padding: 0 16px;
+  }
+
+  .userName {
+    display: none;
+  }
+
+  .menu {
+    min-width: 200px;
+    right: -8px;
+  }
+}

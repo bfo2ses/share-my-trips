@@ -1,0 +1,111 @@
+.uploader {
+  margin-top: 16px;
+}
+
+.input {
+  display: none;
+}
+
+/* ── Drop zone ── */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px 16px;
+  background: var(--color-bg-subtle);
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.dropzone:hover {
+  border-color: var(--color-gold);
+}
+
+.dropzoneActive {
+  border-color: var(--color-gold);
+  background: rgba(198, 163, 93, 0.08);
+}
+
+.dropzoneIcon {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: var(--color-text-muted);
+  line-height: 1;
+  transition: color 0.15s;
+}
+
+.dropzone:hover .dropzoneIcon,
+.dropzoneActive .dropzoneIcon {
+  color: var(--color-gold);
+}
+
+.dropzoneText {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* ── Progress list ── */
+.progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progressItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+}
+
+.filename {
+  color: var(--color-text-muted);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bar {
+  width: 80px;
+  height: 4px;
+  background: var(--color-bg-subtle);
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.barFill {
+  height: 100%;
+  background: var(--color-gold);
+  transition: width 0.2s ease;
+}
+
+.done {
+  color: #78dc78;
+  font-weight: 600;
+}
+
+.error {
+  color: #e55;
+  font-weight: 600;
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .dropzone {
+    padding: 20px 12px;
+  }
+
+  .dropzoneText {
+    font-size: 0.72rem;
+  }
+}

@@ -21,6 +21,10 @@ type Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": typeof types.SetupStatusDocument,
+    "\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateMediaCaptionDocument,
+    "\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ReorderMediaDocument,
+    "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteMediaDocument,
+    "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n": typeof types.DayMediaDocument,
     "\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.AddDayDocument,
     "\n  mutation UpdateDay($id: ID!, $input: UpdateDayInput!) {\n    updateDay(id: $id, input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateDayDocument,
     "\n  mutation DeleteDay($id: ID!) {\n    deleteDay(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteDayDocument,
@@ -29,7 +33,9 @@ type Documents = {
     "\n  mutation UpdateStage($id: ID!, $input: UpdateStageInput!) {\n    updateStage(id: $id, input: $input) {\n      stage {\n        id\n        tripID\n        city\n        displayName\n        lat\n        lng\n        description\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateStageDocument,
     "\n  mutation DeleteStage($id: ID!) {\n    deleteStage(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteStageDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": typeof types.StagesDocument,
+    "\n  query TripDays($tripID: ID!) {\n    tripDays(tripID: $tripID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n": typeof types.TripDaysDocument,
     "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": typeof types.TripDocument,
+    "\n  query TripDetail($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n    stages(tripID: $id) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n    tripDays(tripID: $id) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n": typeof types.TripDetailDocument,
     "\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        lat\n        lng\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.CreateTripDocument,
     "\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        lat\n        lng\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateTripDocument,
     "\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteTripDocument,
@@ -47,6 +53,10 @@ const documents: Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": types.SetupStatusDocument,
+    "\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateMediaCaptionDocument,
+    "\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ReorderMediaDocument,
+    "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteMediaDocument,
+    "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n": types.DayMediaDocument,
     "\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.AddDayDocument,
     "\n  mutation UpdateDay($id: ID!, $input: UpdateDayInput!) {\n    updateDay(id: $id, input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateDayDocument,
     "\n  mutation DeleteDay($id: ID!) {\n    deleteDay(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteDayDocument,
@@ -55,7 +65,9 @@ const documents: Documents = {
     "\n  mutation UpdateStage($id: ID!, $input: UpdateStageInput!) {\n    updateStage(id: $id, input: $input) {\n      stage {\n        id\n        tripID\n        city\n        displayName\n        lat\n        lng\n        description\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateStageDocument,
     "\n  mutation DeleteStage($id: ID!) {\n    deleteStage(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteStageDocument,
     "\n  query Stages($tripID: ID!) {\n    stages(tripID: $tripID) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n  }\n": types.StagesDocument,
+    "\n  query TripDays($tripID: ID!) {\n    tripDays(tripID: $tripID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n": types.TripDaysDocument,
     "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": types.TripDocument,
+    "\n  query TripDetail($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n    stages(tripID: $id) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n    tripDays(tripID: $id) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n": types.TripDetailDocument,
     "\n  mutation CreateTrip($input: CreateTripInput!) {\n    createTrip(input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        lat\n        lng\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.CreateTripDocument,
     "\n  mutation UpdateTrip($id: ID!, $input: UpdateTripInput!) {\n    updateTrip(id: $id, input: $input) {\n      trip {\n        id\n        title\n        country\n        description\n        lat\n        lng\n        startDate\n        endDate\n        status\n        coverPhoto\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateTripDocument,
     "\n  mutation DeleteTrip($id: ID!) {\n    deleteTrip(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteTripDocument,
@@ -111,6 +123,22 @@ export function gql(source: "\n  query SetupStatus {\n    setupStatus {\n      d
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function gql(source: "\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function gql(source: "\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
@@ -143,7 +171,15 @@ export function gql(source: "\n  query Stages($tripID: ID!) {\n    stages(tripID
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
+export function gql(source: "\n  query TripDays($tripID: ID!) {\n    tripDays(tripID: $tripID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n"): (typeof documents)["\n  query TripDays($tripID: ID!) {\n    tripDays(tripID: $tripID) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
 export function gql(source: "\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n"): (typeof documents)["\n  query Trip($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query TripDetail($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n    stages(tripID: $id) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n    tripDays(tripID: $id) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n"): (typeof documents)["\n  query TripDetail($id: ID!) {\n    trip(id: $id) {\n      id\n      title\n      country\n      description\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n    stages(tripID: $id) {\n      id\n      tripID\n      city\n      displayName\n      lat\n      lng\n      description\n    }\n    tripDays(tripID: $id) {\n      id\n      tripID\n      stageIDs\n      date\n      title\n      description\n      lat\n      lng\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

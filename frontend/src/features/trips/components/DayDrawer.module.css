@@ -118,3 +118,18 @@
   object-fit: cover;
   display: block;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .header {
+    padding: 16px 16px 12px;
+  }
+
+  .body {
+    padding: 16px 16px 24px;
+  }
+
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

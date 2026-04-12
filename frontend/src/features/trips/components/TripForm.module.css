@@ -167,3 +167,19 @@
   color: #e55;
   font-size: 0.8rem;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .header {
+    padding: 16px;
+  }
+
+  .form {
+    padding: 16px;
+  }
+}

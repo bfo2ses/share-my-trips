@@ -1,7 +1,9 @@
-import { useState } from 'react';
-import { useDays } from '../../stages/hooks/useDays';
+import { useState, useCallback } from 'react';
 import { useDeleteStage } from '../../stages/hooks/useStageMutations';
 import { useDeleteDay } from '../../stages/hooks/useDayMutations';
+import { useDayMedia } from '../../media/hooks/useMediaQueries';
+import { MediaGallery } from '../../media/components/MediaGallery';
+import { MediaUploader } from '../../media/components/MediaUploader';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
@@ -26,6 +28,7 @@ interface EditCallbacks {
 
 type DetailPanelProps = {
   stage: Stage | null;
+  stageDays: Day[];
   day: Day | null;
   open: boolean;
   onClose: () => void;
@@ -34,10 +37,10 @@ type DetailPanelProps = {
 } & ({ canEdit: false } | ({ canEdit: true } & EditCallbacks));
 
 export function DetailPanel(props: DetailPanelProps) {
-  const { stage, day, onClose, onDayClick, onBackToStage } = props;
+  const { stage, stageDays, day, open, onClose, onDayClick, onBackToStage } = props;
 
   return (
-    <div className={styles.panelWrapper}>
+    <div className={`${styles.panelWrapper} ${open ? styles.panelOpen : ''}`}>
       <aside className={styles.panel}>
         {day && stage ? (
           props.canEdit ? (
@@ -62,6 +65,7 @@ export function DetailPanel(props: DetailPanelProps) {
           props.canEdit ? (
             <StageDetail
               stage={stage}
+              days={stageDays}
               onClose={onClose}
               onDayClick={onDayClick}
               canEdit
@@ -71,6 +75,7 @@ export function DetailPanel(props: DetailPanelProps) {
           ) : (
             <StageDetail
               stage={stage}
+              days={stageDays}
               onClose={onClose}
               onDayClick={onDayClick}
               canEdit={false}
@@ -84,6 +89,7 @@ export function DetailPanel(props: DetailPanelProps) {
 
 type StageDetailProps = {
   stage: Stage;
+  days: Day[];
   onClose: () => void;
   onDayClick: (day: Day) => void;
 } & (
@@ -96,9 +102,7 @@ type StageDetailProps = {
 );
 
 function StageDetail(props: StageDetailProps) {
-  const { stage, onClose, onDayClick } = props;
-  const [{ data, fetching }] = useDays(stage.id);
-  const days = data?.days ?? [];
+  const { stage, days, onClose, onDayClick } = props;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -144,9 +148,7 @@ function StageDetail(props: StageDetailProps) {
           <p className={styles.description}>{stage.description}</p>
         )}
 
-        {fetching ? (
-          <p className={styles.muted}>Chargement…</p>
-        ) : days.length === 0 ? (
+        {days.length === 0 ? (
           <p className={styles.muted}>
             {props.canEdit
               ? 'Aucun jour pour cette étape. Utilisez le menu ⋮ pour en ajouter un.'
@@ -201,6 +203,9 @@ function DayDetail(props: DayDetailProps) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, deleteDay] = useDeleteDay();
+  const [{ data: mediaData }, reexecuteMedia] = useDayMedia(day.id);
+  const media = mediaData?.dayMedia ?? [];
+  const refetchMedia = useCallback(() => reexecuteMedia({ requestPolicy: 'network-only' }), [reexecuteMedia]);
 
   async function handleDelete() {
     if (deleting) return;
@@ -242,6 +247,12 @@ function DayDetail(props: DayDetailProps) {
           <p className={styles.description}>{day.description}</p>
         ) : (
           <p className={styles.muted} style={{ fontStyle: 'italic' }}>Aucune description pour ce jour.</p>
+        )}
+
+        <MediaGallery media={media} isAdmin={props.canEdit} onDeleted={refetchMedia} />
+
+        {props.canEdit && (
+          <MediaUploader dayID={day.id} tripID={day.tripID} onUploadComplete={refetchMedia} />
         )}
       </div>
 

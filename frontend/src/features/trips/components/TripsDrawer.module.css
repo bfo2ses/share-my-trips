@@ -105,3 +105,19 @@
   scrollbar-width: thin;
   scrollbar-color: var(--color-border) transparent;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .drawer {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .header {
+    padding: 16px;
+  }
+
+  .list {
+    padding: 16px;
+  }
+}

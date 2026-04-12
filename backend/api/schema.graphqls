@@ -221,6 +221,38 @@ input ChangePasswordInput {
   newPasswordConfirm: String!
 }
 
+type Media {
+  id: ID!
+  dayID: ID!
+  tripID: ID!
+  filename: String!
+  contentType: String!
+  "Null when not set."
+  caption: String
+  "URL to serve the original file."
+  url: String!
+  "URL to serve the thumbnail."
+  thumbUrl: String!
+  position: Int!
+  "RFC 3339 timestamp."
+  createdAt: String!
+}
+
+type MediaPayload {
+  media: Media
+  errors: [UserError!]!
+}
+
+type ReorderMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
+type DeleteMediaPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -234,6 +266,10 @@ type Query {
   day(id: ID!): Day
   "Returns all days for a stage, sorted by date ascending."
   days(stageID: ID!): [Day!]!
+  "Returns all days for a trip, sorted by date ascending."
+  tripDays(tripID: ID!): [Day!]!
+  "Returns all media for a day, sorted by position ascending."
+  dayMedia(dayID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
   me: Account
   "Returns true if the admin account has already been created."
@@ -270,4 +306,10 @@ type Mutation {
   requestPasswordReset(email: String!): Boolean!
   resetPassword(input: ResetPasswordInput!): AccountPayload!
   changePassword(input: ChangePasswordInput!): AccountPayload!
+  "Updates a media's caption. Requires admin role."
+  updateMediaCaption(id: ID!, caption: String): MediaPayload!
+  "Reorders media within a day. Requires admin role."
+  reorderMedia(dayID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Deletes a media and its files. Requires admin role."
+  deleteMedia(id: ID!): DeleteMediaPayload!
 }

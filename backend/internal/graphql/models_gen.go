@@ -114,6 +114,11 @@ type DeleteDayPayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
+type DeleteMediaPayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type DeleteStagePayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
@@ -124,10 +129,31 @@ type DeleteTripPayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
-type Mutation struct {
+type Media struct {
+	ID          string `json:"id"`
+	DayID       string `json:"dayID"`
+	TripID      string `json:"tripID"`
+	Filename    string `json:"filename"`
+	ContentType string `json:"contentType"`
+	// Null when not set.
+	Caption *string `json:"caption,omitempty"`
+	// URL to serve the original file.
+	URL string `json:"url"`
+	// URL to serve the thumbnail.
+	ThumbURL string `json:"thumbUrl"`
+	Position int    `json:"position"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
 }
 
-type Query struct {
+type MediaPayload struct {
+	Media  *Media       `json:"media,omitempty"`
+	Errors []*UserError `json:"errors"`
+}
+
+type ReorderMediaPayload struct {
+	Media  []*Media     `json:"media"`
+	Errors []*UserError `json:"errors"`
 }
 
 type ResetPasswordInput struct {

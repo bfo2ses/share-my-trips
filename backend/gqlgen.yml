@@ -14,3 +14,4 @@ resolver:
   filename: internal/graphql/schema.resolvers.go
   package: graph
   type: Resolver
+omit_root_models: true

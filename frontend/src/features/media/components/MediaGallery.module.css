@@ -1,0 +1,135 @@
+.empty {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  font-style: italic;
+  margin: 0;
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.thumb {
+  position: relative;
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  background: var(--color-surface);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.thumb:hover {
+  opacity: 0.85;
+  transform: scale(1.02);
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.playBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  font-size: 1.2rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.deleteBtn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: white;
+  font-size: 0.65rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.thumb:hover .deleteBtn {
+  opacity: 1;
+}
+
+.deleteBtn:hover {
+  background: rgba(238, 85, 85, 0.8);
+}
+
+.thumbWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.thumbWrapper[draggable='true'] {
+  cursor: grab;
+}
+
+.thumbWrapper[draggable='true']:active {
+  cursor: grabbing;
+  opacity: 0.6;
+}
+
+.captionText {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 1.2em;
+  display: block;
+}
+
+.captionEditable {
+  cursor: text;
+}
+
+.captionEditable:hover {
+  color: var(--color-text);
+}
+
+.captionInput {
+  font-size: 0.7rem;
+  color: var(--color-text);
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  outline: none;
+  width: 100%;
+}
+
+.captionInput:focus {
+  border-color: var(--color-gold);
+}
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .gallery {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

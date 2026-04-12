@@ -11,19 +11,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bfosses/sharemytrips/internal/adapter/crypto"
+	"github.com/bfosses/sharemytrips/internal/adapter/filesystem"
+	imaging "github.com/bfosses/sharemytrips/internal/adapter/imaging"
 	"github.com/bfosses/sharemytrips/internal/adapter/mailer"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
+	mediahttp "github.com/bfosses/sharemytrips/internal/http"
 )
 
 func corsMiddleware(origin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", origin)
-		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Methods", "POST, GET, PATCH, DELETE, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
@@ -62,10 +66,21 @@ func main() {
 
 	authHandler := auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, logMailer)
 
+	// Media
+	mediaRepo := memory.NewMediaRepository()
+	dayChecker := memory.NewDayChecker(dayRepo)
+	mediaBasePath := os.Getenv("MEDIA_PATH")
+	if mediaBasePath == "" {
+		mediaBasePath = "./media_data"
+	}
+	mediaStorage := filesystem.NewStorage(mediaBasePath)
+	mediaHandler := media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
+	thumbnailer := imaging.NewThumbnailer()
+
 	seedData(context.Background(), userRepo, tripRepo, stageRepo, dayRepo)
 
 	// GraphQL
-	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler, authHandler)
+	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler, authHandler, mediaHandler)
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	port := os.Getenv("PORT")
@@ -84,6 +99,21 @@ func main() {
 	}
 
 	http.Handle("/query", corsMiddleware(corsOrigin, graph.AuthMiddleware(srv)))
+
+	// Media REST endpoints
+	mediaServing := mediahttp.NewMediaHandler(mediaHandler, mediaStorage, thumbnailer)
+	http.Handle("/media/", corsMiddleware(corsOrigin, mediaServing))
+
+	// Upload endpoint (requires auth).
+	tokenResolver := func(token string) (string, error) {
+		user, err := authHandler.GetCurrentUser(context.Background(), auth.GetCurrentUserQuery{Token: token})
+		if err != nil {
+			return "", err
+		}
+		return user.ID, nil
+	}
+	uploadHandler := mediahttp.NewUploadHandler(mediaHandler, mediaStorage)
+	http.Handle("/api/upload", corsMiddleware(corsOrigin, mediahttp.RequireAuth(tokenResolver, uploadHandler)))
 
 	log.Printf("Server running at http://localhost:%s/query", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

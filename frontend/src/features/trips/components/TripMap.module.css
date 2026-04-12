@@ -114,3 +114,20 @@
   color: var(--color-text) !important;
   background: var(--color-surface) !important;
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .hint {
+    left: 16px;
+    right: 16px;
+    transform: none;
+    justify-content: center;
+    font-size: 0.72rem;
+    padding: 8px 12px;
+  }
+
+  @keyframes hintIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
