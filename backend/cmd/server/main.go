@@ -117,7 +117,10 @@ func main() {
 		dayChecker := pg.NewDayChecker(pool)
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
 
-		seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+		if os.Getenv("ENV") == "dev" {
+			seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+			log.Println("Seed data loaded")
+		}
 		log.Println("Using PostgreSQL storage")
 	} else {
 		// ── In-memory (dev without DB) ──
@@ -139,7 +142,10 @@ func main() {
 		dayChecker := memory.NewDayChecker(dayRepo)
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
 
-		seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+		if os.Getenv("ENV") == "dev" {
+			seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+			log.Println("Seed data loaded")
+		}
 		log.Println("Using in-memory storage (set DATABASE_URL for PostgreSQL)")
 	}
 
