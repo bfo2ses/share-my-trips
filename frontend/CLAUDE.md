@@ -47,6 +47,13 @@ src/
 - CSS Modules pour le styling (fichier `.module.css` à côté du composant)
 - Client GraphQL : urql avec ses hooks générés par graphql-codegen (`useTripsQuery`, `useCreateTripMutation`, etc.)
 
+## Data fetching
+
+- Les requêtes GraphQL (`useQuery`, `useMutation`) ne s'appellent que dans les **hooks** (`hooks/`) ou les **pages** (`pages/`), jamais dans les composants (`components/`)
+- Les composants reçoivent les données en props — ils ne fetchent pas eux-mêmes
+- Une donnée ne doit être fetchée qu'une seule fois par page : si plusieurs composants ont besoin de la même donnée, la page la fetch et la distribue en props
+- Préférer une query large au niveau page (ex: `tripDays(tripID)`) plutôt que N queries enfants (ex: `days(stageID)` × N étapes)
+
 ## GraphQL Codegen
 
 - Les types TypeScript et les hooks urql sont générés depuis le schéma backend

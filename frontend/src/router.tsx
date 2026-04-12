@@ -1,10 +1,12 @@
+import { lazy } from 'react';
 import { createBrowserRouter } from 'react-router-dom';
-import { LoginPage } from './features/auth/pages/LoginPage';
-import { SetupPage } from './features/auth/pages/SetupPage';
 import { ProtectedLayout } from './features/auth/components/ProtectedLayout';
-import { ResetPasswordPage } from './features/auth/pages/ResetPasswordPage';
-import { TripsPage } from './features/trips/pages/TripsPage';
-import { TripDetailPage } from './features/trips/pages/TripDetailPage';
+
+const LoginPage = lazy(() => import('./features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
+const SetupPage = lazy(() => import('./features/auth/pages/SetupPage').then((m) => ({ default: m.SetupPage })));
+const ResetPasswordPage = lazy(() => import('./features/auth/pages/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })));
+const TripsPage = lazy(() => import('./features/trips/pages/TripsPage').then((m) => ({ default: m.TripsPage })));
+const TripDetailPage = lazy(() => import('./features/trips/pages/TripDetailPage').then((m) => ({ default: m.TripDetailPage })));
 
 export const router = createBrowserRouter([
   {
