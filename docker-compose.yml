@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sharemytrips
+      POSTGRES_USER: smt
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smt -d sharemytrips"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://smt:${POSTGRES_PASSWORD}@postgres:5432/sharemytrips?sslmode=disable
+      PORT: "8080"
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost}
+      RESET_URL_BASE: ${RESET_URL_BASE:-http://localhost/reset-password}
+      MEDIA_PATH: /data/media
+    volumes:
+      - media_data:/data/media
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${PORT:-80}:80"
+
+volumes:
+  pgdata:
+  media_data:
