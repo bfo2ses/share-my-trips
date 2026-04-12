@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"sort"
 	"sync"
 	"time"
 
@@ -61,6 +62,9 @@ func (r *DayRepository) ListByStage(_ context.Context, stageID string) ([]*day.D
 			result = append(result, &cp)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Date.Before(result[j].Date)
+	})
 	return result, nil
 }
 
@@ -77,6 +81,9 @@ func (r *DayRepository) ListByTrip(_ context.Context, tripID string) ([]*day.Day
 			result = append(result, &cp)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Date.Before(result[j].Date)
+	})
 	return result, nil
 }
 
