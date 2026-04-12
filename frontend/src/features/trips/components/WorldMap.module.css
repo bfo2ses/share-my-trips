@@ -134,3 +134,27 @@
   60%  { r: 16; opacity: 0; }
   100% { r: 5;  opacity: 0; }
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .counter {
+    top: 16px;
+    left: 16px;
+    gap: 8px;
+  }
+
+  .counterNumber {
+    font-size: 1.75rem;
+  }
+
+  .counterLabel {
+    font-size: 0.6rem;
+  }
+
+  .popup {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}

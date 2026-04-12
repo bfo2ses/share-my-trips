@@ -58,3 +58,15 @@
   transform: scale(1.1);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .listButton {
+    bottom: 24px;
+  }
+
+  .createButton {
+    bottom: 24px;
+    right: 20px;
+  }
+}

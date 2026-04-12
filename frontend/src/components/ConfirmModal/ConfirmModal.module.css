@@ -96,3 +96,13 @@
   color: #ff6b6b;
   border-color: rgba(238, 85, 85, 0.5);
 }
+
+/* ── Mobile ── */
+@media (max-width: 768px) {
+  .modal {
+    min-width: 0;
+    max-width: calc(100vw - 32px);
+    margin: 0 16px;
+    padding: 20px 16px 16px;
+  }
+}

@@ -322,9 +322,14 @@
 @media (max-width: 768px) {
   .page {
     grid-template-columns: 1fr;
-    grid-template-rows: 40vh 1fr;
+    grid-template-rows: 35svh 1fr;
     height: auto;
     min-height: calc(100svh - var(--header-height));
+  }
+
+  .detailOpen {
+    grid-template-columns: 1fr;
+    grid-template-rows: 35svh 1fr;
   }
 
   .panel {
@@ -341,5 +346,26 @@
 
   .content {
     overflow: visible;
+  }
+
+  .tripHeader {
+    padding: 16px;
+  }
+
+  .viewToggle {
+    padding: 10px 16px;
+  }
+
+  .dayRow {
+    padding: 10px 16px;
+    gap: 12px;
+  }
+
+  .stageDivider {
+    padding: 10px 16px;
+  }
+
+  .stageRow {
+    padding: 12px 16px;
   }
 }
