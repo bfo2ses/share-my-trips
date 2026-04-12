@@ -2,6 +2,7 @@ package memory
 
 import (
 	"context"
+	"sort"
 	"sync"
 
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
@@ -53,6 +54,9 @@ func (r *StageRepository) ListByTrip(_ context.Context, tripID string) ([]*stage
 			result = append(result, &cp)
 		}
 	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].CreatedAt.Before(result[j].CreatedAt)
+	})
 	return result, nil
 }
 
