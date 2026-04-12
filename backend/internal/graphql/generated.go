@@ -1383,6 +1383,7 @@ input UpdateDayInput {
 
 enum AccountRole {
   ADMIN
+  EDITOR
   FAMILY
 }
 
@@ -1429,6 +1430,8 @@ input CreateAccountInput {
   "Optional. When omitted the account is created without a password — the user must use password reset to set one."
   password: String
   passwordConfirm: String
+  "Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed."
+  role: AccountRole
 }
 
 input ResetPasswordInput {
@@ -8011,7 +8014,7 @@ func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"name", "email", "password", "passwordConfirm"}
+	fieldsInOrder := [...]string{"name", "email", "password", "passwordConfirm", "role"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -8046,6 +8049,13 @@ func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context
 				return it, err
 			}
 			it.PasswordConfirm = data
+		case "role":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("role"))
+			data, err := ec.unmarshalOAccountRole2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Role = data
 		}
 	}
 	return it, nil
@@ -10908,6 +10918,22 @@ func (ec *executionContext) marshalOAccount2ᚖgithubᚗcomᚋbfossesᚋsharemyt
 		return graphql.Null
 	}
 	return ec._Account(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOAccountRole2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole(ctx context.Context, v any) (*AccountRole, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var res = new(AccountRole)
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOAccountRole2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAccountRole(ctx context.Context, sel ast.SelectionSet, v *AccountRole) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return v
 }
 
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v any) (bool, error) {

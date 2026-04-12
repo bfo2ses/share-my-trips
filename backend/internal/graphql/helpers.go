@@ -144,7 +144,7 @@ func (r *Resolver) currentUserID(ctx context.Context) string {
 
 // requireAdmin resolves the current user from the session and verifies they
 // have the admin role. It returns auth.ErrForbidden when not authenticated or
-// not an admin.
+// not an admin. Used for account management mutations.
 func (r *Resolver) requireAdmin(ctx context.Context) error {
 	token := sessionTokenFromContext(ctx)
 	if token == "" {
@@ -155,6 +155,23 @@ func (r *Resolver) requireAdmin(ctx context.Context) error {
 		return auth.ErrForbidden
 	}
 	if user.Role != auth.RoleAdmin {
+		return auth.ErrForbidden
+	}
+	return nil
+}
+
+// requireEditor resolves the current user from the session and verifies they
+// have the admin or editor role. Used for trip/stage/day/media mutations.
+func (r *Resolver) requireEditor(ctx context.Context) error {
+	token := sessionTokenFromContext(ctx)
+	if token == "" {
+		return auth.ErrForbidden
+	}
+	user, err := r.authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
+	if err != nil {
+		return auth.ErrForbidden
+	}
+	if user.Role != auth.RoleAdmin && user.Role != auth.RoleEditor {
 		return auth.ErrForbidden
 	}
 	return nil
@@ -184,8 +201,12 @@ func toGraphQLMediaList(list []*media.Media) []*Media {
 }
 
 func toGraphQLRole(r auth.Role) AccountRole {
-	if r == auth.RoleAdmin {
+	switch r {
+	case auth.RoleAdmin:
 		return AccountRoleAdmin
+	case auth.RoleEditor:
+		return AccountRoleEditor
+	default:
+		return AccountRoleFamily
 	}
-	return AccountRoleFamily
 }

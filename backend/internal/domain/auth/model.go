@@ -21,6 +21,7 @@ var (
 	ErrResetTokenExpired      = errors.New("reset token has expired")
 	ErrInvalidCurrentPassword = errors.New("current password is incorrect")
 	ErrPasswordTooLong        = errors.New("password must not exceed 128 characters")
+	ErrInvalidRole            = errors.New("role must be family or editor")
 )
 
 // Role represents the role of a user account.
@@ -28,6 +29,7 @@ type Role string
 
 const (
 	RoleAdmin  Role = "admin"
+	RoleEditor Role = "editor"
 	RoleFamily Role = "family"
 )
 

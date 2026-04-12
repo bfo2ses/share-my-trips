@@ -19,13 +19,15 @@ type LogoutCommand struct {
 	Token string
 }
 
-// CreateAccountCommand creates a new family account (admin only).
+// CreateAccountCommand creates a new account (admin only).
+// Role defaults to "family" when empty. Only "family" and "editor" are accepted.
 type CreateAccountCommand struct {
 	ActorID         string
 	Name            string
 	Email           string
 	Password        string
 	PasswordConfirm string
+	Role            string
 }
 
 // DeleteAccountCommand removes an account (admin only, cannot self-delete).

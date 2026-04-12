@@ -86,6 +86,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: auth.ErrCannotDeleteSelf.Error()}}
 	case errors.Is(err, auth.ErrForbidden):
 		return []*UserError{{Message: auth.ErrForbidden.Error()}}
+	case errors.Is(err, auth.ErrInvalidRole):
+		return []*UserError{{Field: strPtr("role"), Message: auth.ErrInvalidRole.Error()}}
 	case errors.Is(err, auth.ErrInvalidResetToken):
 		return []*UserError{{Field: strPtr("token"), Message: auth.ErrInvalidResetToken.Error()}}
 	case errors.Is(err, auth.ErrResetTokenExpired):
