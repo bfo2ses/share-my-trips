@@ -14,6 +14,10 @@ import type { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-
  * Learn more about it here: https://the-guild.dev/graphql/codegen/plugins/presets/preset-client#reducing-bundle-size
  */
 type Documents = {
+    "\n  mutation CreateAccount($input: CreateAccountInput!) {\n    createAccount(input: $input) {\n      account {\n        id\n        name\n        email\n        role\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.CreateAccountDocument,
+    "\n  mutation DeleteAccount($id: ID!) {\n    deleteAccount(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteAccountDocument,
+    "\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ChangePasswordDocument,
+    "\n  query Accounts {\n    accounts {\n      id\n      name\n      email\n      role\n      createdAt\n    }\n  }\n": typeof types.AccountsDocument,
     "\n  mutation RequestPasswordReset($email: String!) {\n    requestPasswordReset(email: $email)\n  }\n": typeof types.RequestPasswordResetDocument,
     "\n  mutation Login($email: String!, $password: String!) {\n    login(email: $email, password: $password) {\n      token\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.LoginDocument,
     "\n  mutation ResetPassword($input: ResetPasswordInput!) {\n    resetPassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ResetPasswordDocument,
@@ -46,6 +50,10 @@ type Documents = {
     "\n  query Trips($status: [TripStatus!]) {\n    trips(status: $status) {\n      id\n      title\n      country\n      lat\n      lng\n      startDate\n      endDate\n      status\n      coverPhoto\n    }\n  }\n": typeof types.TripsDocument,
 };
 const documents: Documents = {
+    "\n  mutation CreateAccount($input: CreateAccountInput!) {\n    createAccount(input: $input) {\n      account {\n        id\n        name\n        email\n        role\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.CreateAccountDocument,
+    "\n  mutation DeleteAccount($id: ID!) {\n    deleteAccount(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteAccountDocument,
+    "\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ChangePasswordDocument,
+    "\n  query Accounts {\n    accounts {\n      id\n      name\n      email\n      role\n      createdAt\n    }\n  }\n": types.AccountsDocument,
     "\n  mutation RequestPasswordReset($email: String!) {\n    requestPasswordReset(email: $email)\n  }\n": types.RequestPasswordResetDocument,
     "\n  mutation Login($email: String!, $password: String!) {\n    login(email: $email, password: $password) {\n      token\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.LoginDocument,
     "\n  mutation ResetPassword($input: ResetPasswordInput!) {\n    resetPassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ResetPasswordDocument,
@@ -92,6 +100,22 @@ const documents: Documents = {
  */
 export function gql(source: string): unknown;
 
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation CreateAccount($input: CreateAccountInput!) {\n    createAccount(input: $input) {\n      account {\n        id\n        name\n        email\n        role\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation CreateAccount($input: CreateAccountInput!) {\n    createAccount(input: $input) {\n      account {\n        id\n        name\n        email\n        role\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation DeleteAccount($id: ID!) {\n    deleteAccount(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation DeleteAccount($id: ID!) {\n    deleteAccount(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation ChangePassword($input: ChangePasswordInput!) {\n    changePassword(input: $input) {\n      account {\n        id\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query Accounts {\n    accounts {\n      id\n      name\n      email\n      role\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query Accounts {\n    accounts {\n      id\n      name\n      email\n      role\n      createdAt\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */

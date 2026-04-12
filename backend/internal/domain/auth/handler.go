@@ -106,22 +106,37 @@ func (h *Handler) Logout(ctx context.Context, cmd LogoutCommand) error {
 }
 
 // CreateAccount creates a new family account. Actor must be an admin.
+// When Password is empty the account is created without a usable password;
+// the user must go through the password-reset flow to set one.
 func (h *Handler) CreateAccount(ctx context.Context, cmd CreateAccountCommand) (*User, error) {
 	if err := h.requireAdmin(ctx, cmd.ActorID); err != nil {
 		return nil, fmt.Errorf("create account: %w", err)
 	}
 
-	if err := h.validateNewAccount(cmd.Name, cmd.Email, cmd.Password, cmd.PasswordConfirm); err != nil {
-		return nil, fmt.Errorf("create account: %w", err)
+	if cmd.Password != "" {
+		if err := h.validateNewAccount(cmd.Name, cmd.Email, cmd.Password, cmd.PasswordConfirm); err != nil {
+			return nil, fmt.Errorf("create account: %w", err)
+		}
+	} else {
+		if cmd.Name == "" {
+			return nil, fmt.Errorf("create account: %w", ErrNameRequired)
+		}
+		if cmd.Email == "" {
+			return nil, fmt.Errorf("create account: %w", ErrEmailRequired)
+		}
 	}
 
 	if _, err := h.users.FindByEmail(ctx, cmd.Email); err == nil {
 		return nil, fmt.Errorf("create account: %w", ErrEmailTaken)
 	}
 
-	hash, err := h.hasher.Hash(cmd.Password)
-	if err != nil {
-		return nil, fmt.Errorf("create account: %w", err)
+	var hash string
+	if cmd.Password != "" {
+		var err error
+		hash, err = h.hasher.Hash(cmd.Password)
+		if err != nil {
+			return nil, fmt.Errorf("create account: %w", err)
+		}
 	}
 
 	user, err := NewUser(uuid.New().String(), cmd.Name, cmd.Email, hash, RoleFamily)

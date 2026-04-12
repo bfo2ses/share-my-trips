@@ -43,6 +43,7 @@ type User struct {
 }
 
 // NewUser creates a new User with validated fields.
+// passwordHash may be empty for family accounts created without a password.
 func NewUser(id, name, email, passwordHash string, role Role) (*User, error) {
 	if name == "" {
 		return nil, ErrNameRequired
@@ -50,7 +51,7 @@ func NewUser(id, name, email, passwordHash string, role Role) (*User, error) {
 	if email == "" {
 		return nil, ErrEmailRequired
 	}
-	if passwordHash == "" {
+	if passwordHash == "" && role == RoleAdmin {
 		return nil, ErrPasswordRequired
 	}
 	now := time.Now()

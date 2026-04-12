@@ -1426,8 +1426,9 @@ input SetupAdminInput {
 input CreateAccountInput {
   name: String!
   email: String!
-  password: String!
-  passwordConfirm: String!
+  "Optional. When omitted the account is created without a password — the user must use password reset to set one."
+  password: String
+  passwordConfirm: String
 }
 
 input ResetPasswordInput {
@@ -8033,14 +8034,14 @@ func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context
 			it.Email = data
 		case "password":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Password = data
 		case "passwordConfirm":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("passwordConfirm"))
-			data, err := ec.unmarshalNString2string(ctx, v)
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}

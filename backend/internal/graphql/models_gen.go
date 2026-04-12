@@ -62,10 +62,11 @@ type CloseTripInput struct {
 }
 
 type CreateAccountInput struct {
-	Name            string `json:"name"`
-	Email           string `json:"email"`
-	Password        string `json:"password"`
-	PasswordConfirm string `json:"passwordConfirm"`
+	Name  string `json:"name"`
+	Email string `json:"email"`
+	// Optional. When omitted the account is created without a password — the user must use password reset to set one.
+	Password        *string `json:"password,omitempty"`
+	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 }
 
 type CreateTripInput struct {
