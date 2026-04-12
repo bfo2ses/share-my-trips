@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import styles from './MediaUploader.module.css';
 
@@ -14,17 +14,24 @@ interface MediaUploaderProps {
   onUploadComplete: () => void;
 }
 
-const ACCEPT = 'image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm';
+const ACCEPTED_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp',
+  'video/mp4', 'video/quicktime', 'video/webm',
+]);
+const ACCEPT = Array.from(ACCEPTED_TYPES).join(',');
 
 export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploaderProps) {
   const { token } = useAuth();
   const [uploads, setUploads] = useState<UploadItem[]>([]);
+  const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleFiles(files: FileList | null) {
-    if (!files || files.length === 0) return;
+  const handleFiles = useCallback((files: FileList | File[]) => {
+    const fileArray = Array.from(files).filter((f) => ACCEPTED_TYPES.has(f.type));
+    if (fileArray.length === 0) return;
 
-    const items: UploadItem[] = Array.from(files).map((f) => ({
+    const startIndex = uploads.length;
+    const items: UploadItem[] = fileArray.map((f) => ({
       file: f,
       progress: 0,
       status: 'uploading' as const,
@@ -32,13 +39,12 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
 
     setUploads((prev) => [...prev, ...items]);
 
-    items.forEach((item, idx) => {
-      const offset = uploads.length;
-      uploadFile(item.file, offset + idx);
+    fileArray.forEach((file, idx) => {
+      uploadFile(file, startIndex + idx);
     });
-  }
+  }, [uploads.length, dayID, tripID, token]);
 
-  async function uploadFile(file: File, index: number) {
+  function uploadFile(file: File, index: number) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('dayID', dayID);
@@ -79,8 +85,35 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
     xhr.send(formData);
   }
 
-  const activeUploads = uploads.filter((u) => u.status === 'uploading');
-  const hasActiveUploads = activeUploads.length > 0;
+  function handleDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      handleFiles(files);
+    }
+  }
+
+  const hasActiveUploads = uploads.some((u) => u.status === 'uploading');
 
   return (
     <div className={styles.uploader}>
@@ -89,16 +122,28 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
         type="file"
         accept={ACCEPT}
         multiple
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => e.target.files && handleFiles(e.target.files)}
         className={styles.input}
       />
-      <button
-        className={styles.addBtn}
-        onClick={() => inputRef.current?.click()}
-        disabled={hasActiveUploads}
+
+      <div
+        className={`${styles.dropzone} ${dragOver ? styles.dropzoneActive : ''}`}
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        onClick={() => !hasActiveUploads && inputRef.current?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && !hasActiveUploads && inputRef.current?.click()}
       >
-        + Ajouter des photos / vidéos
-      </button>
+        <span className={styles.dropzoneIcon}>+</span>
+        <span className={styles.dropzoneText}>
+          {dragOver
+            ? 'Déposer ici'
+            : 'Glisser-déposer ou cliquer pour ajouter des photos / vidéos'}
+        </span>
+      </div>
 
       {uploads.length > 0 && (
         <div className={styles.progress}>
