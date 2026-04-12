@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/google/uuid"
@@ -201,9 +202,11 @@ func (h *Handler) RequestPasswordReset(ctx context.Context, cmd RequestPasswordR
 		return fmt.Errorf("request password reset: %w", err)
 	}
 
-	if err := h.mailer.SendPasswordReset(ctx, user.Email, rawToken); err != nil {
-		return fmt.Errorf("request password reset: %w", err)
-	}
+	go func() {
+		if err := h.mailer.SendPasswordReset(context.Background(), user.Email, rawToken); err != nil {
+			log.Printf("failed to send password reset email to %s: %v", user.Email, err)
+		}
+	}()
 
 	return nil
 }
