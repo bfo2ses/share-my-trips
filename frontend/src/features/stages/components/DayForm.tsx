@@ -1,5 +1,8 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useAddDay, useUpdateDay } from '../hooks/useDayMutations';
+import { useDayMedia } from '../../media/hooks/useMediaQueries';
+import { MediaGallery } from '../../media/components/MediaGallery';
+import { MediaUploader } from '../../media/components/MediaUploader';
 import type { FormAction } from '../../trips/components/TripForm';
 import styles from './DayForm.module.css';
 
@@ -73,6 +76,11 @@ function DayFormContent({
 
   const [, addDay] = useAddDay();
   const [, updateDay] = useUpdateDay();
+
+  // Media (only when editing an existing day)
+  const [{ data: mediaData }, reexecuteMedia] = useDayMedia(day?.id ?? '');
+  const media = isEdit ? (mediaData?.dayMedia ?? []) : [];
+  const refetchMedia = useCallback(() => reexecuteMedia({ requestPolicy: 'network-only' }), [reexecuteMedia]);
 
   // Live coords: pending from map click takes precedence over the existing day.
   const lat = pendingCoords?.lat ?? day?.lat ?? null;
@@ -189,6 +197,13 @@ function DayFormContent({
         <button type="submit" className={styles.submit}>
           {isEdit ? 'Enregistrer' : 'Ajouter le jour'}
         </button>
+
+        {isEdit && (
+          <div className={styles.mediaSection}>
+            <MediaGallery media={media} isAdmin onDeleted={refetchMedia} />
+            <MediaUploader dayID={day!.id} tripID={tripID} onUploadComplete={refetchMedia} />
+          </div>
+        )}
 
         {actions && actions.length > 0 && (
           <div className={styles.actions}>
