@@ -38,6 +38,10 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
 
   function handleCardClick() {
     if (menuOpen || confirmDelete) return;
+    if (isAdmin && onEdit) {
+      onEdit(trip);
+      return;
+    }
     navigate(`/trips/${trip.id}`);
   }
 
@@ -101,9 +105,6 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
 
         {isAdmin && menuOpen && (
           <div className={styles.actionMenu} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.actionItem} onClick={(e) => stopAndRun(e, () => onEdit?.(trip))}>
-              Modifier
-            </button>
             {trip.status === 'DRAFT' && (
               <button className={styles.actionItem} onClick={(e) => stopAndRun(e, handlePublish)}>
                 Publier

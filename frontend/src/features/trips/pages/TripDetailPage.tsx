@@ -78,6 +78,7 @@ export function TripDetailPage() {
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
 
   const trip = data?.trip ?? null;
+  const isModifiable = trip ? trip.status !== 'CLOSED' : false;
   const stages = useMemo(() => data?.stages ?? [], [data?.stages]);
   const allDays = useMemo(() => data?.tripDays ?? [], [data?.tripDays]);
 
@@ -114,6 +115,51 @@ export function TripDetailPage() {
     if (!selectedStageId) return [];
     return (daysByStage.get(selectedStageId) ?? []).filter((d) => d.stageIDs[0] === selectedStageId);
   }, [selectedStageId, daysByStage]);
+
+  // Closing helpers — centralised so the "mutually exclusive forms" rule is
+  // easy to enforce in the openers below.
+  const closeStageForm = useCallback(() => {
+    setStageFormOpen(false);
+    setEditingStage(null);
+    setPendingStageCoords(null);
+  }, []);
+
+  const closeDayForm = useCallback(() => {
+    setDayFormOpen(false);
+    setEditingDay(null);
+    setDayFormStageId(null);
+    setPendingDayCoords(null);
+  }, []);
+
+  function handleAddStage() {
+    closeDayForm();
+    setEditingStage(null);
+    setPendingStageCoords(null);
+    setStageFormOpen(true);
+  }
+
+  const handleEditStage = useCallback((stage: Stage) => {
+    closeDayForm();
+    setEditingStage(stage);
+    setPendingStageCoords(null);
+    setStageFormOpen(true);
+  }, [closeDayForm]);
+
+  const handleAddDay = useCallback((stageId: string) => {
+    closeStageForm();
+    setEditingDay(null);
+    setDayFormStageId(stageId);
+    setPendingDayCoords(null);
+    setDayFormOpen(true);
+  }, [closeStageForm]);
+
+  const handleEditDay = useCallback((stageId: string, day: Day) => {
+    closeStageForm();
+    setEditingDay(day);
+    setDayFormStageId(stageId);
+    setPendingDayCoords(null);
+    setDayFormOpen(true);
+  }, [closeStageForm]);
 
   const handleStageClick = useCallback((stageId: string) => {
     setSearchParams({ stage: stageId }, { replace: true });
@@ -168,51 +214,6 @@ export function TripDetailPage() {
     navigate('/');
   }
 
-  // Closing helpers — centralised so the "mutually exclusive forms" rule is
-  // easy to enforce in the openers below.
-  const closeStageForm = useCallback(() => {
-    setStageFormOpen(false);
-    setEditingStage(null);
-    setPendingStageCoords(null);
-  }, []);
-
-  const closeDayForm = useCallback(() => {
-    setDayFormOpen(false);
-    setEditingDay(null);
-    setDayFormStageId(null);
-    setPendingDayCoords(null);
-  }, []);
-
-  function handleAddStage() {
-    closeDayForm();
-    setEditingStage(null);
-    setPendingStageCoords(null);
-    setStageFormOpen(true);
-  }
-
-  function handleEditStage(stage: Stage) {
-    closeDayForm();
-    setEditingStage(stage);
-    setPendingStageCoords(null);
-    setStageFormOpen(true);
-  }
-
-  function handleAddDay(stageId: string) {
-    closeStageForm();
-    setEditingDay(null);
-    setDayFormStageId(stageId);
-    setPendingDayCoords(null);
-    setDayFormOpen(true);
-  }
-
-  function handleEditDay(stageId: string, day: Day) {
-    closeStageForm();
-    setEditingDay(day);
-    setDayFormStageId(stageId);
-    setPendingDayCoords(null);
-    setDayFormOpen(true);
-  }
-
   // Drag handlers — F3 single-writer policy: if the edit form for this exact
   // entity is open, propagate the coords into the form's pending state and
   // skip the immediate mutation (the form submit is the single writer).
@@ -220,7 +221,9 @@ export function TripDetailPage() {
   // first save resolves, and revert the marker via the provided closure.
   const handleStageDragEnd = useCallback(
     async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
-      if (stageFormOpen && editingStage?.id === stage.id) {
+      // Check both manual form and auto-edit form (editMode + selected stage).
+      const autoEdit = isAdmin && isModifiable;
+      if ((stageFormOpen && editingStage?.id === stage.id) || (autoEdit && !selectedDayId)) {
         setPendingStageCoords(coords);
         return;
       }
@@ -254,12 +257,14 @@ export function TripDetailPage() {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [stageFormOpen, editingStage, updateStage, refetchAll],
+    [stageFormOpen, editingStage, isAdmin, isModifiable, selectedDayId, updateStage, refetchAll],
   );
 
   const handleDayDragEnd = useCallback(
     async (day: Day, coords: { lat: number; lng: number }, revert: () => void) => {
-      if (dayFormOpen && editingDay?.id === day.id) {
+      // Check both manual form and auto-edit form (editMode + selected day).
+      const autoEdit = isAdmin && isModifiable;
+      if ((dayFormOpen && editingDay?.id === day.id) || (autoEdit && selectedDayId === day.id)) {
         setPendingDayCoords(coords);
         return;
       }
@@ -291,7 +296,7 @@ export function TripDetailPage() {
         savingDaysRef.current.delete(day.id);
       }
     },
-    [dayFormOpen, editingDay, updateDay, refetchAll],
+    [dayFormOpen, editingDay, isAdmin, isModifiable, selectedDayId, updateDay, refetchAll],
   );
 
   if (detailFetching) {
@@ -302,7 +307,6 @@ export function TripDetailPage() {
     return <div className={styles.notFound}>Voyage introuvable.</div>;
   }
 
-  const isModifiable = trip.status !== 'CLOSED';
   const canEditMarkers = !!isAdmin && isModifiable;
   const color = tripColor(trip.id);
   const detailOpen = selectedStageId !== null;
@@ -310,14 +314,27 @@ export function TripDetailPage() {
   const canCloseTrip =
     stages.length > 0 && Object.keys(stageDateRanges).length === stages.length;
 
+  // Auto-open edit forms in edit mode based on current selection.
+  // Manual opens (create via map click / menu) take priority over auto-open.
+  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !stageFormOpen && !dayFormOpen;
+  const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedDayId && !stageFormOpen && !dayFormOpen;
+  const autoDayForm = isAdmin && isModifiable && !!selectedDay && !!selectedStageId && !dayFormOpen;
+
+  const effectiveFormOpen = formOpen || autoTripForm;
+  const effectiveStageFormOpen = stageFormOpen || autoStageForm;
+  const effectiveStageEntity = stageFormOpen ? editingStage : (autoStageForm ? selectedStage : null);
+  const effectiveDayFormOpen = dayFormOpen || autoDayForm;
+  const effectiveDayEntity = dayFormOpen ? editingDay : (autoDayForm ? selectedDay : null);
+  const effectiveDayStageId = dayFormOpen ? dayFormStageId : (autoDayForm ? selectedStageId : null);
+
   // F4: suppress placement mode whenever a modal/overlay is blocking the map.
-  const overlayActive = confirmDelete || formOpen;
+  const overlayActive = confirmDelete || effectiveFormOpen;
 
   const placementMode: PlacementMode = !canEditMarkers || overlayActive
     ? null
-    : stageFormOpen
+    : effectiveStageFormOpen
     ? 'stage'
-    : dayFormOpen
+    : effectiveDayFormOpen
     ? 'day'
     : selectedDay
     ? null
@@ -335,11 +352,11 @@ export function TripDetailPage() {
       : null;
 
   const handleMapClick = (coords: { lat: number; lng: number }) => {
-    if (stageFormOpen) {
+    if (effectiveStageFormOpen) {
       setPendingStageCoords(coords);
       return;
     }
-    if (dayFormOpen) {
+    if (effectiveDayFormOpen) {
       setPendingDayCoords(coords);
       return;
     }
@@ -362,7 +379,6 @@ export function TripDetailPage() {
 
   const tripMenuItems: ActionMenuItem[] = isAdmin
     ? [
-        { label: 'Modifier', onClick: () => setFormOpen(true) },
         ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
         ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
         ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir', onClick: handleReopen }] : []),
@@ -511,27 +527,27 @@ export function TripDetailPage() {
     {isAdmin && (
       <>
         <TripForm
-          open={formOpen}
+          open={effectiveFormOpen}
           onClose={() => setFormOpen(false)}
           trip={trip}
         />
         <StageForm
-          key={editingStage?.id ?? 'new-stage'}
-          open={stageFormOpen}
-          onClose={closeStageForm}
+          key={effectiveStageEntity?.id ?? 'new-stage'}
+          open={effectiveStageFormOpen}
+          onClose={autoStageForm ? handleDetailClose : closeStageForm}
           tripID={id!}
-          stage={editingStage}
+          stage={effectiveStageEntity}
           pendingCoords={pendingStageCoords}
           noBackdrop
         />
-        {dayFormStageId && (
+        {effectiveDayStageId && (
           <DayForm
-            key={`${dayFormStageId}-${editingDay?.id ?? 'new-day'}`}
-            open={dayFormOpen}
-            onClose={closeDayForm}
+            key={`${effectiveDayStageId}-${effectiveDayEntity?.id ?? 'new-day'}`}
+            open={effectiveDayFormOpen}
+            onClose={autoDayForm ? handleBackToStage : closeDayForm}
             tripID={id!}
-            stageID={dayFormStageId}
-            day={editingDay}
+            stageID={effectiveDayStageId}
+            day={effectiveDayEntity}
             pendingCoords={pendingDayCoords}
             noBackdrop
           />
