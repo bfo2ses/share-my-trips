@@ -124,7 +124,6 @@ function StageDetail(props: StageDetailProps) {
 
   const menuItems: ActionMenuItem[] = props.canEdit
     ? [
-        { label: 'Modifier', onClick: () => props.onEditStage(stage) },
         { label: 'Ajouter un jour', onClick: () => props.onAddDay(stage.id) },
         { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
       ]
@@ -198,7 +197,7 @@ type DayDetailProps = {
 );
 
 function DayDetail(props: DayDetailProps) {
-  const { day, stage, onClose, onBack } = props;
+  const { day, onClose, onBack } = props;
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -223,7 +222,6 @@ function DayDetail(props: DayDetailProps) {
 
   const menuItems: ActionMenuItem[] = props.canEdit
     ? [
-        { label: 'Modifier', onClick: () => props.onEdit(stage.id, day) },
         { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
       ]
     : [];

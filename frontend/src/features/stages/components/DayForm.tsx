@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAddDay, useUpdateDay } from '../hooks/useDayMutations';
+import type { FormAction } from '../../trips/components/TripForm';
 import styles from './DayForm.module.css';
 
 interface DayData {
@@ -19,15 +20,17 @@ interface DayFormProps {
   day?: DayData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   noBackdrop?: boolean;
+  panel?: boolean;
+  actions?: FormAction[];
 }
 
-export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, noBackdrop }: DayFormProps) {
+export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, noBackdrop, panel, actions }: DayFormProps) {
   return (
     <>
-      {open && !noBackdrop && (
+      {open && !noBackdrop && !panel && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
-      <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
+      <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
         {open && (
           <DayFormContent
             tripID={tripID}
@@ -35,6 +38,8 @@ export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, no
             day={day}
             pendingCoords={pendingCoords}
             onClose={onClose}
+            panel={panel}
+            actions={actions}
           />
         )}
       </aside>
@@ -48,12 +53,16 @@ function DayFormContent({
   day,
   pendingCoords,
   onClose,
+  panel,
+  actions,
 }: {
   tripID: string;
   stageID: string;
   day?: DayData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   onClose: () => void;
+  panel?: boolean;
+  actions?: FormAction[];
 }) {
   const isEdit = !!day;
 
@@ -132,7 +141,9 @@ function DayFormContent({
         <span className={styles.headerTitle}>
           {isEdit ? 'Modifier le jour' : 'Nouveau jour'}
         </span>
-        <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+        {!panel && (
+          <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+        )}
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -178,6 +189,21 @@ function DayFormContent({
         <button type="submit" className={styles.submit}>
           {isEdit ? 'Enregistrer' : 'Ajouter le jour'}
         </button>
+
+        {actions && actions.length > 0 && (
+          <div className={styles.actions}>
+            {actions.map((action, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
     </>
   );

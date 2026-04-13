@@ -34,7 +34,12 @@ export function Header({ user }: HeaderProps) {
     <header className={styles.header}>
       <div className={styles.inner}>
         <a href="/" className={styles.logo}>
-          <span className={styles.logoIcon}>✈</span>
+          <svg className={styles.logoIcon} width="16" height="16" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M16 2C10.48 2 6 6.48 6 12c0 7.5 10 18 10 18s10-10.5 10-18c0-5.52-4.48-10-10-10z" fill="currentColor"/>
+            <circle cx="16" cy="12" r="5.5" fill="var(--color-bg)"/>
+            <ellipse cx="16" cy="12" rx="2.2" ry="5.5" fill="none" stroke="currentColor" strokeWidth="0.8"/>
+            <line x1="10.5" y1="12" x2="21.5" y2="12" stroke="currentColor" strokeWidth="0.8"/>
+          </svg>
           ShareMyTrips
         </a>
 

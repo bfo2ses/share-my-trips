@@ -2,6 +2,12 @@ import { useState } from 'react';
 import { useCreateTrip, useUpdateTrip } from '../hooks/useTripMutations';
 import styles from './TripForm.module.css';
 
+export interface FormAction {
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}
+
 interface TripData {
   id: string;
   title: string;
@@ -20,22 +26,24 @@ interface TripFormProps {
   trip?: TripData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   noBackdrop?: boolean;
+  panel?: boolean;
+  actions?: FormAction[];
 }
 
-export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop }: TripFormProps) {
+export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel, actions }: TripFormProps) {
   return (
     <>
-      {open && !noBackdrop && (
+      {open && !noBackdrop && !panel && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
-      <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
-        {open && <TripFormContent trip={trip} pendingCoords={pendingCoords} onClose={onClose} />}
+      <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
+        {open && <TripFormContent trip={trip} pendingCoords={pendingCoords} onClose={onClose} panel={panel} actions={actions} />}
       </aside>
     </>
   );
 }
 
-function TripFormContent({ trip, pendingCoords, onClose }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void }) {
+function TripFormContent({ trip, pendingCoords, onClose, panel, actions }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: FormAction[] }) {
   const isEdit = !!trip;
 
   const [title, setTitle] = useState(trip?.title ?? '');
@@ -107,9 +115,11 @@ function TripFormContent({ trip, pendingCoords, onClose }: { trip?: TripData | n
         <span className={styles.headerTitle}>
           {isEdit ? 'Modifier le voyage' : 'Nouveau voyage'}
         </span>
-        <button className={styles.close} onClick={onClose} aria-label="Fermer">
-          ✕
-        </button>
+        {!panel && (
+          <button className={styles.close} onClick={onClose} aria-label="Fermer">
+            ✕
+          </button>
+        )}
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -189,6 +199,21 @@ function TripFormContent({ trip, pendingCoords, onClose }: { trip?: TripData | n
         <button type="submit" className={styles.submit}>
           {isEdit ? 'Enregistrer' : 'Créer le voyage'}
         </button>
+
+        {actions && actions.length > 0 && (
+          <div className={styles.actions}>
+            {actions.map((action, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
     </>
   );
