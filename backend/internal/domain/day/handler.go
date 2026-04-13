@@ -72,7 +72,7 @@ func (h *Handler) Update(ctx context.Context, cmd UpdateDayCommand) (*Day, error
 		return nil, fmt.Errorf("update day: %w", ErrTripClosed)
 	}
 
-	if err := d.Update(cmd.Title, cmd.Description, cmd.Lat, cmd.Lng); err != nil {
+	if err := d.Update(cmd.Date, cmd.Title, cmd.Description, cmd.Lat, cmd.Lng); err != nil {
 		return nil, fmt.Errorf("update day: %w", err)
 	}
 

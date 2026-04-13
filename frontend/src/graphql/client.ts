@@ -1,5 +1,6 @@
 import { createClient, fetchExchange, mapExchange } from 'urql';
 import { cacheExchange } from '@urql/exchange-graphcache';
+import type { Cache } from '@urql/exchange-graphcache';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
 
@@ -9,7 +10,7 @@ export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
-function invalidateQuery(cache: Parameters<NonNullable<Parameters<typeof cacheExchange>[0]['updates']>['Mutation'][string]>[2], field: string) {
+function invalidateQuery(cache: Cache, field: string) {
   const fields = cache.inspectFields('Query');
   for (const f of fields) {
     if (f.fieldName === field) {

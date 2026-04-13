@@ -224,8 +224,26 @@ func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input Updat
 	if err := r.requireEditor(ctx); err != nil {
 		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
+
+	// If date is provided, parse it; otherwise fetch the existing day's date.
+	var dateVal time.Time
+	if input.Date != nil {
+		parsed, err := time.Parse(dateFormat, *input.Date)
+		if err != nil {
+			return &DayPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+		}
+		dateVal = parsed
+	} else {
+		existing, err := r.dayHandler.GetByID(ctx, day.GetDayQuery{ID: id})
+		if err != nil {
+			return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		}
+		dateVal = existing.Date
+	}
+
 	d, err := r.dayHandler.Update(ctx, day.UpdateDayCommand{
 		ID:          id,
+		Date:        dateVal,
 		Title:       derefString(input.Title),
 		Description: derefString(input.Description),
 		Lat:         input.Lat,
@@ -334,7 +352,9 @@ func (r *mutationResolver) DeleteAccount(ctx context.Context, id string) (*Delet
 
 // RequestPasswordReset is the resolver for the requestPasswordReset field.
 func (r *mutationResolver) RequestPasswordReset(ctx context.Context, email string) (bool, error) {
-	_ = r.authHandler.RequestPasswordReset(ctx, auth.RequestPasswordResetCommand{Email: email})
+	go func() {
+		_ = r.authHandler.RequestPasswordReset(context.Background(), auth.RequestPasswordResetCommand{Email: email})
+	}()
 	return true, nil
 }
 

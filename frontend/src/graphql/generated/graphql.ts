@@ -496,8 +496,8 @@ export type TripStatus =
   | 'DRAFT'
   | 'PUBLISHED';
 
-/** The date of a day is immutable after creation. To change the date, delete and recreate the day. */
 export type UpdateDayInput = {
+  date?: InputMaybe<Scalars['String']['input']>;
   description?: InputMaybe<Scalars['String']['input']>;
   lat: Scalars['Float']['input'];
   lng: Scalars['Float']['input'];

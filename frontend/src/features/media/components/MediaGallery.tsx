@@ -28,8 +28,8 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
 
   // Reset local state when props change (after refetch).
   const prevMediaRef = useRef(media);
-  if (media !== prevMediaRef.current) {
-    prevMediaRef.current = media;
+  if (media !== prevMediaRef.current) { // eslint-disable-line react-hooks/refs
+    prevMediaRef.current = media; // eslint-disable-line react-hooks/refs
     setLocalMedia(null);
   }
 

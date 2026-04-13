@@ -1,15 +1,6 @@
-import { createContext, useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { ReactNode } from 'react';
-
-interface EditModeContextValue {
-  editMode: boolean;
-  toggleEditMode: () => void;
-}
-
-export const EditModeContext = createContext<EditModeContextValue>({
-  editMode: false,
-  toggleEditMode: () => {},
-});
+import { EditModeContext } from './editModeContext';
 
 export function EditModeProvider({ children }: { children: ReactNode }) {
   const [editMode, setEditMode] = useState(false);
