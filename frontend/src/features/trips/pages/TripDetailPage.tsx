@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTripDetail } from '../hooks/useTripDetail';
 import { useMe } from '../../auth/hooks/useMe';
+import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useUpdateStage } from '../../stages/hooks/useStageMutations';
 import { useUpdateDay } from '../../stages/hooks/useDayMutations';
@@ -38,7 +39,9 @@ export function TripDetailPage() {
   const [{ data, fetching: detailFetching }, reexecuteDetail] = useTripDetail(id!);
   const { data: meData } = useMe();
   const role = meData?.me?.role;
-  const isAdmin = role === 'ADMIN' || role === 'EDITOR';
+  const hasEditRole = role === 'ADMIN' || role === 'EDITOR';
+  const { editMode } = useEditMode();
+  const isAdmin = hasEditRole && editMode;
 
   const [searchParams, setSearchParams] = useSearchParams();
 

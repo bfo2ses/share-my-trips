@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useTrips } from '../hooks/useTrips';
 import { useMe } from '../../auth/hooks/useMe';
+import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { WorldMap } from '../components/WorldMap';
 import { TripsDrawer } from '../components/TripsDrawer';
 import { TripForm } from '../components/TripForm';
@@ -17,9 +18,11 @@ export function TripsPage() {
 
   const { data: meData } = useMe();
   const role = meData?.me?.role;
-  const isAdmin = role === 'ADMIN' || role === 'EDITOR';
+  const hasEditRole = role === 'ADMIN' || role === 'EDITOR';
+  const { editMode } = useEditMode();
+  const isAdmin = hasEditRole && editMode;
 
-  const { data, fetching, error } = useTrips(isAdmin ? undefined : ['PUBLISHED', 'CLOSED']);
+  const { data, fetching, error } = useTrips(hasEditRole ? undefined : ['PUBLISHED', 'CLOSED']);
 
   const trips = data?.trips ?? [];
 
