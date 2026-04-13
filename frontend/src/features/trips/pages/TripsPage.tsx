@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
 import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { WorldMap } from '../components/WorldMap';
-import { TripsDrawer } from '../components/TripsDrawer';
+import { TripCard } from '../components/TripCard';
 import { TripForm } from '../components/TripForm';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
 import styles from './TripsPage.module.css';
@@ -11,7 +12,8 @@ import styles from './TripsPage.module.css';
 type TripSummary = TripsQuery['trips'][number];
 
 export function TripsPage() {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const navigate = useNavigate();
+  const [panelOpen, setPanelOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -30,6 +32,14 @@ export function TripsPage() {
     setEditingTrip(trip);
     setPendingCoords(trip.lat != null && trip.lng != null ? { lat: trip.lat, lng: trip.lng } : null);
     setFormOpen(true);
+  }
+
+  function handleCardClick(trip: TripSummary) {
+    if (isAdmin) {
+      handleEdit(trip);
+    } else {
+      navigate(`/trips/${trip.id}`, { viewTransition: true });
+    }
   }
 
   function handleCreate() {
@@ -61,34 +71,61 @@ export function TripsPage() {
   }
 
   return (
-    <main className={styles.page}>
-      {!fetching && (
-        <WorldMap
-          trips={trips}
-          placementMode={isAdmin}
-          pendingCoords={formOpen ? pendingCoords : null}
-          onMapClick={isAdmin ? handleMapClick : undefined}
-        />
-      )}
+    <main className={`${styles.page} ${panelOpen ? styles.panelOpen : ''}`}>
+      {/* ── Panel gauche ── */}
+      <aside className={styles.panel}>
+        <div className={styles.panelHeader}>
+          <span className={styles.panelTitle}>Tous les voyages</span>
+          <div className={styles.panelActions}>
+            {isAdmin && (
+              <button className={styles.addBtn} onClick={handleCreate} aria-label="Créer un voyage">
+                +
+              </button>
+            )}
+            <button className={styles.closeBtn} onClick={() => setPanelOpen(false)} aria-label="Fermer">
+              ✕
+            </button>
+          </div>
+        </div>
+        <div className={styles.list}>
+          {trips.map((trip, index) => (
+            <TripCard
+              key={trip.id}
+              trip={trip}
+              index={index}
+              isAdmin={isAdmin}
+              onEdit={handleCardClick}
+            />
+          ))}
+          {trips.length === 0 && (
+            <p className={styles.empty}>Aucun voyage pour le moment.</p>
+          )}
+        </div>
+      </aside>
 
+      {/* ── Carte ── */}
+      <div className={styles.mapArea}>
+        {!fetching && (
+          <WorldMap
+            trips={trips}
+            placementMode={isAdmin}
+            pendingCoords={formOpen ? pendingCoords : null}
+            onMapClick={isAdmin ? handleMapClick : undefined}
+          />
+        )}
+      </div>
+
+      {/* ── Bouton toggle ── */}
       <button
         className={styles.listButton}
-        onClick={() => setDrawerOpen(true)}
+        onClick={() => setPanelOpen(!panelOpen)}
         aria-label="Afficher la liste des voyages"
       >
         <span className={styles.listButtonIcon}>≡</span>
         <span>Voyages</span>
       </button>
 
-      <TripsDrawer
-        trips={trips}
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        isAdmin={isAdmin}
-        onEdit={handleEdit}
-        onCreate={handleCreate}
-      />
-
+      {/* ── Formulaire (drawer) ── */}
       {isAdmin && (
         <TripForm
           open={formOpen}
