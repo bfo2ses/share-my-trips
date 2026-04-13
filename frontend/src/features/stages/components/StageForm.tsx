@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAddStage, useUpdateStage } from '../hooks/useStageMutations';
+import type { FormAction } from '../../trips/components/TripForm';
 import styles from './StageForm.module.css';
 
 interface StageData {
@@ -18,21 +19,25 @@ interface StageFormProps {
   stage?: StageData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   noBackdrop?: boolean;
+  panel?: boolean;
+  actions?: FormAction[];
 }
 
-export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackdrop }: StageFormProps) {
+export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackdrop, panel, actions }: StageFormProps) {
   return (
     <>
-      {open && !noBackdrop && (
+      {open && !noBackdrop && !panel && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
-      <aside className={`${styles.drawer} ${open ? styles.open : ''}`}>
+      <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
         {open && (
           <StageFormContent
             tripID={tripID}
             stage={stage}
             pendingCoords={pendingCoords}
             onClose={onClose}
+            panel={panel}
+            actions={actions}
           />
         )}
       </aside>
@@ -45,11 +50,15 @@ function StageFormContent({
   stage,
   pendingCoords,
   onClose,
+  panel,
+  actions,
 }: {
   tripID: string;
   stage?: StageData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   onClose: () => void;
+  panel?: boolean;
+  actions?: FormAction[];
 }) {
   const isEdit = !!stage;
 
@@ -114,7 +123,9 @@ function StageFormContent({
         <span className={styles.headerTitle}>
           {isEdit ? 'Modifier l\'étape' : 'Nouvelle étape'}
         </span>
-        <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+        {!panel && (
+          <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
+        )}
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -160,6 +171,21 @@ function StageFormContent({
         <button type="submit" className={styles.submit}>
           {isEdit ? 'Enregistrer' : 'Ajouter l\'étape'}
         </button>
+
+        {actions && actions.length > 0 && (
+          <div className={styles.actions}>
+            {actions.map((action, i) => (
+              <button
+                key={i}
+                type="button"
+                className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
+                onClick={action.onClick}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        )}
       </form>
     </>
   );

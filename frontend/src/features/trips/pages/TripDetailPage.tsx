@@ -4,10 +4,10 @@ import { useTripDetail } from '../hooks/useTripDetail';
 import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
-import { useUpdateStage } from '../../stages/hooks/useStageMutations';
-import { useUpdateDay } from '../../stages/hooks/useDayMutations';
+import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
+import { useUpdateDay, useDeleteDay } from '../../stages/hooks/useDayMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
-import { TripForm } from '../components/TripForm';
+import { TripForm, type FormAction } from '../components/TripForm';
 import { DetailPanel } from '../components/DetailPanel';
 import { StageForm } from '../../stages/components/StageForm';
 import { DayForm } from '../../stages/components/DayForm';
@@ -73,7 +73,9 @@ export function TripDetailPage() {
   const [, deleteTrip] = useDeleteTrip();
   const [, reopenTrip] = useReopenTrip();
   const [, updateStage] = useUpdateStage();
+  const [, deleteStage] = useDeleteStage();
   const [, updateDay] = useUpdateDay();
+  const [, deleteDay] = useDeleteDay();
 
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
 
@@ -322,9 +324,7 @@ export function TripDetailPage() {
 
   const effectiveFormOpen = formOpen || autoTripForm;
   const effectiveStageFormOpen = stageFormOpen || autoStageForm;
-  const effectiveStageEntity = stageFormOpen ? editingStage : (autoStageForm ? selectedStage : null);
   const effectiveDayFormOpen = dayFormOpen || autoDayForm;
-  const effectiveDayEntity = dayFormOpen ? editingDay : (autoDayForm ? selectedDay : null);
   const effectiveDayStageId = dayFormOpen ? dayFormStageId : (autoDayForm ? selectedStageId : null);
 
   // F4: suppress placement mode whenever a modal/overlay is blocking the map.
@@ -377,7 +377,43 @@ export function TripDetailPage() {
     }
   };
 
-  const tripMenuItems: ActionMenuItem[] = isAdmin
+  // Auto-form is one of the three auto-open forms (panel mode in-grid).
+  const anyAutoForm = autoTripForm || autoStageForm || autoDayForm;
+
+  // Actions for each form panel
+  const tripFormActions: FormAction[] = isAdmin ? [
+    ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
+    ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
+    ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
+    ...(trip.status === 'PUBLISHED' && canCloseTrip ? [{ label: 'Clôturer le voyage', onClick: handleCloseTripAction }] : []),
+    ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir le voyage', onClick: handleReopen }] : []),
+    { label: 'Supprimer le voyage', onClick: () => setConfirmDelete(true), danger: true },
+  ] : [];
+
+  const stageFormActions: FormAction[] = isAdmin && selectedStage ? [
+    { label: 'Ajouter un jour', onClick: () => handleAddDay(selectedStage.id) },
+    {
+      label: 'Supprimer l\'étape',
+      danger: true,
+      onClick: async () => {
+        const result = await deleteStage({ id: selectedStage.id }, { additionalTypenames: ['Stage', 'Day'] });
+        if (!result.error && result.data?.deleteStage.success) handleDetailClose();
+      },
+    },
+  ] : [];
+
+  const dayFormActions: FormAction[] = isAdmin && selectedDay ? [
+    {
+      label: 'Supprimer le jour',
+      danger: true,
+      onClick: async () => {
+        const result = await deleteDay({ id: selectedDay.id }, { additionalTypenames: ['Day'] });
+        if (!result.error && result.data?.deleteDay.success) handleBackToStage();
+      },
+    },
+  ] : [];
+
+  const tripMenuItems: ActionMenuItem[] = isAdmin && !anyAutoForm
     ? [
         ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
         ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
@@ -398,7 +434,7 @@ export function TripDetailPage() {
 
   return (
     <>
-    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''}`}>
+    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -411,16 +447,6 @@ export function TripDetailPage() {
           <p className={styles.country}>{trip.country}</p>
           <h1 className={styles.tripTitle}>{trip.title}</h1>
           <p className={styles.tripDates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
-          {isAdmin && trip.status === 'DRAFT' && (
-            <button className={styles.primaryCta} onClick={handlePublish}>
-              Publier le voyage
-            </button>
-          )}
-          {isAdmin && trip.status === 'PUBLISHED' && canCloseTrip && (
-            <button className={styles.primaryCta} onClick={handleCloseTripAction}>
-              Clôturer le voyage
-            </button>
-          )}
         </div>
 
         <div className={styles.viewToggle}>
@@ -486,8 +512,46 @@ export function TripDetailPage() {
         </div>
       </aside>
 
-      {/* ── Panneau détail ── */}
-      {isAdmin && isModifiable ? (
+      {/* ── Panneau milieu : form panel (edit mode) ou detail panel ── */}
+      {anyAutoForm ? (
+        <div className={styles.formPanelWrapper}>
+          {autoTripForm && (
+            <TripForm
+              open
+              panel
+              onClose={() => {}}
+              trip={trip}
+              pendingCoords={pendingStageCoords}
+              actions={tripFormActions}
+            />
+          )}
+          {autoStageForm && selectedStage && (
+            <StageForm
+              key={selectedStage.id}
+              open
+              panel
+              onClose={handleDetailClose}
+              tripID={id!}
+              stage={selectedStage}
+              pendingCoords={pendingStageCoords}
+              actions={stageFormActions}
+            />
+          )}
+          {autoDayForm && selectedDay && effectiveDayStageId && (
+            <DayForm
+              key={`${effectiveDayStageId}-${selectedDay.id}`}
+              open
+              panel
+              onClose={handleBackToStage}
+              tripID={id!}
+              stageID={effectiveDayStageId}
+              day={selectedDay}
+              pendingCoords={pendingDayCoords}
+              actions={dayFormActions}
+            />
+          )}
+        </div>
+      ) : isAdmin && isModifiable ? (
         <DetailPanel
           {...detailPanelCommon}
           canEdit
@@ -526,28 +590,29 @@ export function TripDetailPage() {
 
     {isAdmin && (
       <>
+        {/* Manual form opens (create via menu/map click) — rendered as drawers */}
         <TripForm
-          open={effectiveFormOpen}
+          open={formOpen}
           onClose={() => setFormOpen(false)}
           trip={trip}
         />
         <StageForm
-          key={effectiveStageEntity?.id ?? 'new-stage'}
-          open={effectiveStageFormOpen}
-          onClose={autoStageForm ? handleDetailClose : closeStageForm}
+          key={editingStage?.id ?? 'new-stage'}
+          open={stageFormOpen}
+          onClose={closeStageForm}
           tripID={id!}
-          stage={effectiveStageEntity}
+          stage={editingStage}
           pendingCoords={pendingStageCoords}
           noBackdrop
         />
-        {effectiveDayStageId && (
+        {dayFormStageId && (
           <DayForm
-            key={`${effectiveDayStageId}-${effectiveDayEntity?.id ?? 'new-day'}`}
-            open={effectiveDayFormOpen}
-            onClose={autoDayForm ? handleBackToStage : closeDayForm}
+            key={`${dayFormStageId}-${editingDay?.id ?? 'new-day'}`}
+            open={dayFormOpen}
+            onClose={closeDayForm}
             tripID={id!}
-            stageID={effectiveDayStageId}
-            day={effectiveDayEntity}
+            stageID={dayFormStageId}
+            day={editingDay}
             pendingCoords={pendingDayCoords}
             noBackdrop
           />

@@ -35,6 +35,19 @@
   transform: translateX(0);
 }
 
+/* Panel mode: rendered in-grid instead of fixed overlay */
+.drawer.panel {
+  position: static;
+  transform: none;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  box-shadow: none;
+  border-left: none;
+  border-right: none;
+  z-index: auto;
+}
+
 .header {
   display: flex;
   align-items: center;
@@ -166,6 +179,46 @@
   margin: 0;
   color: #e55;
   font-size: 0.8rem;
+}
+
+/* ── Action buttons ── */
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid var(--color-border);
+  padding-top: 18px;
+  margin-top: 8px;
+}
+
+.actionBtn {
+  width: 100%;
+  background: var(--color-bg-subtle);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.actionBtn:hover {
+  border-color: var(--color-border-focus);
+  background: var(--color-surface);
+}
+
+.actionDanger {
+  color: #e55;
+  border-color: rgba(238, 85, 85, 0.2);
+}
+
+.actionDanger:hover {
+  background: rgba(238, 85, 85, 0.08);
+  border-color: rgba(238, 85, 85, 0.4);
 }
 
 /* ── Mobile ── */
