@@ -2,6 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMe } from '../hooks/useMe';
 import { Header } from '../../../components/Header/Header';
+import { EditModeProvider } from '../../../components/EditMode/EditModeContext';
 
 export function ProtectedLayout() {
   const { token } = useAuth();
@@ -20,9 +21,9 @@ export function ProtectedLayout() {
   }
 
   return (
-    <>
+    <EditModeProvider>
       <Header user={data?.me ?? null} />
       <Outlet />
-    </>
+    </EditModeProvider>
   );
 }

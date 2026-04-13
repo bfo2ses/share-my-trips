@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLogout } from '../../features/auth/hooks/useLogout';
+import { EditModeToggle } from '../EditMode/EditModeToggle';
 import type { MeQuery } from '../../graphql/generated/graphql';
 import styles from './Header.module.css';
 
@@ -37,6 +38,11 @@ export function Header({ user }: HeaderProps) {
           ShareMyTrips
         </a>
 
+        <div className={styles.rightArea}>
+          {(user?.role === 'ADMIN' || user?.role === 'EDITOR') && (
+            <EditModeToggle />
+          )}
+
         <div className={styles.userArea} ref={menuRef}>
           <button
             className={styles.userBtn}
@@ -71,6 +77,7 @@ export function Header({ user }: HeaderProps) {
               </button>
             </div>
           )}
+        </div>
         </div>
       </div>
     </header>

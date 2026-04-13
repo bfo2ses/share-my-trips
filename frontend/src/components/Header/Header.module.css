@@ -33,6 +33,13 @@
   opacity: 0.6;
 }
 
+/* ── Zone droite (toggle + utilisateur) ── */
+.rightArea {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 /* ── Zone utilisateur ── */
 .userArea {
   position: relative;
