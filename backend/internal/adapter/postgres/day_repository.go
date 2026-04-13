@@ -31,6 +31,7 @@ func (r *DayRepository) Save(ctx context.Context, d *day.Day) error {
 		INSERT INTO days (id, trip_id, date, title, description, lat, lng, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 		ON CONFLICT (id) DO UPDATE SET
+			date = EXCLUDED.date,
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
 			lat = EXCLUDED.lat,
