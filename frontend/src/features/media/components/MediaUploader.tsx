@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
 import styles from './MediaUploader.module.css';
 
@@ -25,24 +25,6 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFiles = useCallback((files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter((f) => ACCEPTED_TYPES.has(f.type));
-    if (fileArray.length === 0) return;
-
-    const startIndex = uploads.length;
-    const items: UploadItem[] = fileArray.map((f) => ({
-      file: f,
-      progress: 0,
-      status: 'uploading' as const,
-    }));
-
-    setUploads((prev) => [...prev, ...items]);
-
-    fileArray.forEach((file, idx) => {
-      uploadFile(file, startIndex + idx);
-    });
-  }, [uploads.length, dayID, tripID, token]);
 
   function uploadFile(file: File, index: number) {
     const formData = new FormData();
@@ -83,6 +65,24 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
     xhr.open('POST', '/api/upload');
     xhr.setRequestHeader('Authorization', `Bearer ${token}`);
     xhr.send(formData);
+  }
+
+  function handleFiles(files: FileList | File[]) {
+    const fileArray = Array.from(files).filter((f) => ACCEPTED_TYPES.has(f.type));
+    if (fileArray.length === 0) return;
+
+    const startIndex = uploads.length;
+    const items: UploadItem[] = fileArray.map((f) => ({
+      file: f,
+      progress: 0,
+      status: 'uploading' as const,
+    }));
+
+    setUploads((prev) => [...prev, ...items]);
+
+    fileArray.forEach((file, idx) => {
+      uploadFile(file, startIndex + idx);
+    });
   }
 
   function handleDragEnter(e: React.DragEvent) {

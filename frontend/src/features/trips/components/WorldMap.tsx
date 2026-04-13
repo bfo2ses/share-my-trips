@@ -7,9 +7,9 @@ import { tripColor } from '../utils/tripColor';
 import styles from './WorldMap.module.css';
 
 // react-simple-maps exports MapContext but it's not in @types/react-simple-maps
+const rsm: Record<string, unknown> = await import('react-simple-maps');
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const rsm: any = await import('react-simple-maps');
-const MapContext: React.Context<{ projection: any; width: number; height: number }> = rsm.MapContext;
+const MapContext = rsm.MapContext as React.Context<{ projection: any; width: number; height: number }>;
 
 type TripSummary = TripsQuery['trips'][number];
 

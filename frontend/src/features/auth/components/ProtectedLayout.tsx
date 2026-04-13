@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useMe } from '../hooks/useMe';
 import { Header } from '../../../components/Header/Header';
-import { EditModeProvider } from '../../../components/EditMode/EditModeContext';
+import { EditModeProvider } from '../../../components/EditMode/EditModeProvider';
 
 export function ProtectedLayout() {
   const { token } = useAuth();
