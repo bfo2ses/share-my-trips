@@ -98,6 +98,10 @@
   border-top-color: var(--color-border);
 }
 
+.map :global(.leaflet-control-attribution) {
+  display: none;
+}
+
 :global(.leaflet-control-zoom) {
   border: 1px solid var(--color-border) !important;
   border-radius: var(--radius-md) !important;
