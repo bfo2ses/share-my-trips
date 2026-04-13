@@ -1373,8 +1373,8 @@ input AddDayInput {
   lng: Float!
 }
 
-"The date of a day is immutable after creation. To change the date, delete and recreate the day."
 input UpdateDayInput {
+  date: String
   title: String
   description: String
   lat: Float!
@@ -8246,13 +8246,20 @@ func (ec *executionContext) unmarshalInputUpdateDayInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"title", "description", "lat", "lng"}
+	fieldsInOrder := [...]string{"date", "title", "description", "lat", "lng"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
+		case "date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Date = data
 		case "title":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
 			data, err := ec.unmarshalOString2ᚖstring(ctx, v)

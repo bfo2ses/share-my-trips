@@ -62,11 +62,15 @@ func NewDay(id, tripID, stageID string, date time.Time, title, description strin
 }
 
 // Update modifies editable fields of the day.
-func (d *Day) Update(title, description string, lat, lng float64) error {
+func (d *Day) Update(date time.Time, title, description string, lat, lng float64) error {
+	if date.IsZero() {
+		return ErrDateRequired
+	}
 	// Same sentinel as NewDay — see note there.
 	if lat == 0 && lng == 0 {
 		return ErrGPSRequired
 	}
+	d.Date = date
 	d.Title = title
 	d.Description = description
 	d.Lat = lat

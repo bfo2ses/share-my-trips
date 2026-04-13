@@ -84,6 +84,7 @@ function DayFormContent({
       const result = await updateDay({
         id: day!.id,
         input: {
+          date: date !== day!.date ? date : undefined,
           title: title || undefined,
           description: description || undefined,
           lat,
@@ -149,7 +150,6 @@ function DayFormContent({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
-            disabled={isEdit}
           />
         </label>
 

@@ -16,6 +16,7 @@ type AddDayCommand struct {
 // UpdateDayCommand contains the data needed to update an existing day.
 type UpdateDayCommand struct {
 	ID          string
+	Date        time.Time
 	Title       string
 	Description string
 	Lat         float64

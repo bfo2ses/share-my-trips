@@ -224,8 +224,8 @@ type TripPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
-// The date of a day is immutable after creation. To change the date, delete and recreate the day.
 type UpdateDayInput struct {
+	Date        *string `json:"date,omitempty"`
 	Title       *string `json:"title,omitempty"`
 	Description *string `json:"description,omitempty"`
 	Lat         float64 `json:"lat"`

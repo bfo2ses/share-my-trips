@@ -42,6 +42,7 @@ func (tc *testContext) dayExistsInStage(dateStr string) error {
 func (tc *testContext) updateDayTitle(title string) error {
 	updated, err := tc.handler.Update(context.Background(), day.UpdateDayCommand{
 		ID:          tc.currentDay.ID,
+		Date:        tc.currentDay.Date,
 		Title:       title,
 		Description: tc.currentDay.Description,
 		Lat:         tc.currentDay.Lat,
@@ -75,6 +76,7 @@ func (tc *testContext) updateDayCoords(latStr, lngStr string) error {
 	}
 	updated, err := tc.handler.Update(context.Background(), day.UpdateDayCommand{
 		ID:          tc.currentDay.ID,
+		Date:        tc.currentDay.Date,
 		Title:       tc.currentDay.Title,
 		Description: tc.currentDay.Description,
 		Lat:         lat,
@@ -90,6 +92,7 @@ func (tc *testContext) updateDayCoords(latStr, lngStr string) error {
 func (tc *testContext) updateDayWithoutGPS() error {
 	_, err := tc.handler.Update(context.Background(), day.UpdateDayCommand{
 		ID:          tc.currentDay.ID,
+		Date:        tc.currentDay.Date,
 		Title:       tc.currentDay.Title,
 		Description: tc.currentDay.Description,
 	})

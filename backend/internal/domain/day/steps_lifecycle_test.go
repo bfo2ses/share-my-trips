@@ -70,6 +70,7 @@ func (tc *testContext) dayExistsInClosedTrip(dateStr string) error {
 func (tc *testContext) updateDayInClosedTrip() error {
 	updated, err := tc.handler.Update(context.Background(), day.UpdateDayCommand{
 		ID:    tc.currentDay.ID,
+		Date:  tc.currentDay.Date,
 		Title: "Titre modifié",
 		Lat:   tc.currentDay.Lat,
 		Lng:   tc.currentDay.Lng,
