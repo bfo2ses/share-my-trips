@@ -124,7 +124,6 @@ function StageDetail(props: StageDetailProps) {
 
   const menuItems: ActionMenuItem[] = props.canEdit
     ? [
-        { label: 'Ajouter un jour', onClick: () => props.onAddDay(stage.id) },
         { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
       ]
     : [];
