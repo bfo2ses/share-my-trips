@@ -133,13 +133,6 @@ export function TripDetailPage() {
     setPendingDayCoords(null);
   }, []);
 
-  function handleAddStage() {
-    closeDayForm();
-    setEditingStage(null);
-    setPendingStageCoords(null);
-    setStageFormOpen(true);
-  }
-
   const handleEditStage = useCallback((stage: Stage) => {
     closeDayForm();
     setEditingStage(stage);
@@ -322,19 +315,17 @@ export function TripDetailPage() {
   const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedDayId && !stageFormOpen && !dayFormOpen;
   const autoDayForm = isAdmin && isModifiable && !!selectedDay && !!selectedStageId && !dayFormOpen;
 
-  const effectiveFormOpen = formOpen || autoTripForm;
-  const effectiveStageFormOpen = stageFormOpen || autoStageForm;
-  const effectiveDayFormOpen = dayFormOpen || autoDayForm;
   const effectiveDayStageId = dayFormOpen ? dayFormStageId : (autoDayForm ? selectedStageId : null);
 
-  // F4: suppress placement mode whenever a modal/overlay is blocking the map.
-  const overlayActive = confirmDelete || effectiveFormOpen;
+  // F4: suppress placement mode whenever a real overlay (modal, manual drawer)
+  // is blocking the map. Auto-open panels are in-grid and don't block.
+  const overlayActive = confirmDelete || formOpen;
 
   const placementMode: PlacementMode = !canEditMarkers || overlayActive
     ? null
-    : effectiveStageFormOpen
+    : stageFormOpen
     ? 'stage'
-    : effectiveDayFormOpen
+    : dayFormOpen
     ? 'day'
     : selectedDay
     ? null
@@ -352,11 +343,13 @@ export function TripDetailPage() {
       : null;
 
   const handleMapClick = (coords: { lat: number; lng: number }) => {
-    if (effectiveStageFormOpen) {
+    // Only manual (create) forms intercept map clicks for coord placement.
+    // Auto-open panels don't — the click should open a new create form instead.
+    if (stageFormOpen) {
       setPendingStageCoords(coords);
       return;
     }
-    if (effectiveDayFormOpen) {
+    if (dayFormOpen) {
       setPendingDayCoords(coords);
       return;
     }
@@ -382,7 +375,6 @@ export function TripDetailPage() {
 
   // Actions for each form panel
   const tripFormActions: FormAction[] = isAdmin ? [
-    ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
     ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
     ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
     ...(trip.status === 'PUBLISHED' && canCloseTrip ? [{ label: 'Clôturer le voyage', onClick: handleCloseTripAction }] : []),
@@ -391,7 +383,6 @@ export function TripDetailPage() {
   ] : [];
 
   const stageFormActions: FormAction[] = isAdmin && selectedStage ? [
-    { label: 'Ajouter un jour', onClick: () => handleAddDay(selectedStage.id) },
     {
       label: 'Supprimer l\'étape',
       danger: true,
@@ -415,7 +406,6 @@ export function TripDetailPage() {
 
   const tripMenuItems: ActionMenuItem[] = isAdmin && !anyAutoForm
     ? [
-        ...(isModifiable ? [{ label: 'Ajouter une étape', onClick: handleAddStage }] : []),
         ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
         ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir', onClick: handleReopen }] : []),
         { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
