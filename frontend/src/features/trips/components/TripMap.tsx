@@ -23,20 +23,32 @@ const PENDING_COLOR = '#f2c96a';
 const DRAWER_PAD_PX = 440; // right-drawer width + small margin
 const EDGE_PAD_PX = 60;
 
+// Icons are wrapped in a transparent hit box so the tap target reaches 44px
+// even when the visible dot is smaller.
+const HIT_BOX = 44;
+
+function wrapInHitBox(inner: string) {
+  return `<div style="
+    width:${HIT_BOX}px;height:${HIT_BOX}px;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+  ">${inner}</div>`;
+}
+
 function makeStageIcon(n: number, color: string, active: boolean) {
   const size = active ? 40 : 32;
   return L.divIcon({
     className: '',
-    html: `<div style="
+    html: wrapInHitBox(`<div style="
       width:${size}px;height:${size}px;border-radius:50%;
       background:${color};border:2px solid rgba(255,255,255,0.95);
       display:flex;align-items:center;justify-content:center;
       font-family:'DM Sans',sans-serif;font-size:${active ? 15 : 13}px;font-weight:600;color:#fff;
       box-shadow:0 2px 10px rgba(0,0,0,0.55);
       cursor:pointer;
-    ">${n}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
+    ">${n}</div>`),
+    iconSize: [HIT_BOX, HIT_BOX],
+    iconAnchor: [HIT_BOX / 2, HIT_BOX / 2],
     popupAnchor: [0, -size / 2 - 4],
   });
 }
@@ -44,16 +56,16 @@ function makeStageIcon(n: number, color: string, active: boolean) {
 function makeDayIcon(n: number) {
   return L.divIcon({
     className: '',
-    html: `<div style="
+    html: wrapInHitBox(`<div style="
       width:24px;height:24px;border-radius:50%;
       background:${DAY_COLOR};border:2px solid ${ACTIVE_STAGE_COLOR};
       display:flex;align-items:center;justify-content:center;
       font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#1a1a1a;
       box-shadow:0 2px 6px rgba(0,0,0,0.4);
       cursor:pointer;
-    ">${n}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
+    ">${n}</div>`),
+    iconSize: [HIT_BOX, HIT_BOX],
+    iconAnchor: [HIT_BOX / 2, HIT_BOX / 2],
     popupAnchor: [0, -14],
   });
 }
@@ -99,9 +111,15 @@ function FitBounds({
     if (lastKey.current === boundsKey) return;
     lastKey.current = boundsKey;
     const bounds = L.latLngBounds(positions);
+    // The asymmetric right padding accounts for the desktop form drawer; on
+    // the stacked mobile layout there is no drawer and the map is short, so a
+    // uniform reduced padding fits the bounds correctly.
+    const mobile = window.matchMedia('(max-width: 768px)').matches;
     map.flyToBounds(bounds, {
-      paddingTopLeft: [EDGE_PAD_PX, EDGE_PAD_PX],
-      paddingBottomRight: [drawerOpen ? DRAWER_PAD_PX : EDGE_PAD_PX, EDGE_PAD_PX],
+      paddingTopLeft: mobile ? [32, 32] : [EDGE_PAD_PX, EDGE_PAD_PX],
+      paddingBottomRight: mobile
+        ? [32, 32]
+        : [drawerOpen ? DRAWER_PAD_PX : EDGE_PAD_PX, EDGE_PAD_PX],
       duration: 0.8,
       maxZoom: 13,
     });
@@ -116,6 +134,21 @@ function MapClickCapture({ onMapClick }: { onMapClick: (coords: { lat: number; l
       onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
+  return null;
+}
+
+// On touch layouts the map sits in the page scroll flow: a one-finger drag
+// must scroll the page, not pan the map ("embed" gesture model). Two-finger
+// touchZoom stays enabled for deliberate map moves, and markers stay tappable.
+function TouchGestureMode() {
+  const map = useMap();
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 768px)').matches) return;
+    map.dragging.disable();
+    return () => {
+      map.dragging.enable();
+    };
+  }, [map]);
   return null;
 }
 
@@ -246,6 +279,7 @@ export function TripMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
+        <TouchGestureMode />
         <PlacementZoomToggle disabled={drawerOpen} />
         {drawerOpen && onMapClick && <MapClickCapture onMapClick={onMapClick} />}
         <PanInsideTarget target={panTarget} />
