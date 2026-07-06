@@ -38,7 +38,7 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
       index={index}
       slides={slides}
       plugins={[Captions]}
-      controller={{ closeOnPullDown: true, closeOnBackdropClick: true }}
+      controller={{ closeOnPullDown: true }}
       render={{
         slide: ({ slide }) => {
           const s = slide as Slide & { contentType?: string };

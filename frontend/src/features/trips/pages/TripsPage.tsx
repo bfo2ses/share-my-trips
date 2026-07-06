@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
 import { useMe } from '../../auth/hooks/useMe';
+import { isMobileViewport } from '../../../lib/viewport';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { WorldMap } from '../components/WorldMap';
 import { TripCard } from '../components/TripCard';
@@ -15,9 +16,7 @@ export function TripsPage() {
   const navigate = useNavigate();
   // On mobile the list is the primary entry point — the world map markers are
   // too small to be a mandatory tap path.
-  const [panelOpen, setPanelOpen] = useState(
-    () => window.matchMedia('(max-width: 768px)').matches,
-  );
+  const [panelOpen, setPanelOpen] = useState(isMobileViewport);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
