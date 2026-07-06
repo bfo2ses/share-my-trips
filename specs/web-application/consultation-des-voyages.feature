@@ -83,28 +83,17 @@ Fonctionnalité: Consultation des voyages
 
   # --- Navigation dans un voyage ---
 
-  Scénario: Consulter un voyage en vue timeline chronologique
+  Scénario: Consulter la timeline d'un voyage
     Etant donné que je consulte le voyage "Road trip en Islande"
-    Quand je sélectionne la vue "Timeline"
     Alors les jours sont affichés chronologiquement
-    Et les étapes apparaissent comme séparateurs entre les groupes de jours
-
-  Scénario: Consulter un voyage en vue par étapes
-    Etant donné que je consulte le voyage "Road trip en Islande"
-    Quand je sélectionne la vue "Étapes"
-    Alors les étapes sont listées dans l'ordre chronologique
-    Et chaque étape affiche son nom, sa ville et le nombre de jours
-
-  Scénario: Basculer entre les deux vues
-    Etant donné que je consulte le voyage "Road trip en Islande" en vue "Timeline"
-    Quand je bascule vers la vue "Étapes"
-    Alors la vue change sans recharger la page
+    Et chaque groupe de jours est précédé d'une tête d'étape affichant son nom, sa ville et ses dates
 
   Scénario: Consulter le détail d'une étape
     Etant donné que je consulte le voyage "Road trip en Islande"
-    Quand je sélectionne l'étape "Reykjavik"
+    Quand je sélectionne la tête d'étape "Reykjavik" dans la timeline
     Alors je vois la description de l'étape
     Et je vois la liste des jours rattachés à cette étape
+    Et la carte se centre sur l'étape
 
   Scénario: Consulter le détail d'un jour
     Etant donné que je consulte l'étape "Reykjavik"

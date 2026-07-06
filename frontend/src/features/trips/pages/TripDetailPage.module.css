@@ -104,40 +104,6 @@
   line-height: 1.5;
 }
 
-/* Toggle */
-.viewToggle {
-  display: flex;
-  padding: 12px 24px;
-  gap: 4px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.viewBtn {
-  flex: 1;
-  height: 34px;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  letter-spacing: 0.02em;
-}
-
-.viewBtn:hover {
-  color: var(--color-text);
-}
-
-.viewBtn.active {
-  background: var(--color-bg-subtle);
-  border-color: var(--color-border);
-  color: var(--color-gold);
-}
-
 /* Contenu scrollable */
 .content {
   flex: 1;
@@ -155,24 +121,27 @@
   margin-bottom: 4px;
 }
 
+/* Tête d'étape : porte seule la navigation vers le détail d'étape */
 .stageDivider {
+  width: 100%;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
-  padding: 10px 24px;
+  gap: 3px;
+  padding: 12px 24px;
+  min-height: 44px;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: background 0.15s;
 }
 
-.stageDivider::before,
-.stageDivider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--color-border);
-}
-
-.stageDivider span {
+.stageDividerName {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -182,8 +151,22 @@
   transition: color 0.15s;
 }
 
-.stageDivider:hover span,
-.stageDividerActive span {
+.stageDividerName::before,
+.stageDividerName::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.stageDividerMeta {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  opacity: 0.75;
+}
+
+.stageDivider:hover .stageDividerName,
+.stageDividerActive .stageDividerName {
   color: var(--color-gold);
 }
 
@@ -239,66 +222,6 @@
   color: var(--color-text);
   margin: 0 0 8px;
   line-height: 1.3;
-}
-
-/* ── Stage list ── */
-.stageList {
-  padding: 8px 0 24px;
-}
-
-.stageRow {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px 24px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s;
-}
-
-.stageRow:hover {
-  background: var(--color-bg-subtle);
-}
-
-.stageRow.stageRowActive {
-  background: var(--color-bg-subtle);
-}
-
-.stageRow.stageRowActive .stageIndex {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-}
-
-.stageIndex {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  border: 1.5px solid var(--color-border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-.stageName {
-  font-family: var(--font-display);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text);
-  margin: 0 0 3px;
-}
-
-.stageMeta {
-  font-size: 0.75rem;
-  color: var(--color-text-muted);
-  margin: 0;
 }
 
 /* ── Form panel (edit mode) ── */
@@ -364,24 +287,12 @@
     padding: 16px;
   }
 
-  .viewToggle {
-    padding: 10px 16px;
-  }
-
-  .viewBtn {
-    height: 44px;
-  }
-
   .dayRow {
     padding: 12px 16px;
     gap: 12px;
   }
 
   .stageDivider {
-    padding: 10px 16px;
-  }
-
-  .stageRow {
     padding: 12px 16px;
   }
 }
