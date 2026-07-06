@@ -4,6 +4,7 @@ import { ComposableMap, Geographies, Geography, Marker } from 'react-simple-maps
 import type { TripsQuery } from '../../../graphql/generated/graphql';
 import { getCountryCoords } from '../utils/countryCoords';
 import { tripColor } from '../utils/tripColor';
+import { isMobileViewport } from '../../../lib/viewport';
 import styles from './WorldMap.module.css';
 
 // react-simple-maps exports MapContext but it's not in @types/react-simple-maps
@@ -97,6 +98,12 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
           const isActive = selectedTrips?.country === first.trip.country;
           return (
             <Marker key={first.id} coordinates={first.coords} onClick={() => handleMarkerClick(group)}>
+              {/* Mobile-only invisible hit zone: the visual dot is far below
+                  finger-sized. Kept out of placement mode so it can't swallow
+                  map clicks landing near an existing marker. */}
+              {isMobileViewport() && !placementMode && (
+                <circle r={22} fill="transparent" style={{ cursor: 'pointer' }} />
+              )}
               <circle r={isActive ? 16 : 10} fill={first.color} fillOpacity={0.25} className={styles.markerPulse} />
               <circle r={isActive ? 7 : 5} fill={first.color} stroke="#ffffff" strokeWidth={1.5} className={styles.markerDot} style={{ cursor: 'pointer' }} />
               {group.length > 1 && (

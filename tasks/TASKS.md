@@ -20,6 +20,7 @@ _Aucune tâche en attente._
 
 | # | Tâche | Branche | PR |
 |---|-------|---------|-----|
+| 7 | Navigation mobile (consultation d'abord) : liste en entrée, gestes carte, lightbox, cibles 44px | `feat/frontend-mobile-navigation` | [#41](https://github.com/bfo2ses/share-my-trips/pull/41) |
 | 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | `feat/frontend-map-placement` | [#18](https://github.com/bfo2ses/share-my-trips/pull/18) |
 | 5 | Menu kebab pour les actions admin (trip, stage, day) + ConfirmModal | `feat/frontend-admin-action-menu` | [#17](https://github.com/bfo2ses/share-my-trips/pull/17) |
 | 4 | Coordonnées GPS obligatoires sur Trip et Day + zoom étape avec marqueurs de jours | `feat/trip-day-coordinates` | [#16](https://github.com/bfo2ses/share-my-trips/pull/16) |

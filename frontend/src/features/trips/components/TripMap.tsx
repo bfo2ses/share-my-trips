@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
+import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -22,40 +23,50 @@ const DAY_COLOR = '#f2e2bb';
 const PENDING_COLOR = '#f2c96a';
 const DRAWER_PAD_PX = 440; // right-drawer width + small margin
 const EDGE_PAD_PX = 60;
+const MOBILE_EDGE_PAD_PX = 32; // stacked mobile layout: short map, no drawer
 
-function makeStageIcon(n: number, color: string, active: boolean) {
-  const size = active ? 40 : 32;
+// On mobile, icons are wrapped in a transparent hit box so the tap target
+// reaches 44px even when the visible dot is smaller. On desktop the hit area
+// stays at the visible size: a larger invisible zone would swallow
+// placement-mode map clicks landing near an existing marker.
+const MOBILE_HIT_BOX = 44;
+
+function makeMarkerIcon(inner: string, size: number, popupAnchorY: number) {
+  const box = isMobileViewport() ? Math.max(size, MOBILE_HIT_BOX) : size;
   return L.divIcon({
     className: '',
     html: `<div style="
+      width:${box}px;height:${box}px;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;
+    ">${inner}</div>`,
+    iconSize: [box, box],
+    iconAnchor: [box / 2, box / 2],
+    popupAnchor: [0, popupAnchorY],
+  });
+}
+
+function makeStageIcon(n: number, color: string, active: boolean) {
+  const size = active ? 40 : 32;
+  return makeMarkerIcon(`<div style="
       width:${size}px;height:${size}px;border-radius:50%;
       background:${color};border:2px solid rgba(255,255,255,0.95);
       display:flex;align-items:center;justify-content:center;
       font-family:'DM Sans',sans-serif;font-size:${active ? 15 : 13}px;font-weight:600;color:#fff;
       box-shadow:0 2px 10px rgba(0,0,0,0.55);
       cursor:pointer;
-    ">${n}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    popupAnchor: [0, -size / 2 - 4],
-  });
+    ">${n}</div>`, size, -size / 2 - 4);
 }
 
 function makeDayIcon(n: number) {
-  return L.divIcon({
-    className: '',
-    html: `<div style="
+  return makeMarkerIcon(`<div style="
       width:24px;height:24px;border-radius:50%;
       background:${DAY_COLOR};border:2px solid ${ACTIVE_STAGE_COLOR};
       display:flex;align-items:center;justify-content:center;
       font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#1a1a1a;
       box-shadow:0 2px 6px rgba(0,0,0,0.4);
       cursor:pointer;
-    ">${n}</div>`,
-    iconSize: [24, 24],
-    iconAnchor: [12, 12],
-    popupAnchor: [0, -14],
-  });
+    ">${n}</div>`, 24, -14);
 }
 
 const pendingIcon = L.divIcon({
@@ -99,9 +110,15 @@ function FitBounds({
     if (lastKey.current === boundsKey) return;
     lastKey.current = boundsKey;
     const bounds = L.latLngBounds(positions);
+    // The asymmetric right padding accounts for the desktop form drawer; on
+    // the stacked mobile layout there is no drawer and the map is short, so a
+    // uniform reduced padding fits the bounds correctly.
+    const mobile = isMobileViewport();
     map.flyToBounds(bounds, {
-      paddingTopLeft: [EDGE_PAD_PX, EDGE_PAD_PX],
-      paddingBottomRight: [drawerOpen ? DRAWER_PAD_PX : EDGE_PAD_PX, EDGE_PAD_PX],
+      paddingTopLeft: mobile ? [MOBILE_EDGE_PAD_PX, MOBILE_EDGE_PAD_PX] : [EDGE_PAD_PX, EDGE_PAD_PX],
+      paddingBottomRight: mobile
+        ? [MOBILE_EDGE_PAD_PX, MOBILE_EDGE_PAD_PX]
+        : [drawerOpen ? DRAWER_PAD_PX : EDGE_PAD_PX, EDGE_PAD_PX],
       duration: 0.8,
       maxZoom: 13,
     });
@@ -116,6 +133,29 @@ function MapClickCapture({ onMapClick }: { onMapClick: (coords: { lat: number; l
       onMapClick({ lat: e.latlng.lat, lng: e.latlng.lng });
     },
   });
+  return null;
+}
+
+// On mobile layouts the map sits in the page scroll flow: a one-finger drag
+// must scroll the page, not pan the map ("embed" gesture model). Two-finger
+// touchZoom stays enabled for deliberate map moves, and markers stay tappable.
+// Follows viewport changes so resizing across the breakpoint restores the
+// right mode without a remount.
+function TouchGestureMode() {
+  const map = useMap();
+  useEffect(() => {
+    const mq = window.matchMedia(MOBILE_QUERY);
+    const apply = () => {
+      if (mq.matches) map.dragging.disable();
+      else map.dragging.enable();
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    return () => {
+      mq.removeEventListener('change', apply);
+      map.dragging.enable();
+    };
+  }, [map]);
   return null;
 }
 
@@ -246,6 +286,7 @@ export function TripMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
+        <TouchGestureMode />
         <PlacementZoomToggle disabled={drawerOpen} />
         {drawerOpen && onMapClick && <MapClickCapture onMapClick={onMapClick} />}
         <PanInsideTarget target={panTarget} />
