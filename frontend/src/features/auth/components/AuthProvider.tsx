@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Provider } from 'urql';
 import { AuthContext } from '../hooks/useAuth';
-import { makeClient, setAuthToken } from '../../../graphql/client';
+import { makeClient } from '../../../graphql/client';
 
 const SESSION_KEY = 'smt_token';
 
@@ -10,28 +10,21 @@ function readToken(): string | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => {
-    const stored = readToken();
-    if (stored) setAuthToken(stored);
-    return stored;
-  });
-  // A fresh client per auth state: queries cached while logged out (or as
-  // another user) must never be served after login.
-  const [client, setClient] = useState(() => makeClient());
+  const [token, setToken] = useState<string | null>(readToken);
 
-  function login(newToken: string) {
+  const login = useCallback((newToken: string) => {
     sessionStorage.setItem(SESSION_KEY, newToken);
     setToken(newToken);
-    setAuthToken(newToken);
-    setClient(makeClient());
-  }
+  }, []);
 
-  function logout() {
+  const logout = useCallback(() => {
     sessionStorage.removeItem(SESSION_KEY);
     setToken(null);
-    setAuthToken(null);
-    setClient(makeClient());
-  }
+  }, []);
+
+  // The client is derived from the token: any auth transition (login, logout,
+  // server-side session invalidation) swaps in a fresh client and cache.
+  const client = useMemo(() => makeClient(token, logout), [token, logout]);
 
   return (
     <AuthContext.Provider value={{ token, login, logout }}>

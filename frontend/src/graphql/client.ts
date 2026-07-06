@@ -4,12 +4,6 @@ import type { Cache } from '@urql/exchange-graphcache';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/query';
 
-let authToken: string | null = null;
-
-export function setAuthToken(token: string | null) {
-  authToken = token;
-}
-
 function invalidateQuery(cache: Cache, field: string) {
   const fields = cache.inspectFields('Query');
   for (const f of fields) {
@@ -19,16 +13,20 @@ function invalidateQuery(cache: Cache, field: string) {
   }
 }
 
-// Recreated on login/logout so the cache never leaks data across auth states
-// (e.g. a `me: null` cached before login being served after login).
-export function makeClient() {
+// One client per auth state, holding its own token: recreated whenever the
+// token changes so the cache never leaks data across auth states (e.g. a
+// `me: null` cached before login being served after login).
+export function makeClient(token: string | null, onUnauthorized: () => void) {
   return createClient({
     url: API_URL,
     exchanges: [
       mapExchange({
         onError(error) {
+          // Defensive only: the GraphQL endpoint currently never answers 401
+          // (invalid sessions come back as `me: null`, handled in
+          // ProtectedLayout). This covers future 401-emitting endpoints.
           if (error.response?.status === 401) {
-            setAuthToken(null);
+            onUnauthorized();
           }
         },
       }),
@@ -60,10 +58,10 @@ export function makeClient() {
       fetchExchange,
     ],
     fetchOptions: () => {
-      if (!authToken) return {};
+      if (!token) return {};
       return {
         headers: {
-          Authorization: `Bearer ${authToken}`,
+          Authorization: `Bearer ${token}`,
         },
       };
     },
