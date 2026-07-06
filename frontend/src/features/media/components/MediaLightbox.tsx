@@ -38,6 +38,7 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
       index={index}
       slides={slides}
       plugins={[Captions]}
+      controller={{ closeOnPullDown: true, closeOnBackdropClick: true }}
       render={{
         slide: ({ slide }) => {
           const s = slide as Slide & { contentType?: string };
@@ -48,7 +49,7 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
                   src={s.src}
                   controls
                   autoPlay
-                  style={{ maxWidth: '100%', maxHeight: '80vh', borderRadius: '8px' }}
+                  style={{ maxWidth: '100%', maxHeight: '80svh', borderRadius: '8px' }}
                 />
               </div>
             );
