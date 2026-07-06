@@ -20,7 +20,10 @@ export function ProtectedLayout() {
 
   if (!token) return <Navigate to="/login" replace />;
 
-  if (fetching) {
+  // On the expired frame, keep the placeholder up: mounting the protected
+  // children would fire their queries with the dead token before the logout
+  // effect swaps the client.
+  if (fetching || sessionExpired) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg)' }}>
         <span style={{ color: 'var(--color-text-muted)', fontFamily: 'var(--font-body)', fontSize: '0.85rem', letterSpacing: '0.05em' }}>

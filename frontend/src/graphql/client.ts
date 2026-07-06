@@ -22,6 +22,9 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
     exchanges: [
       mapExchange({
         onError(error) {
+          // Defensive only: the GraphQL endpoint currently never answers 401
+          // (invalid sessions come back as `me: null`, handled in
+          // ProtectedLayout). This covers future 401-emitting endpoints.
           if (error.response?.status === 401) {
             onUnauthorized();
           }
