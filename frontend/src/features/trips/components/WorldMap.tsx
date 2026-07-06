@@ -97,6 +97,8 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
           const isActive = selectedTrips?.country === first.trip.country;
           return (
             <Marker key={first.id} coordinates={first.coords} onClick={() => handleMarkerClick(group)}>
+              {/* Invisible hit zone: the visual dot is far below finger-sized */}
+              <circle r={22} fill="transparent" style={{ cursor: 'pointer' }} />
               <circle r={isActive ? 16 : 10} fill={first.color} fillOpacity={0.25} className={styles.markerPulse} />
               <circle r={isActive ? 7 : 5} fill={first.color} stroke="#ffffff" strokeWidth={1.5} className={styles.markerDot} style={{ cursor: 'pointer' }} />
               {group.length > 1 && (

@@ -13,7 +13,11 @@ type TripSummary = TripsQuery['trips'][number];
 
 export function TripsPage() {
   const navigate = useNavigate();
-  const [panelOpen, setPanelOpen] = useState(false);
+  // On mobile the list is the primary entry point — the world map markers are
+  // too small to be a mandatory tap path.
+  const [panelOpen, setPanelOpen] = useState(
+    () => window.matchMedia('(max-width: 768px)').matches,
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
