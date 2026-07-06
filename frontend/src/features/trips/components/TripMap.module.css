@@ -66,6 +66,13 @@
   background: var(--color-bg);
 }
 
+/* Les tuiles Carto dark_all sont trop sombres en pleine lumière. contrast(<1)
+   relève le plancher de noir (un simple brightness multiplicatif n'y suffit
+   pas), brightness éclaircit, sepia réchauffe vers l'ivoire du thème. */
+.map :global(.leaflet-tile-pane) {
+  filter: contrast(0.78) brightness(1.5) sepia(0.22) saturate(1.15);
+}
+
 /* Leaflet tooltip */
 :global(.leaflet-tooltip.smt-tooltip) {
   background: var(--color-bg-subtle);
