@@ -34,3 +34,4 @@ _Aucune tâche en attente._
 | Ref | Description | Statut |
 |-----|-------------|--------|
 | COR-008 | Un jour multi-étapes peut apparaître en double dans la vue timeline | `[x]` corrigé dans #2 |
+| COR-009 | Après login, `me` est servi depuis le cache urql (`me: null` mis en cache avant login) → header vide et voyages filtrés en lecteur ; OK après reload. Fix : recréer le client urql au login/logout | `[ ]` à corriger |
