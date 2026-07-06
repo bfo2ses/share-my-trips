@@ -77,12 +77,12 @@ export function WorldMap({ trips, placementMode, pendingCoords, onMapClick }: Wo
               <Geography
                 key={geo.rsmKey}
                 geography={geo}
-                fill="rgba(255,255,255,0.055)"
-                stroke="rgba(255,255,255,0.1)"
-                strokeWidth={0.5}
+                fill="rgba(242,232,217,0.16)"
+                stroke="rgba(242,232,217,0.28)"
+                strokeWidth={0.6}
                 style={{
                   default: { outline: 'none', cursor: placementMode ? 'crosshair' : 'default' },
-                  hover: { outline: 'none', fill: placementMode ? 'rgba(198,163,93,0.12)' : 'rgba(255,255,255,0.09)', cursor: placementMode ? 'crosshair' : 'default' },
+                  hover: { outline: 'none', fill: placementMode ? 'rgba(198,163,93,0.28)' : 'rgba(242,232,217,0.22)', cursor: placementMode ? 'crosshair' : 'default' },
                   pressed: { outline: 'none' },
                 }}
               />
