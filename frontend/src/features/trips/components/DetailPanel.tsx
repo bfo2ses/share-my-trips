@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useDeleteStage } from '../../stages/hooks/useStageMutations';
 import { useDeleteDay } from '../../stages/hooks/useDayMutations';
 import { useDayMedia } from '../../media/hooks/useMediaQueries';
@@ -36,12 +36,99 @@ type DetailPanelProps = {
   onBackToStage: () => void;
 } & ({ canEdit: false } | ({ canEdit: true } & EditCallbacks));
 
+// Drag thresholds for the mobile sheet grab zone (px).
+const EXPAND_DRAG_PX = 50;
+const DISMISS_DRAG_PX = 80;
+const TAP_SLOP_PX = 8;
+
 export function DetailPanel(props: DetailPanelProps) {
   const { stage, stageDays, day, open, onClose, onDayClick, onBackToStage } = props;
 
+  // Mobile sheet snap state: half (~55svh) or expanded (~92svh). The gesture
+  // lives on the grab zone only, so the body scroll never conflicts with it.
+  const [expanded, setExpanded] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
+  const drag = useRef<{ pointerId: number; startY: number } | null>(null);
+
+  // Reset the snap state when the sheet closes, so it never reopens expanded.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (!open) setExpanded(false);
+  }
+
+  function resetDragStyles() {
+    if (panelRef.current) {
+      panelRef.current.style.transition = '';
+      panelRef.current.style.transform = '';
+    }
+  }
+
+  function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    // Ignore gestures while the sheet is closing (the handle stays visible
+    // during the animation) and any second finger during an active drag.
+    if (!open || drag.current) return;
+    drag.current = { pointerId: e.pointerId, startY: e.clientY };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function handlePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (drag.current?.pointerId !== e.pointerId || !panelRef.current) return;
+    // Live-follow downward only (dismiss gesture); upward expansion snaps.
+    const dy = Math.max(0, e.clientY - drag.current.startY);
+    panelRef.current.style.transition = 'none';
+    panelRef.current.style.transform = `translateY(${dy}px)`;
+  }
+
+  function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (drag.current?.pointerId !== e.pointerId) return;
+    const dy = e.clientY - drag.current.startY;
+    drag.current = null;
+    resetDragStyles();
+    if (Math.abs(dy) < TAP_SLOP_PX) {
+      setExpanded((v) => !v);
+    } else if (dy <= -EXPAND_DRAG_PX) {
+      setExpanded(true);
+    } else if (dy >= DISMISS_DRAG_PX) {
+      if (expanded) setExpanded(false);
+      else onClose();
+    }
+  }
+
+  function handlePointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    // An aborted pointer (system gesture, rotation…) discards the gesture:
+    // its coordinates are unreliable and the user didn't commit anything.
+    if (drag.current?.pointerId !== e.pointerId) return;
+    drag.current = null;
+    resetDragStyles();
+  }
+
+  function handleGrabKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setExpanded((v) => !v);
+    }
+  }
+
   return (
-    <div className={`${styles.panelWrapper} ${open ? styles.panelOpen : ''}`}>
-      <aside className={styles.panel}>
+    <div
+      className={`${styles.panelWrapper} ${open ? styles.panelOpen : ''} ${expanded ? styles.panelExpanded : ''}`}
+    >
+      <aside className={styles.panel} ref={panelRef}>
+        <div
+          className={styles.grabZone}
+          role="button"
+          tabIndex={0}
+          aria-label="Agrandir ou réduire le panneau"
+          aria-expanded={expanded}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerCancel}
+          onKeyDown={handleGrabKeyDown}
+        >
+          <span className={styles.grabHandle} />
+        </div>
         {day && stage ? (
           props.canEdit ? (
             <DayDetail

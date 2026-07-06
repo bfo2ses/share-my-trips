@@ -22,8 +22,6 @@ type Day = TripDetailQuery['tripDays'][number];
 type StageDateRangeMap = Record<string, { start: string; end: string }>;
 type PanTarget = { lat: number; lng: number; seq: number } | null;
 
-type View = 'timeline' | 'stages';
-
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 }
@@ -45,7 +43,6 @@ export function TripDetailPage() {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [view, setView] = useState<View>('timeline');
   const selectedStageId = searchParams.get('stage');
   const selectedDayId = searchParams.get('day');
   const [formOpen, setFormOpen] = useState(false);
@@ -424,7 +421,7 @@ export function TripDetailPage() {
 
   return (
     <>
-    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
+    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${detailOpen && !anyAutoForm ? styles.sheetShown : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -439,21 +436,6 @@ export function TripDetailPage() {
           <p className={styles.tripDates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
         </div>
 
-        <div className={styles.viewToggle}>
-          <button
-            className={`${styles.viewBtn} ${view === 'timeline' ? styles.active : ''}`}
-            onClick={() => setView('timeline')}
-          >
-            Timeline
-          </button>
-          <button
-            className={`${styles.viewBtn} ${view === 'stages' ? styles.active : ''}`}
-            onClick={() => setView('stages')}
-          >
-            Étapes
-          </button>
-        </div>
-
         <div className={styles.content}>
           {detailFetching ? (
             <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
@@ -464,40 +446,19 @@ export function TripDetailPage() {
                 : 'Aucune étape pour ce voyage.'}
             </p>
           ) : (
-            <>
-              {view === 'timeline' && (
-                <div className={styles.timeline}>
-                  {stages.map((stage, i) => (
-                    <StageSection
-                      key={stage.id}
-                      stage={stage}
-                      days={daysByStage.get(stage.id) ?? []}
-                      index={i}
-                      view="timeline"
-                      active={selectedStageId === stage.id}
-                      onStageClick={handleStageClick}
-                      onDayClick={handleDayClickFromTimeline}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {view === 'stages' && (
-                <div className={styles.stageList}>
-                  {stages.map((stage, i) => (
-                    <StageSection
-                      key={stage.id}
-                      stage={stage}
-                      days={daysByStage.get(stage.id) ?? []}
-                      index={i}
-                      view="stages"
-                      active={selectedStageId === stage.id}
-                      onStageClick={handleStageClick}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
+            <div className={styles.timeline}>
+              {stages.map((stage) => (
+                <StageSection
+                  key={stage.id}
+                  stage={stage}
+                  days={daysByStage.get(stage.id) ?? []}
+                  dateRange={stageDateRanges[stage.id]}
+                  active={selectedStageId === stage.id}
+                  onStageClick={handleStageClick}
+                  onDayClick={handleDayClickFromTimeline}
+                />
+              ))}
+            </div>
           )}
         </div>
       </aside>
@@ -626,47 +587,37 @@ export function TripDetailPage() {
 interface StageSectionProps {
   stage: Stage;
   days: Day[];
-  index: number;
-  view: View;
+  dateRange?: { start: string; end: string };
   active: boolean;
   onStageClick: (stageId: string) => void;
-  onDayClick?: (stageId: string, day: Day) => void;
+  onDayClick: (stageId: string, day: Day) => void;
 }
 
-function StageSection({ stage, days, index, view, active, onStageClick, onDayClick }: StageSectionProps) {
+function StageSection({ stage, days, dateRange, active, onStageClick, onDayClick }: StageSectionProps) {
   // COR-008 : un jour multi-étapes n'est affiché que dans son étape principale (premier stageID)
   const primaryDays = days.filter((day) => day.stageIDs[0] === stage.id);
 
-  if (view === 'timeline') {
-    return (
-      <div id={`stage-${stage.id}`} className={styles.timelineGroup}>
-        <div
-          className={`${styles.stageDivider} ${active ? styles.stageDividerActive : ''}`}
-          onClick={() => onStageClick(stage.id)}
-        >
-          <span>{stage.displayName}</span>
-        </div>
-        {primaryDays.map((day) => (
-          <DayRow key={day.id} day={day} onClick={() => onDayClick?.(stage.id, day)} />
-        ))}
-      </div>
-    );
-  }
-
   return (
-    <button
-      className={`${styles.stageRow} ${active ? styles.stageRowActive : ''}`}
-      onClick={() => onStageClick(stage.id)}
-    >
-      <span className={styles.stageIndex}>{index + 1}</span>
-      <div className={styles.stageInfo}>
-        <p className={styles.stageName}>{stage.displayName}</p>
-        <p className={styles.stageMeta}>{stage.city} · {primaryDays.length} jour{primaryDays.length > 1 ? 's' : ''}</p>
-      </div>
-    </button>
+    <div id={`stage-${stage.id}`} className={styles.timelineGroup}>
+      <button
+        className={`${styles.stageDivider} ${active ? styles.stageDividerActive : ''}`}
+        onClick={() => onStageClick(stage.id)}
+      >
+        <span className={styles.stageDividerName}>{stage.displayName}</span>
+        <span className={styles.stageDividerMeta}>
+          {stage.city}
+          {dateRange &&
+            (dateRange.start === dateRange.end
+              ? ` · ${formatDate(dateRange.start)}`
+              : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
+        </span>
+      </button>
+      {primaryDays.map((day) => (
+        <DayRow key={day.id} day={day} onClick={() => onDayClick(stage.id, day)} />
+      ))}
+    </div>
   );
 }
-
 
 function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
   return (
