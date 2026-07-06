@@ -150,12 +150,13 @@
   text-overflow: ellipsis;
 }
 
-/* ── Mobile ── */
-/* Desktop : pas de poignée, le panneau latéral n'est pas un sheet */
+/* Poignée du sheet : n'existe qu'en mobile (le panneau latéral desktop
+   n'est pas un sheet) */
 .grabZone {
   display: none;
 }
 
+/* ── Mobile ── */
 @media (max-width: 768px) {
   .panelWrapper {
     position: fixed;

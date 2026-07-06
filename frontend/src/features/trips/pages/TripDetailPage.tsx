@@ -421,7 +421,7 @@ export function TripDetailPage() {
 
   return (
     <>
-    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
+    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${detailOpen && !anyAutoForm ? styles.sheetShown : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
       {/* ── Panneau gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -590,7 +590,7 @@ interface StageSectionProps {
   dateRange?: { start: string; end: string };
   active: boolean;
   onStageClick: (stageId: string) => void;
-  onDayClick?: (stageId: string, day: Day) => void;
+  onDayClick: (stageId: string, day: Day) => void;
 }
 
 function StageSection({ stage, days, dateRange, active, onStageClick, onDayClick }: StageSectionProps) {
@@ -606,16 +606,18 @@ function StageSection({ stage, days, dateRange, active, onStageClick, onDayClick
         <span className={styles.stageDividerName}>{stage.displayName}</span>
         <span className={styles.stageDividerMeta}>
           {stage.city}
-          {dateRange && ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`}
+          {dateRange &&
+            (dateRange.start === dateRange.end
+              ? ` · ${formatDate(dateRange.start)}`
+              : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
       {primaryDays.map((day) => (
-        <DayRow key={day.id} day={day} onClick={() => onDayClick?.(stage.id, day)} />
+        <DayRow key={day.id} day={day} onClick={() => onDayClick(stage.id, day)} />
       ))}
     </div>
   );
 }
-
 
 function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
   return (

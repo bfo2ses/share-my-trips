@@ -276,9 +276,10 @@
     transition: opacity 0.25s ease, filter 0.25s ease;
   }
 
-  /* Sheet ouvert : le fond (timeline) se met en retrait — une seule surface
-     se lit comme active, la carte reste intacte. Pas de backdrop. */
-  .detailOpen .panel {
+  /* Sheet réellement affiché (pas en mode édition, où un formulaire remplace
+     le DetailPanel) : le fond (timeline) se met en retrait — une seule
+     surface se lit comme active, la carte reste intacte. Pas de backdrop. */
+  .sheetShown .panel {
     opacity: 0.45;
     filter: saturate(0.6);
   }
