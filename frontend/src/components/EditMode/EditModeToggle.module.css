@@ -57,3 +57,11 @@
   transform: translateX(16px);
   background: var(--color-gold);
 }
+
+/* Mobile = consultation seule : le mode édition n'y est pas retravaillé,
+   on n'expose pas son entrée. */
+@media (max-width: 768px) {
+  .toggle {
+    display: none;
+  }
+}

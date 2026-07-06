@@ -368,8 +368,12 @@
     padding: 10px 16px;
   }
 
+  .viewBtn {
+    height: 44px;
+  }
+
   .dayRow {
-    padding: 10px 16px;
+    padding: 12px 16px;
     gap: 12px;
   }
 
