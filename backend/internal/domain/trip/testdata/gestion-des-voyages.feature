@@ -24,7 +24,7 @@ Fonctionnalité: Gestion des voyages
 
   Scénario: Créer un voyage sans photo de couverture
     Quand je crée un voyage sans photo de couverture
-    Alors le voyage est créé avec une image par défaut
+    Alors le voyage n'a pas de photo de couverture
 
   Scénario: Le pays est obligatoire
     Quand je tente de créer un voyage sans renseigner le pays
@@ -106,6 +106,12 @@ Fonctionnalité: Gestion des voyages
     Etant donné qu'un voyage "Road trip en Islande" existe en brouillon
     Quand je remplace la photo de couverture par "nouvelle_photo.jpg"
     Alors la photo de couverture est "nouvelle_photo.jpg"
+
+  Scénario: Retirer la photo de couverture
+    Etant donné qu'un voyage "Road trip en Islande" existe en brouillon
+    Quand je remplace la photo de couverture par "nouvelle_photo.jpg"
+    Et que je retire la photo de couverture
+    Alors le voyage n'a pas de photo de couverture
 
   Scénario: Modifier le pays d'un voyage
     Etant donné qu'un voyage "Road trip en Islande" existe en brouillon

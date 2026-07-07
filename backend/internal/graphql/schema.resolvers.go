@@ -16,6 +16,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
 
+
 // CreateTrip is the resolver for the createTrip field.
 func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput) (*TripPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {

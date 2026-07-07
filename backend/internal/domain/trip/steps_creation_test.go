@@ -25,7 +25,7 @@ func registerCreationSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^les dates affichées sont du "([^"]*)" au "([^"]*)"$`, tc.datesAreFromTo)
 	ctx.Step(`^le voyage apparaît dans ma liste de voyages$`, tc.tripAppearsInList)
 	ctx.Step(`^je crée un voyage sans photo de couverture$`, tc.createTripWithoutCoverPhoto)
-	ctx.Step(`^le voyage est créé avec une image par défaut$`, tc.tripHasDefaultCoverPhoto)
+	ctx.Step(`^le voyage n'a pas de photo de couverture$`, tc.tripHasNoCoverPhoto)
 	ctx.Step(`^je tente de créer un voyage sans renseigner le pays$`, tc.createTripWithoutCountry)
 	ctx.Step(`^je tente de créer un voyage sans renseigner le titre$`, tc.createTripWithoutTitle)
 	ctx.Step(`^je tente de créer un voyage sans coordonnées GPS$`, tc.createTripWithoutGPS)
@@ -138,12 +138,12 @@ func (tc *testContext) createTripWithoutCoverPhoto() error {
 	return nil
 }
 
-func (tc *testContext) tripHasDefaultCoverPhoto() error {
+func (tc *testContext) tripHasNoCoverPhoto() error {
 	if tc.lastErr != nil {
 		return fmt.Errorf("expected no error, got: %w", tc.lastErr)
 	}
-	if tc.currentTrip.CoverPhoto != "default_cover.jpg" {
-		return fmt.Errorf("expected default cover, got %q", tc.currentTrip.CoverPhoto)
+	if tc.currentTrip.CoverPhoto != "" {
+		return fmt.Errorf("expected no cover photo, got %q", tc.currentTrip.CoverPhoto)
 	}
 	return nil
 }

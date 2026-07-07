@@ -1508,7 +1508,7 @@ type Query {
   tripDays(tripID: ID!): [Day!]!
   "Returns all media for a day, sorted by position ascending."
   dayMedia(dayID: ID!): [Media!]!
-  "Returns all media for a trip, across all its days, sorted by day then position."
+  "Returns all media for a trip, grouped by day (stable but arbitrary day order), sorted by position within each day."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
   me: Account

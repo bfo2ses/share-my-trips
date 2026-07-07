@@ -192,7 +192,8 @@ func (h *Handler) ListByDay(ctx context.Context, query ListByDayQuery) ([]*Media
 }
 
 // ListByTrip handles the ListByTripQuery. Returns media across all the trip's
-// days, sorted by day then position.
+// days, grouped by day (stable but arbitrary day order — day IDs are UUIDs,
+// not chronological), sorted by position within each day.
 func (h *Handler) ListByTrip(ctx context.Context, query ListByTripQuery) ([]*Media, error) {
 	media, err := h.repo.ListByTrip(ctx, query.TripID)
 	if err != nil {

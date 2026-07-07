@@ -64,10 +64,8 @@ func NewTrip(id, title, country, description, coverPhoto string, lat, lng float6
 		return nil, ErrInvalidDates
 	}
 
-	if coverPhoto == "" {
-		coverPhoto = "default_cover.jpg"
-	}
-
+	// An empty cover photo is valid: the default illustration is a display
+	// concern (the frontend renders a generated gradient), not stored state.
 	now := time.Now()
 	return &Trip{
 		ID:          id,
@@ -159,9 +157,8 @@ func (t *Trip) Update(title, country, description, coverPhoto string, lat, lng f
 	t.Title = title
 	t.Country = country
 	t.Description = description
-	if coverPhoto != "" {
-		t.CoverPhoto = coverPhoto
-	}
+	// Empty clears the cover: the card falls back to its default illustration.
+	t.CoverPhoto = coverPhoto
 	t.Lat = lat
 	t.Lng = lng
 	t.StartDate = startDate
