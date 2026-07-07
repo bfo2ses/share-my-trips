@@ -5,9 +5,11 @@ import { useMe } from '../../auth/hooks/useMe';
 import { isMobileViewport } from '../../../lib/viewport';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { useTripMedia } from '../../media/hooks/useMediaQueries';
+import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip } from '../hooks/useTripMutations';
 import { WorldMap } from '../components/WorldMap';
 import { TripCard } from '../components/TripCard';
-import { TripForm } from '../components/TripForm';
+import { TripForm, type FormAction } from '../components/TripForm';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
 import styles from './TripsPage.module.css';
 
@@ -21,6 +23,14 @@ export function TripsPage() {
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const [, publishTrip] = usePublishTrip();
+  const [, unpublishTrip] = useUnpublishTrip();
+  const [, reopenTrip] = useReopenTrip();
+  const [, deleteTrip] = useDeleteTrip();
 
   const { data: meData } = useMe();
   const role = meData?.me?.role;
@@ -39,6 +49,43 @@ export function TripsPage() {
     .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trips = data?.trips ?? [];
+
+  // Version fraîche du voyage édité : après un changement de statut, la liste
+  // refetchée porte le nouveau statut alors que le state editingTrip est figé.
+  const liveEditingTrip = editingTrip ? trips.find((t) => t.id === editingTrip.id) ?? editingTrip : null;
+
+  const refetchContext = { additionalTypenames: ['Trip'] };
+
+  async function handleDelete() {
+    if (!liveEditingTrip || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await deleteTrip({ id: liveEditingTrip.id }, refetchContext);
+    setDeleting(false);
+    if (result.error || !result.data?.deleteTrip.success) {
+      setDeleteError('Impossible de supprimer le voyage. Réessayez.');
+      return;
+    }
+    setConfirmDelete(false);
+    handleFormClose();
+  }
+
+  // Mêmes actions de cycle de vie que le formulaire de la page voyage —
+  // Clôturer reste sur la page voyage (elle exige les dates des jours).
+  const tripFormActions: FormAction[] = liveEditingTrip
+    ? [
+        ...(liveEditingTrip.status === 'DRAFT'
+          ? [{ label: 'Publier le voyage', onClick: () => publishTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          : []),
+        ...(liveEditingTrip.status === 'PUBLISHED'
+          ? [{ label: 'Repasser en brouillon', onClick: () => unpublishTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          : []),
+        ...(liveEditingTrip.status === 'CLOSED'
+          ? [{ label: 'Réouvrir le voyage', onClick: () => reopenTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          : []),
+        { label: 'Supprimer le voyage', onClick: () => setConfirmDelete(true), danger: true },
+      ]
+    : [];
 
   function handleEdit(trip: TripSummary) {
     setEditingTrip(trip);
@@ -142,14 +189,27 @@ export function TripsPage() {
 
       {/* ── Formulaire (drawer) ── */}
       {isAdmin && (
+        <>
         <TripForm
           open={formOpen}
           onClose={handleFormClose}
-          trip={editingTrip}
+          trip={liveEditingTrip}
           pendingCoords={pendingCoords}
           coverChoices={coverChoices}
+          actions={tripFormActions}
           noBackdrop
         />
+        <ConfirmModal
+          open={confirmDelete}
+          title="Supprimer ce voyage ?"
+          message={deleteError ?? 'Toutes les étapes et tous les jours associés seront définitivement perdus.'}
+          confirmLabel="Supprimer"
+          danger
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
+        />
+        </>
       )}
     </main>
   );
