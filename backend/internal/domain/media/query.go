@@ -9,3 +9,9 @@ type GetMediaQuery struct {
 type ListByDayQuery struct {
 	DayID string
 }
+
+// ListByTripQuery retrieves all media for a given trip, across all its days,
+// sorted by day then position.
+type ListByTripQuery struct {
+	TripID string
+}

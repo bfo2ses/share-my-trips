@@ -190,3 +190,21 @@ func (h *Handler) ListByDay(ctx context.Context, query ListByDayQuery) ([]*Media
 
 	return media, nil
 }
+
+// ListByTrip handles the ListByTripQuery. Returns media across all the trip's
+// days, sorted by day then position.
+func (h *Handler) ListByTrip(ctx context.Context, query ListByTripQuery) ([]*Media, error) {
+	media, err := h.repo.ListByTrip(ctx, query.TripID)
+	if err != nil {
+		return nil, fmt.Errorf("list media by trip: %w", err)
+	}
+
+	sort.Slice(media, func(i, j int) bool {
+		if media[i].DayID != media[j].DayID {
+			return media[i].DayID < media[j].DayID
+		}
+		return media[i].Position < media[j].Position
+	})
+
+	return media, nil
+}

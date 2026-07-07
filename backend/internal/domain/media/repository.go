@@ -7,6 +7,7 @@ type Repository interface {
 	Save(ctx context.Context, m *Media) error
 	FindByID(ctx context.Context, id string) (*Media, error)
 	ListByDay(ctx context.Context, dayID string) ([]*Media, error)
+	ListByTrip(ctx context.Context, tripID string) ([]*Media, error)
 	Delete(ctx context.Context, id string) error
 	// NextPosition returns the next available position for a day.
 	NextPosition(ctx context.Context, dayID string) (int, error)
