@@ -54,14 +54,14 @@ export function DayDetail({ day, canEdit, onClose, onBack }: DayDetailProps) {
     <>
       <div className={styles.header}>
         <div className={styles.headerText}>
-          <button className={styles.back} onClick={onBack}>← Retour à l'étape</button>
+          <button className={styles.back} onClick={onBack}>← Retour à la timeline</button>
           <p className={styles.label}>{formatFullDate(day.date)}</p>
           <h3 className={styles.title}>{day.title ?? day.date}</h3>
         </div>
         {menuItems.length > 0 && (
           <ActionMenu items={menuItems} ariaLabel="Actions sur le jour" />
         )}
-        <button className={styles.close} onClick={onClose} aria-label="Retour à la timeline">✕</button>
+        <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
       </div>
 
       <div className={styles.body}>

@@ -18,17 +18,18 @@
   overflow: hidden;
 }
 
-/* Trois panes côte à côte ; le niveau actif est amené dans la fenêtre par
-   translation. La transition ne joue pas au premier rendu (deep link direct). */
+/* Deux panes côte à côte (timeline, détail de jour) ; le niveau actif est
+   amené dans la fenêtre par translation. La transition ne joue pas au premier
+   rendu (deep link direct). */
 .track {
   display: flex;
-  width: 300%;
+  width: 200%;
   height: 100%;
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .pane {
-  width: calc(100% / 3);
+  width: 50%;
   min-width: 0;
   height: 100%;
   display: flex;

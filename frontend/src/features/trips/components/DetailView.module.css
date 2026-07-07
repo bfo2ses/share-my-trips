@@ -1,5 +1,5 @@
-/* Styles partagés des vues détail (StageDetail, DayDetail) rendues dans les
-   panes du TripPanel : un header fixe + un body scrollable. */
+/* Styles de la vue détail de jour (DayDetail) rendue dans la pane du
+   TripPanel : un header fixe + un body scrollable. */
 
 /* ── Header ── */
 .header {
@@ -92,50 +92,6 @@
   font-size: 0.85rem;
   color: var(--color-text-muted);
   margin: 0;
-}
-
-/* ── Liste des jours ── */
-.dayList {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-top: 4px;
-}
-
-.dayItem {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 11px 12px;
-  background: none;
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  text-align: left;
-  min-width: 0;
-  transition: background 0.15s;
-}
-
-.dayItem:hover {
-  background: var(--color-bg-subtle);
-}
-
-.dayDate {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-  font-weight: 500;
-  flex-shrink: 0;
-  width: 52px;
-}
-
-.dayTitle {
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* ── Mobile ── */

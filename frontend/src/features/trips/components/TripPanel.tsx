@@ -22,10 +22,9 @@ function toggleSnap(snap: SheetSnap): SheetSnap {
 }
 
 interface TripPanelProps {
-  /** 0 = timeline, 1 = stage detail, 2 = day detail. */
-  level: 0 | 1 | 2;
+  /** 0 = timeline, 1 = day detail. */
+  level: 0 | 1;
   timeline: ReactNode;
-  stageDetail: ReactNode;
   dayDetail: ReactNode;
   /** Mobile sheet snap — controlled by the page so map interactions can raise it. */
   snap: SheetSnap;
@@ -35,12 +34,11 @@ interface TripPanelProps {
 }
 
 // Single navigation container for the trip page: fixed left drawer on desktop,
-// persistent bottom sheet on mobile. The three panes sit side by side in a
-// 300%-wide track; the active level is brought into view by translation.
+// persistent bottom sheet on mobile. The two panes sit side by side in a
+// 200%-wide track; the active level is brought into view by translation.
 export function TripPanel({
   level,
   timeline,
-  stageDetail,
   dayDetail,
   snap,
   onSnapChange,
@@ -123,14 +121,11 @@ export function TripPanel({
         <span className={styles.grabHandle} />
       </div>
       <div className={styles.viewport}>
-        <div className={styles.track} style={{ transform: `translateX(${(level * -100) / 3}%)` }}>
+        <div className={styles.track} style={{ transform: `translateX(${level * -50}%)` }}>
           <section className={styles.pane} inert={level !== 0}>
             {timeline}
           </section>
           <section className={styles.pane} inert={level !== 1}>
-            {stageDetail}
-          </section>
-          <section className={styles.pane} inert={level !== 2}>
             {dayDetail}
           </section>
         </div>

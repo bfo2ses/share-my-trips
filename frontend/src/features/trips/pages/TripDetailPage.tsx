@@ -9,7 +9,6 @@ import { useUpdateDay, useDeleteDay } from '../../stages/hooks/useDayMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm, type FormAction } from '../components/TripForm';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
-import { StageDetail } from '../components/StageDetail';
 import { DayDetail } from '../components/DayDetail';
 import { StageForm } from '../../stages/components/StageForm';
 import { DayForm } from '../../stages/components/DayForm';
@@ -94,12 +93,8 @@ export function TripDetailPage() {
     [selectedStageId, stages],
   );
 
-  // Contenu rémanent : les panes détail gardent leur dernier contenu pendant
-  // la translation de retour (adjust-during-render, pattern wasOpen).
-  const [lastStage, setLastStage] = useState<Stage | null>(null);
-  if (selectedStage && selectedStage !== lastStage) setLastStage(selectedStage);
-  const displayStage = selectedStage ?? lastStage;
-
+  // Contenu rémanent : la pane détail garde son dernier contenu pendant la
+  // translation de retour (adjust-during-render, pattern wasOpen).
   const [lastDay, setLastDay] = useState<Day | null>(null);
   if (selectedDay && selectedDay !== lastDay) setLastDay(selectedDay);
   const displayDay = selectedDay ?? lastDay;
@@ -146,20 +141,27 @@ export function TripDetailPage() {
     setPendingDayCoords(null);
   }, []);
 
+  // Sélectionner une étape (timeline ou carte) ne change pas de vue : la carte
+  // se centre dessus et la timeline défile pour l'amener en haut. Re-cliquer
+  // l'étape active la désélectionne (la carte revient à la vue d'ensemble).
   const handleStageClick = useCallback((stageId: string) => {
+    if (selectedStageId === stageId && !selectedDayId) {
+      setSearchParams({}, { replace: true });
+      return;
+    }
     setSearchParams({ stage: stageId }, { replace: true });
     setSheetSnap((s) => (s === 'peek' ? 'half' : s));
-    // Pré-scrolle la timeline (pane désormais cachée) sur l'étape, pour que le
-    // retour retombe au bon endroit. Pas de scrollIntoView : il ajusterait
-    // aussi le scrollLeft des conteneurs overflow:hidden du track.
+    // Pas de scrollIntoView : il ajusterait aussi le scrollLeft des conteneurs
+    // overflow:hidden du track.
     const el = document.getElementById(`stage-${stageId}`);
     const scroller = timelineScrollRef.current;
     if (el && scroller) {
       scroller.scrollTo({
         top: el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop,
+        behavior: 'smooth',
       });
     }
-  }, [setSearchParams]);
+  }, [setSearchParams, selectedStageId, selectedDayId]);
 
   const handleDayClickFromTimeline = useCallback((stageId: string, day: Day) => {
     setSearchParams({ stage: stageId, day: day.id }, { replace: true });
@@ -363,9 +365,10 @@ export function TripDetailPage() {
   // Auto-form is one of the three auto-open forms (panel mode in-grid).
   const anyAutoForm = autoTripForm || autoStageForm || autoDayForm;
 
-  // Niveau du panneau unique : en mode édition (auto-form), le panneau reste
-  // sur la timeline — c'est le formulaire qui porte le détail sélectionné.
-  const panelLevel: 0 | 1 | 2 = anyAutoForm ? 0 : selectedDay && selectedStage ? 2 : selectedStage ? 1 : 0;
+  // Niveau du panneau unique : seul un jour sélectionné change de vue. En mode
+  // édition (auto-form), le panneau reste sur la timeline — c'est le
+  // formulaire qui porte le détail sélectionné.
+  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedDay ? 1 : 0;
 
   // Actions for each form panel
   const tripFormActions: FormAction[] = isAdmin ? [
@@ -458,15 +461,6 @@ export function TripDetailPage() {
         </div>
           </>
         }
-        stageDetail={displayStage && (
-          <StageDetail
-            stage={displayStage}
-            days={daysByStage.get(displayStage.id) ?? []}
-            canEdit={canEditDetail}
-            onClose={handleDetailClose}
-            onDayClick={(day) => setSearchParams({ stage: displayStage.id, day: day.id }, { replace: true })}
-          />
-        )}
         dayDetail={displayDay && (
           <DayDetail
             day={displayDay}
