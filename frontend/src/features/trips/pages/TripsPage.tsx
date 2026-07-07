@@ -74,7 +74,10 @@ export function TripsPage() {
   }
 
   return (
-    <main className={`${styles.page} ${panelOpen ? styles.panelOpen : ''}`}>
+    // En lecture sur mobile, la liste EST la page (carte monde et toggle
+    // masqués) ; la carte ne réapparaît qu'en mode édition, pour le placement
+    // d'un voyage au clic. Desktop inchangé.
+    <main className={`${styles.page} ${panelOpen ? styles.panelOpen : ''} ${!isAdmin ? styles.listOnly : ''}`}>
       {/* ── Panel gauche ── */}
       <aside className={styles.panel}>
         <div className={styles.panelHeader}>
