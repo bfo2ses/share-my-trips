@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
 import { tripColor } from '../utils/tripColor';
-import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip } from '../hooks/useTripMutations';
 import styles from './TripCard.module.css';
 
 type TripSummary = TripsQuery['trips'][number];
@@ -28,50 +27,19 @@ function formatDateRange(start: string | null | undefined, end: string | null | 
 
 export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
   const navigate = useNavigate();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
   // Fallback to the gradient when the cover URL is dead (media deleted, or
   // legacy marker values). Keyed by URL so a new cover retries the load.
   const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
   const showCover = !!trip.coverPhoto && trip.coverPhoto !== brokenUrl;
 
-  const [, publishTrip] = usePublishTrip();
-  const [, unpublishTrip] = useUnpublishTrip();
-  const [, deleteTrip] = useDeleteTrip();
-  const [, reopenTrip] = useReopenTrip();
-
+  // In edit mode the card opens the trip form, which carries all lifecycle
+  // actions (publish, close, delete…) — the card itself has no menu.
   function handleCardClick() {
-    if (menuOpen || confirmDelete) return;
     if (isAdmin && onEdit) {
       onEdit(trip);
       return;
     }
     navigate(`/trips/${trip.id}`);
-  }
-
-  function stopAndRun(e: React.MouseEvent, fn: () => void) {
-    e.stopPropagation();
-    fn();
-    setMenuOpen(false);
-  }
-
-  const refetchTrips = { additionalTypenames: ['Trip'] };
-
-  async function handlePublish() {
-    await publishTrip({ id: trip.id }, { ...refetchTrips });
-  }
-
-  async function handleUnpublish() {
-    await unpublishTrip({ id: trip.id }, { ...refetchTrips });
-  }
-
-  async function handleReopen() {
-    await reopenTrip({ id: trip.id }, { ...refetchTrips });
-  }
-
-  async function handleDelete() {
-    await deleteTrip({ id: trip.id }, { ...refetchTrips });
-    setConfirmDelete(false);
   }
 
   const badgeClass =
@@ -108,63 +76,12 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
         <span className={`${styles.statusBadge} ${badgeClass}`}>
           {STATUS_LABELS[trip.status]}
         </span>
-
-        {isAdmin && (
-          <button
-            className={styles.menuBtn}
-            onClick={(e) => stopAndRun(e, () => setMenuOpen(!menuOpen))}
-            aria-label="Actions"
-          >
-            ···
-          </button>
-        )}
-
-        {isAdmin && menuOpen && (
-          <div className={styles.actionMenu} onClick={(e) => e.stopPropagation()}>
-            {trip.status === 'DRAFT' && (
-              <button className={styles.actionItem} onClick={(e) => stopAndRun(e, handlePublish)}>
-                Publier
-              </button>
-            )}
-            {trip.status === 'PUBLISHED' && (
-              <button className={styles.actionItem} onClick={(e) => stopAndRun(e, handleUnpublish)}>
-                Repasser en brouillon
-              </button>
-            )}
-            {trip.status === 'CLOSED' && (
-              <button className={styles.actionItem} onClick={(e) => stopAndRun(e, handleReopen)}>
-                Réouvrir
-              </button>
-            )}
-            <div className={styles.actionDivider} />
-            <button
-              className={`${styles.actionItem} ${styles.actionDanger}`}
-              onClick={(e) => stopAndRun(e, () => setConfirmDelete(true))}
-            >
-              Supprimer
-            </button>
-          </div>
-        )}
       </div>
 
       <div className={styles.body}>
         <h2 className={styles.title}>{trip.title}</h2>
         <p className={styles.dates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
       </div>
-
-      {confirmDelete && (
-        <div className={styles.confirmOverlay} onClick={(e) => e.stopPropagation()}>
-          <p>Supprimer ce voyage ?</p>
-          <div className={styles.confirmActions}>
-            <button className={styles.confirmCancel} onClick={(e) => stopAndRun(e, () => setConfirmDelete(false))}>
-              Annuler
-            </button>
-            <button className={styles.confirmDelete} onClick={(e) => stopAndRun(e, handleDelete)}>
-              Supprimer
-            </button>
-          </div>
-        </div>
-      )}
     </article>
   );
 }

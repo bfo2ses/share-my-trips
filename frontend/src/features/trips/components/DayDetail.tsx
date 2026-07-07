@@ -65,10 +65,8 @@ export function DayDetail({ day, canEdit, onClose, onBack }: DayDetailProps) {
       </div>
 
       <div className={styles.body}>
-        {day.description ? (
+        {day.description && (
           <p className={styles.description}>{day.description}</p>
-        ) : (
-          <p className={styles.muted} style={{ fontStyle: 'italic' }}>Aucune description pour ce jour.</p>
         )}
 
         <MediaGallery media={media} isAdmin={canEdit} onDeleted={refetchMedia} />

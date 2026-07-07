@@ -87,7 +87,7 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
   }
 
   if (items.length === 0) {
-    return <p className={styles.empty}>Aucun média pour ce jour.</p>;
+    return null;
   }
 
   return (
