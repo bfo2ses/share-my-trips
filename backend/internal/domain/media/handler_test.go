@@ -98,6 +98,17 @@ func (r *mediaRepository) ListByDay(_ context.Context, dayID string) ([]*media.M
 	return result, nil
 }
 
+func (r *mediaRepository) ListByTrip(_ context.Context, tripID string) ([]*media.Media, error) {
+	var result []*media.Media
+	for _, m := range r.media {
+		if m.TripID == tripID {
+			cp := *m
+			result = append(result, &cp)
+		}
+	}
+	return result, nil
+}
+
 func (r *mediaRepository) Delete(_ context.Context, id string) error {
 	if _, ok := r.media[id]; !ok {
 		return media.ErrNotFound
@@ -371,6 +382,39 @@ func TestListByDay_SortedByPosition(t *testing.T) {
 	require.Len(t, result, 2)
 	assert.Equal(t, 0, result[0].Position)
 	assert.Equal(t, 1, result[1].Position)
+}
+
+func TestListByTrip_SortedByDayThenPosition(t *testing.T) {
+	tc := newTestContext()
+	ctx := context.Background()
+
+	tc.handler.Add(ctx, media.AddMediaCommand{
+		DayID: "day-2", TripID: "trip-1", Filename: "c.png", ContentType: "image/png",
+	})
+	tc.handler.Add(ctx, media.AddMediaCommand{
+		DayID: "day-1", TripID: "trip-1", Filename: "a.jpg", ContentType: "image/jpeg",
+	})
+	tc.handler.Add(ctx, media.AddMediaCommand{
+		DayID: "day-1", TripID: "trip-1", Filename: "b.mp4", ContentType: "video/mp4",
+	})
+	tc.handler.Add(ctx, media.AddMediaCommand{
+		DayID: "day-9", TripID: "trip-2", Filename: "other.jpg", ContentType: "image/jpeg",
+	})
+
+	result, err := tc.handler.ListByTrip(ctx, media.ListByTripQuery{TripID: "trip-1"})
+	require.NoError(t, err)
+	require.Len(t, result, 3)
+	assert.Equal(t, "a.jpg", result[0].Filename)
+	assert.Equal(t, "b.mp4", result[1].Filename)
+	assert.Equal(t, "c.png", result[2].Filename)
+}
+
+func TestListByTrip_EmptyTrip(t *testing.T) {
+	tc := newTestContext()
+
+	result, err := tc.handler.ListByTrip(context.Background(), media.ListByTripQuery{TripID: "trip-unknown"})
+	require.NoError(t, err)
+	assert.Empty(t, result)
 }
 
 func TestModel_IsPhoto_IsVideo(t *testing.T) {

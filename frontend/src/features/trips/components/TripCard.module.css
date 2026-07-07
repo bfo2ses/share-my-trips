@@ -40,7 +40,24 @@
   padding: 14px 16px;
 }
 
+/* Photo de couverture : sous le contenu (les éléments positionnés suivants
+   dans le DOM peignent au-dessus) ; voile sombre pour la lisibilité. */
+.coverImg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.coverScrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(14, 12, 9, 0.1) 0%, rgba(14, 12, 9, 0.5) 100%);
+}
+
 .country {
+  position: relative;
   font-size: 0.65rem;
   font-weight: 500;
   letter-spacing: 0.1em;

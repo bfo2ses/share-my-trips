@@ -56,6 +56,20 @@ func (r *MediaRepository) ListByDay(_ context.Context, dayID string) ([]*media.M
 	return result, nil
 }
 
+func (r *MediaRepository) ListByTrip(_ context.Context, tripID string) ([]*media.Media, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var result []*media.Media
+	for _, m := range r.media {
+		if m.TripID == tripID {
+			cp := *m
+			result = append(result, &cp)
+		}
+	}
+	return result, nil
+}
+
 func (r *MediaRepository) Delete(_ context.Context, id string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()

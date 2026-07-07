@@ -20,6 +20,12 @@ interface TripData {
   endDate?: string | null;
 }
 
+// Photo of the trip's album offered as cover choice (filtered by the page).
+export interface CoverChoice {
+  id: string;
+  thumbUrl: string;
+}
+
 interface TripFormProps {
   open: boolean;
   onClose: () => void;
@@ -28,22 +34,25 @@ interface TripFormProps {
   noBackdrop?: boolean;
   panel?: boolean;
   actions?: FormAction[];
+  coverChoices?: CoverChoice[];
 }
 
-export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel, actions }: TripFormProps) {
+export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel, actions, coverChoices }: TripFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
         <div className={styles.backdrop} onClick={onClose} aria-hidden="true" />
       )}
       <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
-        {open && <TripFormContent trip={trip} pendingCoords={pendingCoords} onClose={onClose} panel={panel} actions={actions} />}
+        {/* Keyed by trip so switching the edited trip while the form is open
+            remounts the content and reseeds the field state. */}
+        {open && <TripFormContent key={trip?.id ?? 'new'} trip={trip} pendingCoords={pendingCoords} onClose={onClose} panel={panel} actions={actions} coverChoices={coverChoices} />}
       </aside>
     </>
   );
 }
 
-function TripFormContent({ trip, pendingCoords, onClose, panel, actions }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: FormAction[] }) {
+function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverChoices }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: FormAction[]; coverChoices?: CoverChoice[] }) {
   const isEdit = !!trip;
 
   const [title, setTitle] = useState(trip?.title ?? '');
@@ -51,6 +60,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions }: { tri
   const [description, setDescription] = useState(trip?.description ?? '');
   const [startDate, setStartDate] = useState(trip?.startDate ?? '');
   const [endDate, setEndDate] = useState(trip?.endDate ?? '');
+  const [coverPhoto, setCoverPhoto] = useState(trip?.coverPhoto ?? '');
   const [errors, setErrors] = useState<string[]>([]);
 
   const [, createTrip] = useCreateTrip();
@@ -73,7 +83,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions }: { tri
       title,
       country,
       description: description || undefined,
-      coverPhoto: isEdit ? (trip!.coverPhoto || undefined) : undefined,
+      coverPhoto: coverPhoto || undefined,
       lat,
       lng,
       startDate: startDate || undefined,
@@ -174,6 +184,33 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions }: { tri
             </p>
           )}
         </div>
+
+        {coverChoices && coverChoices.length > 0 && (
+          <div className={styles.label}>
+            Photo de couverture
+            <div className={styles.coverGrid}>
+              <button
+                type="button"
+                className={`${styles.coverNone} ${!coverPhoto ? styles.coverSelected : ''}`}
+                onClick={() => setCoverPhoto('')}
+              >
+                Aucune
+              </button>
+              {coverChoices.map((choice) => (
+                <button
+                  key={choice.id}
+                  type="button"
+                  className={`${styles.coverChoice} ${coverPhoto === choice.thumbUrl ? styles.coverSelected : ''}`}
+                  onClick={() => setCoverPhoto(choice.thumbUrl)}
+                  aria-label="Choisir cette photo de couverture"
+                  aria-pressed={coverPhoto === choice.thumbUrl}
+                >
+                  <img src={choice.thumbUrl} alt="" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className={styles.dateRow}>
           <label className={styles.label}>

@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTripDetail } from '../hooks/useTripDetail';
+import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
@@ -77,6 +78,16 @@ export function TripDetailPage() {
   const [, deleteDay] = useDeleteDay();
 
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
+
+  // Photos de l'album, proposées comme cover dans le formulaire voyage. En
+  // pause dès qu'une étape est sélectionnée : le retour au niveau voyage
+  // relance un fetch réseau (cache-and-network) et récupère les photos
+  // uploadées entre-temps. Filtre par tripID : urql conserve la data
+  // précédente pendant pause/refetch.
+  const [{ data: tripMediaData }] = useTripMedia(isAdmin && !selectedStageId ? id : null);
+  const coverChoices = (tripMediaData?.tripMedia ?? [])
+    .filter((m) => m.tripID === id && m.contentType.startsWith('image/'))
+    .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trip = data?.trip ?? null;
   const isModifiable = trip ? trip.status !== 'CLOSED' : false;
@@ -482,6 +493,7 @@ export function TripDetailPage() {
               trip={trip}
               pendingCoords={pendingStageCoords}
               actions={tripFormActions}
+              coverChoices={coverChoices}
             />
           )}
           {autoStageForm && selectedStage && (

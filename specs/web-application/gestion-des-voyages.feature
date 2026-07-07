@@ -26,7 +26,8 @@ Fonctionnalité: Gestion des voyages
   Scénario: Créer un voyage sans photo de couverture
     Etant donné que je suis connecté en tant qu'administrateur
     Quand je crée un voyage sans photo de couverture
-    Alors le voyage est créé avec une image par défaut
+    Alors le voyage est créé sans photo de couverture
+    Et sa vignette affiche l'illustration par défaut
 
   Scénario: Le pays est obligatoire
     Etant donné que je suis connecté en tant qu'administrateur
@@ -123,9 +124,16 @@ Fonctionnalité: Gestion des voyages
 
   Scénario: Modifier la photo de couverture
     Etant donné que je suis connecté en tant qu'administrateur
-    Et qu'un voyage "Road trip en Islande" existe
-    Quand je remplace la photo de couverture par une nouvelle image
-    Alors la nouvelle photo de couverture est affichée
+    Et qu'un voyage "Road trip en Islande" existe avec des photos dans son album
+    Quand je choisis une photo de l'album comme photo de couverture
+    Alors cette photo est affichée sur la vignette du voyage
+
+  Scénario: Retirer la photo de couverture
+    Etant donné que je suis connecté en tant qu'administrateur
+    Et qu'un voyage "Road trip en Islande" existe avec une photo de couverture
+    Quand je retire la photo de couverture
+    Alors le voyage n'a plus de photo de couverture
+    Et sa vignette affiche l'illustration par défaut
 
   Scénario: Modifier le pays d'un voyage
     Etant donné que je suis connecté en tant qu'administrateur

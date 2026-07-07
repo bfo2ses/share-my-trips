@@ -14,6 +14,7 @@ func registerUpdateSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^je modifie le titre en "([^"]*)"$`, tc.updateTitle)
 	ctx.Step(`^le voyage est mis à jour avec le nouveau titre "([^"]*)"$`, tc.tripTitleIsUpdated)
 	ctx.Step(`^je remplace la photo de couverture par "([^"]*)"$`, tc.updateCoverPhoto)
+	ctx.Step(`^je retire la photo de couverture$`, tc.removeCoverPhoto)
 	ctx.Step(`^la photo de couverture est "([^"]*)"$`, tc.coverPhotoIs)
 	ctx.Step(`^je modifie le pays en "([^"]*)"$`, tc.updateCountry)
 	ctx.Step(`^le pays du voyage est "([^"]*)"$`, tc.countryIs)
@@ -43,6 +44,10 @@ func (tc *testContext) tripTitleIsUpdated(title string) error {
 		return fmt.Errorf("expected title %q, got %q", title, tc.currentTrip.Title)
 	}
 	return nil
+}
+
+func (tc *testContext) removeCoverPhoto() error {
+	return tc.updateCoverPhoto("")
 }
 
 func (tc *testContext) updateCoverPhoto(photo string) error {

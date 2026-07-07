@@ -21,3 +21,28 @@ const DAY_MEDIA_QUERY = gql(`
 export function useDayMedia(dayID: string) {
   return useQuery({ query: DAY_MEDIA_QUERY, variables: { dayID } });
 }
+
+const TRIP_MEDIA_QUERY = gql(`
+  query TripMedia($tripID: ID!) {
+    tripMedia(tripID: $tripID) {
+      id
+      dayID
+      tripID
+      contentType
+      thumbUrl
+    }
+  }
+`);
+
+// Pass null/undefined to pause the query (e.g. outside edit mode).
+// cache-and-network: each unpause/variable change refetches, so cover choices
+// pick up photos uploaded since the last fetch. Callers must still filter the
+// result by tripID — urql keeps the previous data while paused or refetching.
+export function useTripMedia(tripID: string | null | undefined) {
+  return useQuery({
+    query: TRIP_MEDIA_QUERY,
+    variables: { tripID: tripID ?? '' },
+    pause: !tripID,
+    requestPolicy: 'cache-and-network',
+  });
+}

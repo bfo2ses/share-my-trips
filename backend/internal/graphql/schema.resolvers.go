@@ -16,6 +16,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
 
+
 // CreateTrip is the resolver for the createTrip field.
 func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput) (*TripPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
@@ -556,6 +557,15 @@ func (r *queryResolver) TripDays(ctx context.Context, tripID string) ([]*Day, er
 // DayMedia is the resolver for the dayMedia field.
 func (r *queryResolver) DayMedia(ctx context.Context, dayID string) ([]*Media, error) {
 	list, err := r.mediaHandler.ListByDay(ctx, media.ListByDayQuery{DayID: dayID})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLMediaList(list), nil
+}
+
+// TripMedia is the resolver for the tripMedia field.
+func (r *queryResolver) TripMedia(ctx context.Context, tripID string) ([]*Media, error) {
+	list, err := r.mediaHandler.ListByTrip(ctx, media.ListByTripQuery{TripID: tripID})
 	if err != nil {
 		return nil, err
 	}

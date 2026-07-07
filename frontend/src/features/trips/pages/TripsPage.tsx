@@ -4,6 +4,7 @@ import { useTrips } from '../hooks/useTrips';
 import { useMe } from '../../auth/hooks/useMe';
 import { isMobileViewport } from '../../../lib/viewport';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
+import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import { WorldMap } from '../components/WorldMap';
 import { TripCard } from '../components/TripCard';
 import { TripForm } from '../components/TripForm';
@@ -28,6 +29,14 @@ export function TripsPage() {
   const isAdmin = hasEditRole && editMode;
 
   const { data, fetching, error } = useTrips(hasEditRole ? undefined : ['PUBLISHED', 'CLOSED']);
+
+  // Photos de l'album du voyage en cours d'édition, proposées comme cover.
+  // Filtre par tripID indispensable : urql conserve la data du voyage
+  // précédent quand la query est en pause ou en cours de refetch.
+  const [{ data: tripMediaData }] = useTripMedia(isAdmin ? editingTrip?.id : null);
+  const coverChoices = (tripMediaData?.tripMedia ?? [])
+    .filter((m) => m.tripID === editingTrip?.id && m.contentType.startsWith('image/'))
+    .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trips = data?.trips ?? [];
 
@@ -138,6 +147,7 @@ export function TripsPage() {
           onClose={handleFormClose}
           trip={editingTrip}
           pendingCoords={pendingCoords}
+          coverChoices={coverChoices}
           noBackdrop
         />
       )}

@@ -70,6 +70,26 @@ func (r *MediaRepository) ListByDay(ctx context.Context, dayID string) ([]*media
 	return result, nil
 }
 
+func (r *MediaRepository) ListByTrip(ctx context.Context, tripID string) ([]*media.Media, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT id, day_id, trip_id, filename, content_type, caption, position, created_at
+		FROM media WHERE trip_id = $1 ORDER BY day_id, position`, tripID)
+	if err != nil {
+		return nil, fmt.Errorf("list media by trip: %w", err)
+	}
+	defer rows.Close()
+
+	var result []*media.Media
+	for rows.Next() {
+		var m media.Media
+		if err := rows.Scan(&m.ID, &m.DayID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan media: %w", err)
+		}
+		result = append(result, &m)
+	}
+	return result, nil
+}
+
 func (r *MediaRepository) Delete(ctx context.Context, id string) error {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM media WHERE id = $1`, id)
 	if err != nil {
