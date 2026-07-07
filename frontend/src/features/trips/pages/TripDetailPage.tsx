@@ -8,7 +8,9 @@ import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutat
 import { useUpdateDay, useDeleteDay } from '../../stages/hooks/useDayMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm, type FormAction } from '../components/TripForm';
-import { DetailPanel } from '../components/DetailPanel';
+import { TripPanel, type SheetSnap } from '../components/TripPanel';
+import { StageDetail } from '../components/StageDetail';
+import { DayDetail } from '../components/DayDetail';
 import { StageForm } from '../../stages/components/StageForm';
 import { DayForm } from '../../stages/components/DayForm';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
@@ -57,6 +59,8 @@ export function TripDetailPage() {
   const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingDayCoords, setPendingDayCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('half');
+  const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   const refetchAll = useCallback(() => reexecuteDetail({ requestPolicy: 'network-only' }), [reexecuteDetail]);
   // Per-entity in-flight drag mutation guard. Ref-based so updates don't
@@ -85,6 +89,21 @@ export function TripDetailPage() {
     () => (selectedDayId ? allDays.find((d) => d.id === selectedDayId) ?? null : null),
     [selectedDayId, allDays],
   );
+
+  const selectedStage = useMemo(
+    () => (selectedStageId ? stages.find((s) => s.id === selectedStageId) ?? null : null),
+    [selectedStageId, stages],
+  );
+
+  // Contenu rémanent : les panes détail gardent leur dernier contenu pendant
+  // la translation de retour (adjust-during-render, pattern wasOpen).
+  const [lastStage, setLastStage] = useState<Stage | null>(null);
+  if (selectedStage && selectedStage !== lastStage) setLastStage(selectedStage);
+  const displayStage = selectedStage ?? lastStage;
+
+  const [lastDay, setLastDay] = useState<Day | null>(null);
+  if (selectedDay && selectedDay !== lastDay) setLastDay(selectedDay);
+  const displayDay = selectedDay ?? lastDay;
 
   const daysByStage = useMemo(() => {
     const map = new Map<string, Day[]>();
@@ -130,36 +149,24 @@ export function TripDetailPage() {
     setPendingDayCoords(null);
   }, []);
 
-  const handleEditStage = useCallback((stage: Stage) => {
-    closeDayForm();
-    setEditingStage(stage);
-    setPendingStageCoords(null);
-    setStageFormOpen(true);
-  }, [closeDayForm]);
-
-  const handleAddDay = useCallback((stageId: string) => {
-    closeStageForm();
-    setEditingDay(null);
-    setDayFormStageId(stageId);
-    setPendingDayCoords(null);
-    setDayFormOpen(true);
-  }, [closeStageForm]);
-
-  const handleEditDay = useCallback((stageId: string, day: Day) => {
-    closeStageForm();
-    setEditingDay(day);
-    setDayFormStageId(stageId);
-    setPendingDayCoords(null);
-    setDayFormOpen(true);
-  }, [closeStageForm]);
-
   const handleStageClick = useCallback((stageId: string) => {
     setSearchParams({ stage: stageId }, { replace: true });
-    document.getElementById(`stage-${stageId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setSheetSnap((s) => (s === 'peek' ? 'half' : s));
+    // Pré-scrolle la timeline (pane désormais cachée) sur l'étape, pour que le
+    // retour retombe au bon endroit. Pas de scrollIntoView : il ajusterait
+    // aussi le scrollLeft des conteneurs overflow:hidden du track.
+    const el = document.getElementById(`stage-${stageId}`);
+    const scroller = timelineScrollRef.current;
+    if (el && scroller) {
+      scroller.scrollTo({
+        top: el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop,
+      });
+    }
   }, [setSearchParams]);
 
   const handleDayClickFromTimeline = useCallback((stageId: string, day: Day) => {
     setSearchParams({ stage: stageId, day: day.id }, { replace: true });
+    setSheetSnap((s) => (s === 'peek' ? 'half' : s));
   }, [setSearchParams]);
 
   const handleDetailClose = useCallback(() => {
@@ -301,8 +308,6 @@ export function TripDetailPage() {
 
   const canEditMarkers = !!isAdmin && isModifiable;
   const color = tripColor(trip.id);
-  const detailOpen = selectedStageId !== null;
-  const selectedStage = selectedStageId ? (stages.find((s) => s.id === selectedStageId) ?? null) : null;
   const canCloseTrip =
     stages.length > 0 && Object.keys(stageDateRanges).length === stages.length;
 
@@ -370,6 +375,10 @@ export function TripDetailPage() {
   // Auto-form is one of the three auto-open forms (panel mode in-grid).
   const anyAutoForm = autoTripForm || autoStageForm || autoDayForm;
 
+  // Niveau du panneau unique : en mode édition (auto-form), le panneau reste
+  // sur la timeline — c'est le formulaire qui porte le détail sélectionné.
+  const panelLevel: 0 | 1 | 2 = anyAutoForm ? 0 : selectedDay && selectedStage ? 2 : selectedStage ? 1 : 0;
+
   // Actions for each form panel
   const tripFormActions: FormAction[] = isAdmin ? [
     ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
@@ -409,21 +418,19 @@ export function TripDetailPage() {
       ]
     : [];
 
-  const detailPanelCommon = {
-    stage: selectedStage,
-    stageDays: selectedStageId ? (daysByStage.get(selectedStageId) ?? []) : [],
-    day: selectedDay,
-    open: detailOpen,
-    onClose: handleDetailClose,
-    onDayClick: (day: Day) => setSearchParams({ stage: selectedStageId!, day: day.id }, { replace: true }),
-    onBackToStage: handleBackToStage,
-  };
+  const canEditDetail = !!isAdmin && isModifiable;
 
   return (
     <>
-    <div className={`${styles.page} ${detailOpen ? styles.detailOpen : ''} ${detailOpen && !anyAutoForm ? styles.sheetShown : ''} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
-      {/* ── Panneau gauche ── */}
-      <aside className={styles.panel}>
+    <div className={`${styles.page} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
+      {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de jour ── */}
+      <TripPanel
+        level={panelLevel}
+        snap={sheetSnap}
+        onSnapChange={setSheetSnap}
+        hiddenOnMobile={anyAutoForm || formOpen || stageFormOpen || dayFormOpen}
+        timeline={
+          <>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
           <div className={styles.headerTop}>
             <Link to="/" viewTransition className={styles.backLink}>← Tous les voyages</Link>
@@ -436,7 +443,7 @@ export function TripDetailPage() {
           <p className={styles.tripDates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
         </div>
 
-        <div className={styles.content}>
+        <div className={styles.content} ref={timelineScrollRef}>
           {detailFetching ? (
             <p style={{ padding: '20px', color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Chargement des étapes…</p>
           ) : stages.length === 0 ? (
@@ -461,10 +468,29 @@ export function TripDetailPage() {
             </div>
           )}
         </div>
-      </aside>
+          </>
+        }
+        stageDetail={displayStage && (
+          <StageDetail
+            stage={displayStage}
+            days={daysByStage.get(displayStage.id) ?? []}
+            canEdit={canEditDetail}
+            onClose={handleDetailClose}
+            onDayClick={(day) => setSearchParams({ stage: displayStage.id, day: day.id }, { replace: true })}
+          />
+        )}
+        dayDetail={displayDay && (
+          <DayDetail
+            day={displayDay}
+            canEdit={canEditDetail}
+            onClose={handleDetailClose}
+            onBack={handleBackToStage}
+          />
+        )}
+      />
 
-      {/* ── Panneau milieu : form panel (edit mode) ou detail panel ── */}
-      {anyAutoForm ? (
+      {/* ── Form panel (mode édition) ── */}
+      {anyAutoForm && (
         <div className={styles.formPanelWrapper}>
           {autoTripForm && (
             <TripForm
@@ -502,16 +528,6 @@ export function TripDetailPage() {
             />
           )}
         </div>
-      ) : isAdmin && isModifiable ? (
-        <DetailPanel
-          {...detailPanelCommon}
-          canEdit
-          onEditStage={handleEditStage}
-          onAddDay={handleAddDay}
-          onEditDay={handleEditDay}
-        />
-      ) : (
-        <DetailPanel {...detailPanelCommon} canEdit={false} />
       )}
 
       {/* ── Carte droite ── */}
@@ -531,6 +547,7 @@ export function TripDetailPage() {
             onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
             onDayDragEnd={canEditMarkers ? handleDayDragEnd : undefined}
             panTarget={panTarget}
+            mobileSheetLayout={!anyAutoForm}
           />
         ) : (
           !detailFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
