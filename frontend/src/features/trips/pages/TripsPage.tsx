@@ -5,7 +5,8 @@ import { useMe } from '../../auth/hooks/useMe';
 import { isMobileViewport } from '../../../lib/viewport';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { useTripMedia } from '../../media/hooks/useMediaQueries';
-import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip } from '../hooks/useTripMutations';
+import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
+import { useTripCloseData } from '../hooks/useTripCloseData';
 import { WorldMap } from '../components/WorldMap';
 import { TripCard } from '../components/TripCard';
 import { TripForm, type FormAction } from '../components/TripForm';
@@ -30,6 +31,7 @@ export function TripsPage() {
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
   const [, reopenTrip] = useReopenTrip();
+  const [, closeTrip] = useCloseTrip();
   const [, deleteTrip] = useDeleteTrip();
 
   const { data: meData } = useMe();
@@ -56,6 +58,28 @@ export function TripsPage() {
 
   const refetchContext = { additionalTypenames: ['Trip'] };
 
+  // Données nécessaires à « Clôturer » (chaque étape doit porter au moins un
+  // jour ; les dates de clôture = bornes des jours). Chargées uniquement pour
+  // un voyage publié en cours d'édition ; filtrées par tripID (data urql
+  // conservée en pause/refetch).
+  const [{ data: closeData }] = useTripCloseData(
+    isAdmin && liveEditingTrip?.status === 'PUBLISHED' ? liveEditingTrip.id : null,
+  );
+  const closeStages = (closeData?.stages ?? []).filter((s) => s.tripID === liveEditingTrip?.id);
+  const closeDays = (closeData?.tripDays ?? []).filter((d) => d.tripID === liveEditingTrip?.id);
+  const canCloseTrip =
+    closeStages.length > 0 &&
+    closeStages.every((s) => closeDays.some((d) => d.stageIDs[0] === s.id));
+
+  async function handleCloseTrip() {
+    if (!liveEditingTrip || closeDays.length === 0) return;
+    const dates = closeDays.map((d) => d.date).sort();
+    await closeTrip(
+      { id: liveEditingTrip.id, input: { firstDay: dates[0], lastDay: dates[dates.length - 1] } },
+      refetchContext,
+    );
+  }
+
   async function handleDelete() {
     if (!liveEditingTrip || deleting) return;
     setDeleting(true);
@@ -79,6 +103,9 @@ export function TripsPage() {
           : []),
         ...(liveEditingTrip.status === 'PUBLISHED'
           ? [{ label: 'Repasser en brouillon', onClick: () => unpublishTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          : []),
+        ...(liveEditingTrip.status === 'PUBLISHED' && canCloseTrip
+          ? [{ label: 'Clôturer le voyage', onClick: handleCloseTrip }]
           : []),
         ...(liveEditingTrip.status === 'CLOSED'
           ? [{ label: 'Réouvrir le voyage', onClick: () => reopenTrip({ id: liveEditingTrip.id }, refetchContext) }]
