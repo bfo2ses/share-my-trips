@@ -164,4 +164,20 @@
   .listButton {
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   }
+
+  /* Lecture : la liste est la page — pas de carte monde ni de toggle.
+     En mode édition, le layout carte + liste réapparaît (placement au clic). */
+  .listOnly .panel {
+    position: static;
+    transform: none;
+    width: 100%;
+    min-width: 0;
+    border-right: none;
+  }
+
+  .listOnly .mapArea,
+  .listOnly .listButton,
+  .listOnly .closeBtn {
+    display: none;
+  }
 }

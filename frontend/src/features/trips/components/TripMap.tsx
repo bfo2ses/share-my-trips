@@ -24,6 +24,7 @@ const PENDING_COLOR = '#f2c96a';
 const DRAWER_PAD_PX = 440; // right-drawer width + small margin
 const EDGE_PAD_PX = 60;
 const MOBILE_EDGE_PAD_PX = 32; // stacked mobile layout: short map, no drawer
+const MOBILE_SHEET_COVER_RATIO = 0.55; // persistent bottom sheet at half snap (55svh)
 
 // On mobile, icons are wrapped in a transparent hit box so the tap target
 // reaches 44px even when the visible dot is smaller. On desktop the hit area
@@ -98,10 +99,12 @@ function FitBounds({
   positions,
   boundsKey,
   drawerOpen,
+  sheetLayout,
 }: {
   positions: [number, number][];
   boundsKey: string;
   drawerOpen: boolean;
+  sheetLayout: boolean;
 }) {
   const map = useMap();
   const lastKey = useRef<string | null>(null);
@@ -110,19 +113,23 @@ function FitBounds({
     if (lastKey.current === boundsKey) return;
     lastKey.current = boundsKey;
     const bounds = L.latLngBounds(positions);
-    // The asymmetric right padding accounts for the desktop form drawer; on
-    // the stacked mobile layout there is no drawer and the map is short, so a
-    // uniform reduced padding fits the bounds correctly.
+    // The asymmetric right padding accounts for the desktop form drawer. On
+    // mobile the asymmetry is vertical instead: with the persistent bottom
+    // sheet (read layout) the fit targets the visible band above it; the
+    // stacked edit layout has no sheet and keeps a uniform reduced padding.
     const mobile = isMobileViewport();
+    const mobileBottomPad = sheetLayout
+      ? Math.round(window.innerHeight * MOBILE_SHEET_COVER_RATIO) + MOBILE_EDGE_PAD_PX
+      : MOBILE_EDGE_PAD_PX;
     map.flyToBounds(bounds, {
       paddingTopLeft: mobile ? [MOBILE_EDGE_PAD_PX, MOBILE_EDGE_PAD_PX] : [EDGE_PAD_PX, EDGE_PAD_PX],
       paddingBottomRight: mobile
-        ? [MOBILE_EDGE_PAD_PX, MOBILE_EDGE_PAD_PX]
+        ? [MOBILE_EDGE_PAD_PX, mobileBottomPad]
         : [drawerOpen ? DRAWER_PAD_PX : EDGE_PAD_PX, EDGE_PAD_PX],
       duration: 0.8,
       maxZoom: 13,
     });
-  }, [map, positions, boundsKey, drawerOpen]);
+  }, [map, positions, boundsKey, drawerOpen, sheetLayout]);
   return null;
 }
 
@@ -136,17 +143,19 @@ function MapClickCapture({ onMapClick }: { onMapClick: (coords: { lat: number; l
   return null;
 }
 
-// On mobile layouts the map sits in the page scroll flow: a one-finger drag
-// must scroll the page, not pan the map ("embed" gesture model). Two-finger
-// touchZoom stays enabled for deliberate map moves, and markers stay tappable.
-// Follows viewport changes so resizing across the breakpoint restores the
-// right mode without a remount.
-function TouchGestureMode() {
+// In the stacked mobile edit layout the map sits in the page scroll flow: a
+// one-finger drag must scroll the page, not pan the map ("embed" gesture
+// model), so dragging is disabled and two-finger touchZoom stays enabled. In
+// the read layout the map fills the screen behind the persistent sheet and
+// nothing scrolls — one-finger pan is enabled (`interactive`). Follows
+// viewport changes so resizing across the breakpoint restores the right mode
+// without a remount.
+function TouchGestureMode({ interactive }: { interactive: boolean }) {
   const map = useMap();
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     const apply = () => {
-      if (mq.matches) map.dragging.disable();
+      if (mq.matches && !interactive) map.dragging.disable();
       else map.dragging.enable();
     };
     apply();
@@ -155,7 +164,7 @@ function TouchGestureMode() {
       mq.removeEventListener('change', apply);
       map.dragging.enable();
     };
-  }, [map]);
+  }, [map, interactive]);
   return null;
 }
 
@@ -205,6 +214,8 @@ interface TripMapProps {
   onDayDragEnd?: (day: Day, coords: { lat: number; lng: number }, revert: () => void) => void;
   /** Imperative pan target, e.g. after a successful drag to keep the marker in view. */
   panTarget?: { lat: number; lng: number; seq: number } | null;
+  /** Mobile read layout: full-screen map behind the persistent bottom sheet. */
+  mobileSheetLayout?: boolean;
 }
 
 export function TripMap({
@@ -221,6 +232,7 @@ export function TripMap({
   onStageDragEnd,
   onDayDragEnd,
   panTarget = null,
+  mobileSheetLayout = false,
 }: TripMapProps) {
   const activeStage = activeStageId ? stages.find((s) => s.id === activeStageId) ?? null : null;
   const isZoomed = activeStage !== null;
@@ -286,7 +298,7 @@ export function TripMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
 
-        <TouchGestureMode />
+        <TouchGestureMode interactive={mobileSheetLayout} />
         <PlacementZoomToggle disabled={drawerOpen} />
         {drawerOpen && onMapClick && <MapClickCapture onMapClick={onMapClick} />}
         <PanInsideTarget target={panTarget} />
@@ -424,7 +436,7 @@ export function TripMap({
           />
         )}
 
-        <FitBounds positions={boundsPositions} boundsKey={boundsKey} drawerOpen={drawerOpen} />
+        <FitBounds positions={boundsPositions} boundsKey={boundsKey} drawerOpen={drawerOpen} sheetLayout={mobileSheetLayout} />
       </MapContainer>
     </div>
   );

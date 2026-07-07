@@ -1,27 +1,14 @@
 .page {
   display: grid;
-  grid-template-columns: 420px 0px 1fr;
+  grid-template-columns: 420px 1fr;
   height: calc(100svh - var(--header-height));
   overflow: hidden;
   transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.detailOpen {
-  grid-template-columns: 420px 380px 1fr;
-}
-
+/* Mode édition : colonne formulaire à droite (formPanelWrapper, order 3) */
 .formPanelOpen {
   grid-template-columns: 420px 1fr 380px;
-}
-
-/* ── Panneau gauche ── */
-.panel {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--color-border);
-  overflow: hidden;
-  background: var(--color-bg-panel);
-  view-transition-name: trip-panel;
 }
 
 .tripHeader {
@@ -74,26 +61,6 @@
   font-size: 0.78rem;
   color: var(--color-text-muted);
   margin: 0;
-}
-
-.primaryCta {
-  display: block;
-  margin-top: 16px;
-  background: var(--color-gold);
-  color: var(--color-bg);
-  border: 1px solid var(--color-gold);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 9px 18px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.primaryCta:hover {
-  opacity: 0.85;
 }
 
 .emptyStages {
@@ -235,6 +202,9 @@
 /* ── Carte ── */
 .mapArea {
   position: relative;
+  /* Contient les z-index internes de Leaflet (panes 400-1000) : sans ça, la
+     carte passe au-dessus du sheet mobile (z-index 40) malgré son ordre DOM. */
+  isolation: isolate;
   background: var(--color-bg);
 }
 
@@ -255,41 +225,24 @@
 
 /* ── Mobile ── */
 @media (max-width: 768px) {
+  /* Lecture : carte plein écran — le TripPanel est un sheet fixé hors flux */
   .page {
     grid-template-columns: 1fr;
-    grid-template-rows: 35svh 1fr;
-    height: auto;
-    min-height: calc(100svh - var(--header-height));
+    grid-template-rows: 1fr;
   }
 
-  .detailOpen {
-    grid-template-columns: 1fr;
+  /* Mode édition : layout empilé (carte 35svh + formulaire), sheet masqué */
+  .formPanelOpen {
     grid-template-rows: 35svh 1fr;
   }
 
-  .panel {
+  .formPanelWrapper {
     order: 2;
-    border-right: none;
-    border-top: 1px solid var(--color-border);
-    height: auto;
-    overflow: visible;
-    transition: opacity 0.25s ease, filter 0.25s ease;
-  }
-
-  /* Sheet réellement affiché (pas en mode édition, où un formulaire remplace
-     le DetailPanel) : le fond (timeline) se met en retrait — une seule
-     surface se lit comme active, la carte reste intacte. Pas de backdrop. */
-  .sheetShown .panel {
-    opacity: 0.45;
-    filter: saturate(0.6);
+    border-left: none;
   }
 
   .mapArea {
     order: 1;
-  }
-
-  .content {
-    overflow: visible;
   }
 
   .tripHeader {

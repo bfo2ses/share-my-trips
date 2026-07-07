@@ -88,16 +88,20 @@ Fonctionnalité: Consultation des voyages
     Alors les jours sont affichés chronologiquement
     Et chaque groupe de jours est précédé d'une tête d'étape affichant son nom, sa ville et ses dates
 
-  Scénario: Consulter le détail d'une étape
+  Scénario: Sélectionner une étape
     Etant donné que je consulte le voyage "Road trip en Islande"
     Quand je sélectionne la tête d'étape "Reykjavik" dans la timeline
-    Alors je vois la description de l'étape
-    Et je vois la liste des jours rattachés à cette étape
-    Et la carte se centre sur l'étape
+    Alors la carte se centre sur l'étape
+    Et la timeline défile pour amener la tête d'étape "Reykjavik" en haut
+
+  Scénario: Désélectionner une étape
+    Etant donné que l'étape "Reykjavik" est sélectionnée
+    Quand je sélectionne à nouveau la tête d'étape "Reykjavik"
+    Alors la carte revient à la vue d'ensemble du voyage
 
   Scénario: Consulter le détail d'un jour
-    Etant donné que je consulte l'étape "Reykjavik"
-    Quand je sélectionne le jour "2025-07-01"
+    Etant donné que je consulte le voyage "Road trip en Islande"
+    Quand je sélectionne le jour "2025-07-01" dans la timeline
     Alors je vois le titre et la description du jour
     Et je vois les photos et vidéos du jour
 

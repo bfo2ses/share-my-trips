@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './ConfirmModal.module.css';
 
 interface ConfirmModalProps {
@@ -91,7 +92,10 @@ export function ConfirmModal({
     onCancelRef.current();
   }
 
-  return (
+  // Portal to <body>: callers may render the modal inside transformed or
+  // overflow-hidden containers (panel track, mobile sheet), where a fixed
+  // backdrop would anchor to the transformed ancestor instead of the viewport.
+  return createPortal(
     <div className={styles.backdrop} onClick={handleBackdrop} role="presentation">
       <div
         className={styles.modal}
@@ -119,6 +123,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
