@@ -223,26 +223,22 @@ export function TripDetailPage() {
     navigate('/');
   }
 
-  // Drag handlers — F3 single-writer policy: if the auto-edit form for this
-  // entity kind is open, propagate the coords into the form's pending state
-  // and skip the immediate mutation (the form submit is the single writer).
+  // Drag handlers — a drag always saves immediately (dropping a marker IS the
+  // action; requiring a form submit afterwards read as "drag is broken"). If
+  // the dragged entity's auto-edit form is open, its pending coords are also
+  // synced so the form displays — and later re-submits — the same position.
   // F8 in-flight guard: ignore subsequent drags on the same entity until the
   // first save resolves, and revert the marker via the provided closure.
   const handleStageDragEnd = useCallback(
     async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
-      // Pending only when THIS stage's auto-form is open (it is the single
-      // writer). In the overview (trip form open), a stage drag saves
-      // immediately — otherwise the coords would silently feed the trip form.
       const autoEdit = isAdmin && isModifiable;
-      if (autoEdit && selectedStageId === stage.id && !selectedDayId) {
-        setPendingStageCoords(coords);
-        return;
-      }
+      const stageFormShown = autoEdit && selectedStageId === stage.id && !selectedDayId;
       if (savingStagesRef.current.has(stage.id)) {
         revert();
         return;
       }
       savingStagesRef.current.add(stage.id);
+      if (stageFormShown) setPendingStageCoords(coords);
       try {
         const customName = stage.displayName !== stage.city ? stage.displayName : undefined;
         const result = await updateStage(
@@ -260,6 +256,7 @@ export function TripDetailPage() {
         );
         if (result.error || (result.data?.updateStage.errors ?? []).length > 0) {
           revert();
+          if (stageFormShown) setPendingStageCoords(null);
           refetchAll();
           return;
         }
@@ -274,15 +271,13 @@ export function TripDetailPage() {
   const handleDayDragEnd = useCallback(
     async (day: Day, coords: { lat: number; lng: number }, revert: () => void) => {
       const autoEdit = isAdmin && isModifiable;
-      if (autoEdit && selectedDayId === day.id) {
-        setPendingDayCoords(coords);
-        return;
-      }
+      const dayFormShown = autoEdit && selectedDayId === day.id;
       if (savingDaysRef.current.has(day.id)) {
         revert();
         return;
       }
       savingDaysRef.current.add(day.id);
+      if (dayFormShown) setPendingDayCoords(coords);
       try {
         const result = await updateDay(
           {
@@ -298,6 +293,7 @@ export function TripDetailPage() {
         );
         if (result.error || (result.data?.updateDay.errors ?? []).length > 0) {
           revert();
+          if (dayFormShown) setPendingDayCoords(null);
           refetchAll();
           return;
         }
