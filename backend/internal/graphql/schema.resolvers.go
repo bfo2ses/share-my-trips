@@ -562,6 +562,15 @@ func (r *queryResolver) DayMedia(ctx context.Context, dayID string) ([]*Media, e
 	return toGraphQLMediaList(list), nil
 }
 
+// TripMedia is the resolver for the tripMedia field.
+func (r *queryResolver) TripMedia(ctx context.Context, tripID string) ([]*Media, error) {
+	list, err := r.mediaHandler.ListByTrip(ctx, media.ListByTripQuery{TripID: tripID})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLMediaList(list), nil
+}
+
 // Me is the resolver for the me field.
 func (r *queryResolver) Me(ctx context.Context) (*Account, error) {
 	token := sessionTokenFromContext(ctx)
