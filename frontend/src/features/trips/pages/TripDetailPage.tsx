@@ -47,11 +47,10 @@ export function TripDetailPage() {
 
   const selectedStageId = searchParams.get('stage');
   const selectedDayId = searchParams.get('day');
-  const [formOpen, setFormOpen] = useState(false);
+  // Manual forms are create-only (opened via map click); editing an existing
+  // entity goes through the auto-open forms driven by the URL selection.
   const [stageFormOpen, setStageFormOpen] = useState(false);
-  const [editingStage, setEditingStage] = useState<Stage | null>(null);
   const [dayFormOpen, setDayFormOpen] = useState(false);
-  const [editingDay, setEditingDay] = useState<Day | null>(null);
   const [dayFormStageId, setDayFormStageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -138,13 +137,11 @@ export function TripDetailPage() {
   // easy to enforce in the openers below.
   const closeStageForm = useCallback(() => {
     setStageFormOpen(false);
-    setEditingStage(null);
     setPendingStageCoords(null);
   }, []);
 
   const closeDayForm = useCallback(() => {
     setDayFormOpen(false);
-    setEditingDay(null);
     setDayFormStageId(null);
     setPendingDayCoords(null);
   }, []);
@@ -213,16 +210,15 @@ export function TripDetailPage() {
     navigate('/');
   }
 
-  // Drag handlers — F3 single-writer policy: if the edit form for this exact
-  // entity is open, propagate the coords into the form's pending state and
-  // skip the immediate mutation (the form submit is the single writer).
+  // Drag handlers — F3 single-writer policy: if the auto-edit form for this
+  // entity kind is open, propagate the coords into the form's pending state
+  // and skip the immediate mutation (the form submit is the single writer).
   // F8 in-flight guard: ignore subsequent drags on the same entity until the
   // first save resolves, and revert the marker via the provided closure.
   const handleStageDragEnd = useCallback(
     async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
-      // Check both manual form and auto-edit form (editMode + selected stage).
       const autoEdit = isAdmin && isModifiable;
-      if ((stageFormOpen && editingStage?.id === stage.id) || (autoEdit && !selectedDayId)) {
+      if (autoEdit && !selectedDayId) {
         setPendingStageCoords(coords);
         return;
       }
@@ -256,14 +252,13 @@ export function TripDetailPage() {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [stageFormOpen, editingStage, isAdmin, isModifiable, selectedDayId, updateStage, refetchAll],
+    [isAdmin, isModifiable, selectedDayId, updateStage, refetchAll],
   );
 
   const handleDayDragEnd = useCallback(
     async (day: Day, coords: { lat: number; lng: number }, revert: () => void) => {
-      // Check both manual form and auto-edit form (editMode + selected day).
       const autoEdit = isAdmin && isModifiable;
-      if ((dayFormOpen && editingDay?.id === day.id) || (autoEdit && selectedDayId === day.id)) {
+      if (autoEdit && selectedDayId === day.id) {
         setPendingDayCoords(coords);
         return;
       }
@@ -295,7 +290,7 @@ export function TripDetailPage() {
         savingDaysRef.current.delete(day.id);
       }
     },
-    [dayFormOpen, editingDay, isAdmin, isModifiable, selectedDayId, updateDay, refetchAll],
+    [isAdmin, isModifiable, selectedDayId, updateDay, refetchAll],
   );
 
   if (detailFetching) {
@@ -319,9 +314,9 @@ export function TripDetailPage() {
 
   const effectiveDayStageId = dayFormOpen ? dayFormStageId : (autoDayForm ? selectedStageId : null);
 
-  // F4: suppress placement mode whenever a real overlay (modal, manual drawer)
-  // is blocking the map. Auto-open panels are in-grid and don't block.
-  const overlayActive = confirmDelete || formOpen;
+  // F4: suppress placement mode whenever a real overlay is blocking the map.
+  // Auto-open panels are in-grid and don't block.
+  const overlayActive = confirmDelete;
 
   const placementMode: PlacementMode = !canEditMarkers || overlayActive
     ? null
@@ -335,14 +330,9 @@ export function TripDetailPage() {
     ? 'day'
     : 'stage';
 
-  // Only render the golden "pending" marker while CREATING (edit forms already
+  // Golden "pending" marker for the create forms (auto-edit forms already
   // have the dragged marker visible at the dropped position).
-  const pendingMapCoords =
-    stageFormOpen && !editingStage
-      ? pendingStageCoords
-      : dayFormOpen && !editingDay
-      ? pendingDayCoords
-      : null;
+  const pendingMapCoords = stageFormOpen ? pendingStageCoords : dayFormOpen ? pendingDayCoords : null;
 
   const handleMapClick = (coords: { lat: number; lng: number }) => {
     // Only manual (create) forms intercept map clicks for coord placement.
@@ -358,14 +348,12 @@ export function TripDetailPage() {
     if (!canEditMarkers || overlayActive) return;
     if (!selectedStageId) {
       closeDayForm();
-      setEditingStage(null);
       setPendingStageCoords(coords);
       setStageFormOpen(true);
       return;
     }
     if (!selectedDay) {
       closeStageForm();
-      setEditingDay(null);
       setDayFormStageId(selectedStageId);
       setPendingDayCoords(coords);
       setDayFormOpen(true);
@@ -428,7 +416,7 @@ export function TripDetailPage() {
         level={panelLevel}
         snap={sheetSnap}
         onSnapChange={setSheetSnap}
-        hiddenOnMobile={anyAutoForm || formOpen || stageFormOpen || dayFormOpen}
+        hiddenOnMobile={anyAutoForm || stageFormOpen || dayFormOpen}
         timeline={
           <>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -558,29 +546,21 @@ export function TripDetailPage() {
 
     {isAdmin && (
       <>
-        {/* Manual form opens (create via menu/map click) — rendered as drawers */}
-        <TripForm
-          open={formOpen}
-          onClose={() => setFormOpen(false)}
-          trip={trip}
-        />
+        {/* Create forms (opened via map click) — rendered as drawers */}
         <StageForm
-          key={editingStage?.id ?? 'new-stage'}
           open={stageFormOpen}
           onClose={closeStageForm}
           tripID={id!}
-          stage={editingStage}
           pendingCoords={pendingStageCoords}
           noBackdrop
         />
         {dayFormStageId && (
           <DayForm
-            key={`${dayFormStageId}-${editingDay?.id ?? 'new-day'}`}
+            key={dayFormStageId}
             open={dayFormOpen}
             onClose={closeDayForm}
             tripID={id!}
             stageID={dayFormStageId}
-            day={editingDay}
             pendingCoords={pendingDayCoords}
             noBackdrop
           />

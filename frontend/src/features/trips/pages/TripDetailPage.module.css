@@ -63,26 +63,6 @@
   margin: 0;
 }
 
-.primaryCta {
-  display: block;
-  margin-top: 16px;
-  background: var(--color-gold);
-  color: var(--color-bg);
-  border: 1px solid var(--color-gold);
-  font-family: var(--font-body);
-  font-size: 0.78rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  padding: 9px 18px;
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.primaryCta:hover {
-  opacity: 0.85;
-}
-
 .emptyStages {
   padding: 24px;
   margin: 0;

@@ -16,6 +16,11 @@ function snapDown(snap: SheetSnap): SheetSnap {
   return snap === 'full' ? 'half' : 'peek';
 }
 
+// Tap / Enter on the grab handle: cycle peek → half → full → half.
+function toggleSnap(snap: SheetSnap): SheetSnap {
+  return snap === 'full' ? 'half' : snapUp(snap);
+}
+
 interface TripPanelProps {
   /** 0 = timeline, 1 = stage detail, 2 = day detail. */
   level: 0 | 1 | 2;
@@ -74,7 +79,7 @@ export function TripPanel({
     drag.current = null;
     resetDragStyles();
     if (Math.abs(dy) < TAP_SLOP_PX) {
-      onSnapChange(snap === 'full' ? 'half' : snapUp(snap));
+      onSnapChange(toggleSnap(snap));
     } else if (dy <= -SNAP_UP_DRAG_PX) {
       onSnapChange(snapUp(snap));
     } else if (dy >= SNAP_DOWN_DRAG_PX) {
@@ -94,7 +99,7 @@ export function TripPanel({
   function handleGrabKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSnapChange(snap === 'full' ? 'half' : snapUp(snap));
+      onSnapChange(toggleSnap(snap));
     }
   }
 

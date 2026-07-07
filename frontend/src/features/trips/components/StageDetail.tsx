@@ -67,7 +67,7 @@ export function StageDetail({ stage, days, canEdit, onClose, onDayClick }: Stage
         {days.length === 0 ? (
           <p className={styles.muted}>
             {canEdit
-              ? 'Aucun jour pour cette étape. Utilisez le menu ⋮ pour en ajouter un.'
+              ? 'Aucun jour pour cette étape. Cliquez sur la carte pour en ajouter un.'
               : 'Aucun jour pour cette étape.'}
           </p>
         ) : (
