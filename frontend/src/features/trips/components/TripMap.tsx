@@ -32,9 +32,17 @@ const MOBILE_SHEET_COVER_RATIO = 0.55; // persistent bottom sheet at half snap (
 // placement-mode map clicks landing near an existing marker.
 const MOBILE_HIT_BOX = 44;
 
+// Icons must keep a stable identity across renders: react-leaflet swaps a
+// marker's icon whenever the prop identity changes, and swapping the icon of
+// a marker mid-drag crashes Leaflet's drag handler (stale _icon reference).
+const iconCache = new Map<string, L.DivIcon>();
+
 function makeMarkerIcon(inner: string, size: number, popupAnchorY: number) {
   const box = isMobileViewport() ? Math.max(size, MOBILE_HIT_BOX) : size;
-  return L.divIcon({
+  const key = `${box}|${popupAnchorY}|${inner}`;
+  const cached = iconCache.get(key);
+  if (cached) return cached;
+  const icon = L.divIcon({
     className: '',
     html: `<div style="
       width:${box}px;height:${box}px;
@@ -45,6 +53,8 @@ function makeMarkerIcon(inner: string, size: number, popupAnchorY: number) {
     iconAnchor: [box / 2, box / 2],
     popupAnchor: [0, popupAnchorY],
   });
+  iconCache.set(key, icon);
+  return icon;
 }
 
 function makeStageIcon(n: number, color: string, active: boolean) {

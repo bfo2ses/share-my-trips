@@ -230,8 +230,11 @@ export function TripDetailPage() {
   // first save resolves, and revert the marker via the provided closure.
   const handleStageDragEnd = useCallback(
     async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
+      // Pending only when THIS stage's auto-form is open (it is the single
+      // writer). In the overview (trip form open), a stage drag saves
+      // immediately — otherwise the coords would silently feed the trip form.
       const autoEdit = isAdmin && isModifiable;
-      if (autoEdit && !selectedDayId) {
+      if (autoEdit && selectedStageId === stage.id && !selectedDayId) {
         setPendingStageCoords(coords);
         return;
       }
@@ -265,7 +268,7 @@ export function TripDetailPage() {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [isAdmin, isModifiable, selectedDayId, updateStage, refetchAll],
+    [isAdmin, isModifiable, selectedStageId, selectedDayId, updateStage, refetchAll],
   );
 
   const handleDayDragEnd = useCallback(
