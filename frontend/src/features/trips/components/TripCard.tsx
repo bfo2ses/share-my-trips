@@ -30,9 +30,10 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
-  // Fallback to the gradient when the cover URL is dead (media deleted).
-  const [coverBroken, setCoverBroken] = useState(false);
-  const showCover = !!trip.coverPhoto && !coverBroken;
+  // Fallback to the gradient when the cover URL is dead (media deleted, or
+  // legacy marker values). Keyed by URL so a new cover retries the load.
+  const [brokenUrl, setBrokenUrl] = useState<string | null>(null);
+  const showCover = !!trip.coverPhoto && trip.coverPhoto !== brokenUrl;
 
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
@@ -98,7 +99,7 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
               src={trip.coverPhoto}
               alt=""
               loading="lazy"
-              onError={() => setCoverBroken(true)}
+              onError={() => setBrokenUrl(trip.coverPhoto)}
             />
             <div className={styles.coverScrim} aria-hidden="true" />
           </>

@@ -79,10 +79,14 @@ export function TripDetailPage() {
 
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
 
-  // Photos de l'album, proposées comme cover dans le formulaire voyage.
-  const [{ data: tripMediaData }] = useTripMedia(isAdmin ? id : null);
+  // Photos de l'album, proposées comme cover dans le formulaire voyage. En
+  // pause dès qu'une étape est sélectionnée : le retour au niveau voyage
+  // relance un fetch réseau (cache-and-network) et récupère les photos
+  // uploadées entre-temps. Filtre par tripID : urql conserve la data
+  // précédente pendant pause/refetch.
+  const [{ data: tripMediaData }] = useTripMedia(isAdmin && !selectedStageId ? id : null);
   const coverChoices = (tripMediaData?.tripMedia ?? [])
-    .filter((m) => m.contentType.startsWith('image/'))
+    .filter((m) => m.tripID === id && m.contentType.startsWith('image/'))
     .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trip = data?.trip ?? null;

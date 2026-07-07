@@ -31,9 +31,11 @@ export function TripsPage() {
   const { data, fetching, error } = useTrips(hasEditRole ? undefined : ['PUBLISHED', 'CLOSED']);
 
   // Photos de l'album du voyage en cours d'édition, proposées comme cover.
+  // Filtre par tripID indispensable : urql conserve la data du voyage
+  // précédent quand la query est en pause ou en cours de refetch.
   const [{ data: tripMediaData }] = useTripMedia(isAdmin ? editingTrip?.id : null);
   const coverChoices = (tripMediaData?.tripMedia ?? [])
-    .filter((m) => m.contentType.startsWith('image/'))
+    .filter((m) => m.tripID === editingTrip?.id && m.contentType.startsWith('image/'))
     .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trips = data?.trips ?? [];
