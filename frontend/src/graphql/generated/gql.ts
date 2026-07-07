@@ -29,6 +29,7 @@ type Documents = {
     "\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ReorderMediaDocument,
     "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteMediaDocument,
     "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n": typeof types.DayMediaDocument,
+    "\n  query TripMedia($tripID: ID!) {\n    tripMedia(tripID: $tripID) {\n      id\n      dayID\n      contentType\n      thumbUrl\n    }\n  }\n": typeof types.TripMediaDocument,
     "\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.AddDayDocument,
     "\n  mutation UpdateDay($id: ID!, $input: UpdateDayInput!) {\n    updateDay(id: $id, input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateDayDocument,
     "\n  mutation DeleteDay($id: ID!) {\n    deleteDay(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteDayDocument,
@@ -65,6 +66,7 @@ const documents: Documents = {
     "\n  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ReorderMediaDocument,
     "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteMediaDocument,
     "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n": types.DayMediaDocument,
+    "\n  query TripMedia($tripID: ID!) {\n    tripMedia(tripID: $tripID) {\n      id\n      dayID\n      contentType\n      thumbUrl\n    }\n  }\n": types.TripMediaDocument,
     "\n  mutation AddDay($input: AddDayInput!) {\n    addDay(input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.AddDayDocument,
     "\n  mutation UpdateDay($id: ID!, $input: UpdateDayInput!) {\n    updateDay(id: $id, input: $input) {\n      day {\n        id\n        tripID\n        stageIDs\n        date\n        title\n        description\n        lat\n        lng\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateDayDocument,
     "\n  mutation DeleteDay($id: ID!) {\n    deleteDay(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteDayDocument,
@@ -160,6 +162,10 @@ export function gql(source: "\n  mutation DeleteMedia($id: ID!) {\n    deleteMed
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n"): (typeof documents)["\n  query DayMedia($dayID: ID!) {\n    dayMedia(dayID: $dayID) {\n      id\n      dayID\n      tripID\n      filename\n      contentType\n      caption\n      url\n      thumbUrl\n      position\n      createdAt\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  query TripMedia($tripID: ID!) {\n    tripMedia(tripID: $tripID) {\n      id\n      dayID\n      contentType\n      thumbUrl\n    }\n  }\n"): (typeof documents)["\n  query TripMedia($tripID: ID!) {\n    tripMedia(tripID: $tripID) {\n      id\n      dayID\n      contentType\n      thumbUrl\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
