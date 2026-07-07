@@ -165,6 +165,15 @@ changement attendu.
 
 **Verification :** captures aux deux viewports dans la PR ; lint/build verts.
 
+## Évolution post-plan (2026-07-07)
+
+Retour utilisateur après livraison : la vue « détail d'étape » (niveau 1) est
+supprimée. Sélectionner une étape (timeline ou carte) centre la carte et fait
+défiler la timeline pour amener la tête d'étape en haut ; re-cliquer la tête
+active désélectionne (retour vue d'ensemble). Le panneau n'a plus que deux
+panes (timeline ⇄ jour). Conséquence assumée : la description d'étape n'est
+plus visible en lecture. Spec mise à jour (`consultation-des-voyages.feature`).
+
 ## Scope Boundaries
 
 - Formulaires d'édition : rendu actuel conservé (hors périmètre).
