@@ -1,7 +1,7 @@
 ---
 date: 2026-07-07
 type: refactor
-status: active
+status: completed
 origin: docs/brainstorms/2026-07-07-unified-panel-slide-requirements.md
 ---
 
@@ -55,7 +55,7 @@ tout l'espace libéré. (see origin: docs/brainstorms/2026-07-07-unified-panel-s
 
 ## Implementation Units
 
-### [ ] Unit 1 — TripPanel + slider, desktop 2 colonnes
+### [x] Unit 1 — TripPanel + slider, desktop 2 colonnes
 
 **Goal :** le panneau gauche devient l'unique conteneur ; la colonne détail
 desktop disparaît ; navigation par translation entre les 3 niveaux.
@@ -87,7 +87,7 @@ convention CSS Modules un bloc `@media 768px` par fichier.
 gauche vers détail étape, clic jour → slide vers détail jour, retours slide droite ;
 carte occupe tout sauf 420 px ; deep link `?stage&day` atterrit au niveau 2.
 
-### [ ] Unit 2 — Sheet mobile persistant à 3 hauteurs
+### [x] Unit 2 — Sheet mobile persistant à 3 hauteurs
 
 **Goal :** sur mobile (lecture), carte plein écran et TripPanel en sheet fixe
 bottom avec snaps peek (poignée seule) / half (55svh, défaut) / full (92svh).
@@ -114,7 +114,7 @@ bottom avec snaps peek (poignée seule) / half (55svh, défaut) / full (92svh).
 drag haut → 92svh, drag bas ×2 → poignée seule, carte visible plein écran derrière ;
 mode édition inchangé.
 
-### [ ] Unit 3 — Carte : padding sheet + remontée du peek
+### [x] Unit 3 — Carte : padding sheet + remontée du peek
 
 **Goal :** FitBounds mobile ne cache pas les marqueurs sous le sheet ; un tap
 marqueur remonte le sheet s'il est en peek.
@@ -132,7 +132,7 @@ sélection via carte force snap ≥ half.
 marqueurs dans la zone visible au-dessus du sheet ; tap marqueur en peek → sheet
 remonte à half sur le bon niveau.
 
-### [ ] Unit 4 — Échappement des overlays du track transformé
+### [x] Unit 4 — Échappement des overlays du track transformé
 
 **Goal :** les ConfirmModal et menus ⋮ rendus dans les panes ne doivent pas être
 piégés par le `transform` du track (`position: fixed` se rattache à l'ancêtre
@@ -151,7 +151,7 @@ cette fois.
 **Verification :** desktop et mobile — suppression étape/jour depuis le détail :
 modal centrée plein écran, menu ⋮ non clippé.
 
-### [ ] Unit 5 — Audit final e2e
+### [x] Unit 5 — Audit final e2e
 
 **Goal :** vérification navigateur complète + qualité.
 

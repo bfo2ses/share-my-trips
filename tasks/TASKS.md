@@ -20,6 +20,7 @@ _Aucune tâche en attente._
 
 | # | Tâche | Branche | PR |
 |---|-------|---------|-----|
+| 9 | Panneau unique timeline ⇄ étape ⇄ jour (slide horizontal), sheet mobile persistant 3 hauteurs, carte plein écran | `feat/frontend-unified-trip-panel` | [#44](https://github.com/bfo2ses/share-my-trips/pull/44) |
 | 8 | Page voyage : timeline unique (plus de tabs), têtes d'étape enrichies, sheet extensible au geste | `feat/frontend-trip-timeline-sheet` | [#43](https://github.com/bfo2ses/share-my-trips/pull/43) |
 | 7 | Navigation mobile (consultation d'abord) : liste en entrée, gestes carte, lightbox, cibles 44px | `feat/frontend-mobile-navigation` | [#41](https://github.com/bfo2ses/share-my-trips/pull/41) |
 | 6 | Création stage/day au clic sur la carte + drag & drop des marqueurs | `feat/frontend-map-placement` | [#18](https://github.com/bfo2ses/share-my-trips/pull/18) |
