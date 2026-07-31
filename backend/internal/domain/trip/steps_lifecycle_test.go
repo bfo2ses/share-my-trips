@@ -20,11 +20,11 @@ func registerLifecycleSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^le voyage est modifiable$`, tc.tripIsEditable)
 	ctx.Step(`^le voyage n\'est pas modifiable$`, tc.tripIsNotEditable)
 	ctx.Step(`^je repasse le voyage en brouillon$`, tc.unpublishTrip)
-	ctx.Step(`^le voyage contient des jours du "([^"]*)" au "([^"]*)"$`, tc.tripHasDaysFromTo)
+	ctx.Step(`^le voyage contient des visites du "([^"]*)" au "([^"]*)"$`, tc.tripHasVisitsFromTo)
 	ctx.Step(`^je clôture le voyage$`, tc.closeTrip)
 	ctx.Step(`^les dates du voyage sont recalculées du "([^"]*)" au "([^"]*)"$`, tc.tripDatesAreRecalculatedFromTo)
-	ctx.Step(`^je tente de clôturer le voyage sans jours$`, tc.closeTripWithoutDays)
-	ctx.Step(`^un message m\'indique qu\'il faut au moins un jour pour clôturer$`, tc.errNoDaysToClose)
+	ctx.Step(`^je tente de clôturer le voyage sans visites$`, tc.closeTripWithoutVisits)
+	ctx.Step(`^un message m\'indique qu\'il faut au moins une visite pour clôturer$`, tc.errNoVisitsToClose)
 	ctx.Step(`^un message m\'indique que l\'on ne peut pas clôturer un brouillon$`, tc.errCannotCloseDraft)
 	ctx.Step(`^je réouvre le voyage$`, tc.reopenTrip)
 }
@@ -54,10 +54,10 @@ func (tc *testContext) tripIsClosed(title string) error {
 	if err := tc.tripIsPublished(title); err != nil {
 		return err
 	}
-	firstDay := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
-	lastDay := time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC)
+	firstVisitDate := time.Date(2025, 7, 1, 0, 0, 0, 0, time.UTC)
+	lastVisitDate := time.Date(2025, 7, 14, 0, 0, 0, 0, time.UTC)
 	tc.currentTrip, tc.lastErr = tc.handler.Close(context.Background(), trip.CloseTripCommand{
-		ID: tc.currentTrip.ID, FirstDay: firstDay, LastDay: lastDay,
+		ID: tc.currentTrip.ID, FirstVisitDate: firstVisitDate, LastVisitDate: lastVisitDate,
 	})
 	return tc.lastErr
 }
@@ -93,15 +93,15 @@ func (tc *testContext) unpublishTrip() error {
 	return nil
 }
 
-func (tc *testContext) tripHasDaysFromTo(_, _ string) error {
+func (tc *testContext) tripHasVisitsFromTo(_, _ string) error {
 	return nil
 }
 
 func (tc *testContext) closeTrip() error {
-	firstDay := time.Date(2025, 7, 2, 0, 0, 0, 0, time.UTC)
-	lastDay := time.Date(2025, 7, 15, 0, 0, 0, 0, time.UTC)
+	firstVisitDate := time.Date(2025, 7, 2, 0, 0, 0, 0, time.UTC)
+	lastVisitDate := time.Date(2025, 7, 15, 0, 0, 0, 0, time.UTC)
 	tc.currentTrip, tc.lastErr = tc.handler.Close(context.Background(), trip.CloseTripCommand{
-		ID: tc.currentTrip.ID, FirstDay: firstDay, LastDay: lastDay,
+		ID: tc.currentTrip.ID, FirstVisitDate: firstVisitDate, LastVisitDate: lastVisitDate,
 	})
 	return nil
 }
@@ -110,16 +110,16 @@ func (tc *testContext) tripDatesAreRecalculatedFromTo(start, end string) error {
 	return tc.datesAreFromTo(start, end)
 }
 
-func (tc *testContext) closeTripWithoutDays() error {
+func (tc *testContext) closeTripWithoutVisits() error {
 	tc.currentTrip, tc.lastErr = tc.handler.Close(context.Background(), trip.CloseTripCommand{
 		ID: tc.currentTrip.ID,
 	})
 	return nil
 }
 
-func (tc *testContext) errNoDaysToClose() error {
-	if !errors.Is(tc.lastErr, trip.ErrNoDaysToClose) {
-		return fmt.Errorf("expected ErrNoDaysToClose, got: %v", tc.lastErr)
+func (tc *testContext) errNoVisitsToClose() error {
+	if !errors.Is(tc.lastErr, trip.ErrNoVisitsToClose) {
+		return fmt.Errorf("expected ErrNoVisitsToClose, got: %v", tc.lastErr)
 	}
 	return nil
 }

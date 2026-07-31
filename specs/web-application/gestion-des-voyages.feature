@@ -70,7 +70,7 @@ Fonctionnalité: Gestion des voyages
     Etant donné que je suis connecté en tant qu'administrateur
     Et qu'un voyage "Road trip en Islande" est publié
     Alors je peux modifier ses informations
-    Et je peux ajouter des jours et des étapes
+    Et je peux ajouter des visites et des étapes
     Et je peux ajouter des photos et des vidéos
 
   Scénario: Repasser un voyage publié en brouillon
@@ -84,7 +84,7 @@ Fonctionnalité: Gestion des voyages
   Scénario: Clôturer un voyage publié
     Etant donné que je suis connecté en tant qu'administrateur
     Et qu'un voyage "Road trip en Islande" est publié
-    Et que le voyage contient des jours du 2025-07-02 au 2025-07-15
+    Et que le voyage contient des visites du 2025-07-02 au 2025-07-15
     Quand je clôture le voyage
     Alors son statut passe à "clôturé"
     Et les dates du voyage sont recalculées du 2025-07-02 au 2025-07-15
@@ -93,14 +93,14 @@ Fonctionnalité: Gestion des voyages
     Etant donné que je suis connecté en tant qu'administrateur
     Et qu'un voyage "Road trip en Islande" est clôturé
     Alors je ne peux plus modifier ses informations
-    Et je ne peux plus ajouter de jours ou d'étapes
+    Et je ne peux plus ajouter de visites ou d'étapes
     Et je ne peux plus ajouter de photos ou de vidéos
 
-  Scénario: Impossible de clôturer un voyage sans jours
+  Scénario: Impossible de clôturer un voyage sans visites
     Etant donné que je suis connecté en tant qu'administrateur
-    Et qu'un voyage publié existe sans aucun jour
+    Et qu'un voyage publié existe sans aucune visite
     Quand je tente de clôturer le voyage
-    Alors un message m'indique qu'il faut au moins un jour pour clôturer
+    Alors un message m'indique qu'il faut au moins une visite pour clôturer
 
   Scénario: Impossible de clôturer un voyage en brouillon
     Etant donné que je suis connecté en tant qu'administrateur

@@ -5,13 +5,13 @@ type GetMediaQuery struct {
 	ID string
 }
 
-// ListByDayQuery retrieves all media for a given day, sorted by position.
-type ListByDayQuery struct {
-	DayID string
+// ListByVisitQuery retrieves all media for a given visit, sorted by position.
+type ListByVisitQuery struct {
+	VisitID string
 }
 
-// ListByTripQuery retrieves all media for a given trip, across all its days,
-// sorted by day then position.
+// ListByTripQuery retrieves all media for a given trip, across all its visits,
+// sorted by visit then position.
 type ListByTripQuery struct {
 	TripID string
 }

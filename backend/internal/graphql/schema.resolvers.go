@@ -10,12 +10,11 @@ import (
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
-
 
 // CreateTrip is the resolver for the createTrip field.
 func (r *mutationResolver) CreateTrip(ctx context.Context, input CreateTripInput) (*TripPayload, error) {
@@ -107,16 +106,16 @@ func (r *mutationResolver) CloseTrip(ctx context.Context, id string, input Close
 	if err := r.requireEditor(ctx); err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	firstDay, err := time.Parse(time.DateOnly, input.FirstDay)
+	firstVisitDate, err := time.Parse(time.DateOnly, input.FirstVisitDate)
 	if err != nil {
-		return &TripPayload{Errors: []*UserError{{Field: strPtr("firstDay"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("firstVisitDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
-	lastDay, err := time.Parse(time.DateOnly, input.LastDay)
+	lastVisitDate, err := time.Parse(time.DateOnly, input.LastVisitDate)
 	if err != nil {
-		return &TripPayload{Errors: []*UserError{{Field: strPtr("lastDay"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+		return &TripPayload{Errors: []*UserError{{Field: strPtr("lastVisitDate"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
 
-	t, err := r.tripHandler.Close(ctx, trip.CloseTripCommand{ID: id, FirstDay: firstDay, LastDay: lastDay})
+	t, err := r.tripHandler.Close(ctx, trip.CloseTripCommand{ID: id, FirstVisitDate: firstVisitDate, LastVisitDate: lastVisitDate})
 	if err != nil {
 		return &TripPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
@@ -196,16 +195,16 @@ func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*DeleteS
 	return &DeleteStagePayload{Success: true, Errors: []*UserError{}}, nil
 }
 
-// AddDay is the resolver for the addDay field.
-func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayPayload, error) {
+// AddVisit is the resolver for the addVisit field.
+func (r *mutationResolver) AddVisit(ctx context.Context, input AddVisitInput) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	date, err := time.Parse(dateFormat, input.Date)
 	if err != nil {
-		return &DayPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+		return &VisitPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
-	d, err := r.dayHandler.Add(ctx, day.AddDayCommand{
+	v, err := r.visitHandler.Add(ctx, visit.AddVisitCommand{
 		TripID:      input.TripID,
 		StageID:     input.StageID,
 		Date:        date,
@@ -215,34 +214,34 @@ func (r *mutationResolver) AddDay(ctx context.Context, input AddDayInput) (*DayP
 		Lng:         input.Lng,
 	})
 	if err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
 }
 
-// UpdateDay is the resolver for the updateDay field.
-func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input UpdateDayInput) (*DayPayload, error) {
+// UpdateVisit is the resolver for the updateVisit field.
+func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input UpdateVisitInput) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 
-	// If date is provided, parse it; otherwise fetch the existing day's date.
+	// If date is provided, parse it; otherwise fetch the existing visit's date.
 	var dateVal time.Time
 	if input.Date != nil {
 		parsed, err := time.Parse(dateFormat, *input.Date)
 		if err != nil {
-			return &DayPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+			return &VisitPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 		}
 		dateVal = parsed
 	} else {
-		existing, err := r.dayHandler.GetByID(ctx, day.GetDayQuery{ID: id})
+		existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: id})
 		if err != nil {
-			return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+			return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 		}
 		dateVal = existing.Date
 	}
 
-	d, err := r.dayHandler.Update(ctx, day.UpdateDayCommand{
+	v, err := r.visitHandler.Update(ctx, visit.UpdateVisitCommand{
 		ID:          id,
 		Date:        dateVal,
 		Title:       derefString(input.Title),
@@ -251,44 +250,44 @@ func (r *mutationResolver) UpdateDay(ctx context.Context, id string, input Updat
 		Lng:         input.Lng,
 	})
 	if err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
 }
 
-// DeleteDay is the resolver for the deleteDay field.
-func (r *mutationResolver) DeleteDay(ctx context.Context, id string) (*DeleteDayPayload, error) {
+// DeleteVisit is the resolver for the deleteVisit field.
+func (r *mutationResolver) DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
-		return &DeleteDayPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	if err := r.dayHandler.Delete(ctx, day.DeleteDayCommand{ID: id}); err != nil {
-		return &DeleteDayPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	if err := r.visitHandler.Delete(ctx, visit.DeleteVisitCommand{ID: id}); err != nil {
+		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DeleteDayPayload{Success: true, Errors: []*UserError{}}, nil
+	return &DeleteVisitPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
-// AttachDayToStage is the resolver for the attachDayToStage field.
-func (r *mutationResolver) AttachDayToStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
+// AttachVisitToStage is the resolver for the attachVisitToStage field.
+func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	d, err := r.dayHandler.AttachToStage(ctx, day.AttachToStageCommand{DayID: dayID, StageID: stageID})
+	v, err := r.visitHandler.AttachToStage(ctx, visit.AttachToStageCommand{VisitID: visitID, StageID: stageID})
 	if err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
 }
 
-// DetachDayFromStage is the resolver for the detachDayFromStage field.
-func (r *mutationResolver) DetachDayFromStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error) {
+// DetachVisitFromStage is the resolver for the detachVisitFromStage field.
+func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	d, err := r.dayHandler.DetachFromStage(ctx, day.DetachFromStageCommand{DayID: dayID, StageID: stageID})
+	v, err := r.visitHandler.DetachFromStage(ctx, visit.DetachFromStageCommand{VisitID: visitID, StageID: stageID})
 	if err != nil {
-		return &DayPayload{Errors: domainErrorToUserErrors(err)}, nil
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DayPayload{Day: toGraphQLDay(d), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
 }
 
 // SetupAdmin is the resolver for the setupAdmin field.
@@ -403,12 +402,12 @@ func (r *mutationResolver) UpdateMediaCaption(ctx context.Context, id string, ca
 }
 
 // ReorderMedia is the resolver for the reorderMedia field.
-func (r *mutationResolver) ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error) {
+func (r *mutationResolver) ReorderMedia(ctx context.Context, visitID string, mediaIDs []string) (*ReorderMediaPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
 		return &ReorderMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	list, err := r.mediaHandler.Reorder(ctx, media.ReorderCommand{
-		DayID:    dayID,
+		VisitID:  visitID,
 		MediaIDs: mediaIDs,
 	})
 	if err != nil {
@@ -479,19 +478,19 @@ func (r *queryResolver) Stages(ctx context.Context, tripID string) ([]*Stage, er
 		return nil, err
 	}
 
-	// Sort stages chronologically by their earliest primary day date.
-	days, err := r.dayHandler.ListByTrip(ctx, day.ListByTripQuery{TripID: tripID})
+	// Sort stages chronologically by their earliest primary visit date.
+	visits, err := r.visitHandler.ListByTrip(ctx, visit.ListByTripQuery{TripID: tripID})
 	if err != nil {
 		return nil, err
 	}
 	earliestDate := make(map[string]time.Time, len(stages))
-	for _, d := range days {
-		if len(d.StageIDs) == 0 {
+	for _, v := range visits {
+		if len(v.StageIDs) == 0 {
 			continue
 		}
-		primary := d.StageIDs[0]
-		if existing, ok := earliestDate[primary]; !ok || d.Date.Before(existing) {
-			earliestDate[primary] = d.Date
+		primary := v.StageIDs[0]
+		if existing, ok := earliestDate[primary]; !ok || v.Date.Before(existing) {
+			earliestDate[primary] = v.Date
 		}
 	}
 	sort.Slice(stages, func(i, j int) bool {
@@ -516,47 +515,47 @@ func (r *queryResolver) Stages(ctx context.Context, tripID string) ([]*Stage, er
 	return result, nil
 }
 
-// Day is the resolver for the day field.
-func (r *queryResolver) Day(ctx context.Context, id string) (*Day, error) {
-	d, err := r.dayHandler.GetByID(ctx, day.GetDayQuery{ID: id})
+// Visit is the resolver for the visit field.
+func (r *queryResolver) Visit(ctx context.Context, id string) (*Visit, error) {
+	v, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: id})
 	if err != nil {
-		if errors.Is(err, day.ErrNotFound) {
+		if errors.Is(err, visit.ErrNotFound) {
 			return nil, nil
 		}
 		return nil, err
 	}
-	return toGraphQLDay(d), nil
+	return toGraphQLVisit(v), nil
 }
 
-// Days is the resolver for the days field.
-func (r *queryResolver) Days(ctx context.Context, stageID string) ([]*Day, error) {
-	days, err := r.dayHandler.ListByStage(ctx, day.ListByStageQuery{StageID: stageID})
+// Visits is the resolver for the visits field.
+func (r *queryResolver) Visits(ctx context.Context, stageID string) ([]*Visit, error) {
+	visits, err := r.visitHandler.ListByStage(ctx, visit.ListByStageQuery{StageID: stageID})
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*Day, 0, len(days))
-	for _, d := range days {
-		result = append(result, toGraphQLDay(d))
+	result := make([]*Visit, 0, len(visits))
+	for _, v := range visits {
+		result = append(result, toGraphQLVisit(v))
 	}
 	return result, nil
 }
 
-// TripDays is the resolver for the tripDays field.
-func (r *queryResolver) TripDays(ctx context.Context, tripID string) ([]*Day, error) {
-	days, err := r.dayHandler.ListByTrip(ctx, day.ListByTripQuery{TripID: tripID})
+// TripVisits is the resolver for the tripVisits field.
+func (r *queryResolver) TripVisits(ctx context.Context, tripID string) ([]*Visit, error) {
+	visits, err := r.visitHandler.ListByTrip(ctx, visit.ListByTripQuery{TripID: tripID})
 	if err != nil {
 		return nil, err
 	}
-	result := make([]*Day, 0, len(days))
-	for _, d := range days {
-		result = append(result, toGraphQLDay(d))
+	result := make([]*Visit, 0, len(visits))
+	for _, v := range visits {
+		result = append(result, toGraphQLVisit(v))
 	}
 	return result, nil
 }
 
-// DayMedia is the resolver for the dayMedia field.
-func (r *queryResolver) DayMedia(ctx context.Context, dayID string) ([]*Media, error) {
-	list, err := r.mediaHandler.ListByDay(ctx, media.ListByDayQuery{DayID: dayID})
+// VisitMedia is the resolver for the visitMedia field.
+func (r *queryResolver) VisitMedia(ctx context.Context, visitID string) ([]*Media, error) {
+	list, err := r.mediaHandler.ListByVisit(ctx, media.ListByVisitQuery{VisitID: visitID})
 	if err != nil {
 		return nil, err
 	}

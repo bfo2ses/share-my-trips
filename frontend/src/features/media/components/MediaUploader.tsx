@@ -9,7 +9,7 @@ interface UploadItem {
 }
 
 interface MediaUploaderProps {
-  dayID: string;
+  visitID: string;
   tripID: string;
   onUploadComplete: () => void;
 }
@@ -20,7 +20,7 @@ const ACCEPTED_TYPES = new Set([
 ]);
 const ACCEPT = Array.from(ACCEPTED_TYPES).join(',');
 
-export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploaderProps) {
+export function MediaUploader({ visitID, tripID, onUploadComplete }: MediaUploaderProps) {
   const { token } = useAuth();
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -29,7 +29,7 @@ export function MediaUploader({ dayID, tripID, onUploadComplete }: MediaUploader
   function uploadFile(file: File, index: number) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('dayID', dayID);
+    formData.append('visitID', visitID);
     formData.append('tripID', tripID);
 
     const xhr = new XMLHttpRequest();

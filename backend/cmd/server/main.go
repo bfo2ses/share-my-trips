@@ -16,16 +16,15 @@ import (
 	"github.com/bfosses/sharemytrips/internal/adapter/mailer"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
 	pg "github.com/bfosses/sharemytrips/internal/adapter/postgres"
-	"github.com/bfosses/sharemytrips/migrations"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
 	mediahttp "github.com/bfosses/sharemytrips/internal/http"
+	"github.com/bfosses/sharemytrips/migrations"
 )
-
 
 func corsMiddleware(origin string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -81,7 +80,7 @@ func main() {
 	// Domain handlers — wired with either postgres or in-memory adapters.
 	var tripHandler *trip.Handler
 	var stageHandler *stage.Handler
-	var dayHandler *day.Handler
+	var visitHandler *visit.Handler
 	var authHandler *auth.Handler
 	var mediaHandler *media.Handler
 
@@ -101,12 +100,12 @@ func main() {
 
 		tripRepo := pg.NewTripRepository(pool)
 		stageRepo := pg.NewStageRepository(pool)
-		dayRepo := pg.NewDayRepository(pool)
+		visitRepo := pg.NewVisitRepository(pool)
 		tripChecker := pg.NewTripChecker(pool)
 
 		tripHandler = trip.NewHandler(tripRepo)
-		stageHandler = stage.NewHandler(stageRepo, tripChecker, dayRepo)
-		dayHandler = day.NewHandler(dayRepo, tripChecker, stageRepo)
+		stageHandler = stage.NewHandler(stageRepo, tripChecker, visitRepo)
+		visitHandler = visit.NewHandler(visitRepo, tripChecker, stageRepo)
 
 		userRepo := pg.NewUserRepository(pool)
 		sessionRepo := pg.NewSessionRepository(pool)
@@ -114,11 +113,11 @@ func main() {
 		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, mailSender)
 
 		mediaRepo := pg.NewMediaRepository(pool)
-		dayChecker := pg.NewDayChecker(pool)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
+		visitChecker := pg.NewVisitChecker(pool)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
 
 		if os.Getenv("ENV") == "dev" {
-			seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
 			log.Println("Seed data loaded")
 		}
 		log.Println("Using PostgreSQL storage")
@@ -126,12 +125,12 @@ func main() {
 		// ── In-memory (dev without DB) ──
 		tripRepo := memory.NewTripRepository()
 		stageRepo := memory.NewStageRepository()
-		dayRepo := memory.NewDayRepository()
+		visitRepo := memory.NewVisitRepository()
 		tripChecker := memory.NewTripChecker(tripRepo)
 
 		tripHandler = trip.NewHandler(tripRepo)
-		stageHandler = stage.NewHandler(stageRepo, tripChecker, dayRepo)
-		dayHandler = day.NewHandler(dayRepo, tripChecker, stageRepo)
+		stageHandler = stage.NewHandler(stageRepo, tripChecker, visitRepo)
+		visitHandler = visit.NewHandler(visitRepo, tripChecker, stageRepo)
 
 		userRepo := memory.NewUserRepository()
 		sessionRepo := memory.NewSessionRepository()
@@ -139,18 +138,18 @@ func main() {
 		authHandler = auth.NewHandler(userRepo, sessionRepo, resetRepo, hasher, tokenGen, mailSender)
 
 		mediaRepo := memory.NewMediaRepository()
-		dayChecker := memory.NewDayChecker(dayRepo)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, dayChecker)
+		visitChecker := memory.NewVisitChecker(visitRepo)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
 
 		if os.Getenv("ENV") == "dev" {
-			seedData(ctx, userRepo, tripRepo, stageRepo, dayRepo)
+			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
 			log.Println("Seed data loaded")
 		}
 		log.Println("Using in-memory storage (set DATABASE_URL for PostgreSQL)")
 	}
 
 	// GraphQL
-	resolver := graph.NewResolver(tripHandler, stageHandler, dayHandler, authHandler, mediaHandler)
+	resolver := graph.NewResolver(tripHandler, stageHandler, visitHandler, authHandler, mediaHandler)
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	port := os.Getenv("PORT")

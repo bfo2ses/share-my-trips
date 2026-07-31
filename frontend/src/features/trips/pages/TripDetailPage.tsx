@@ -6,13 +6,13 @@ import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
-import { useUpdateDay, useDeleteDay } from '../../stages/hooks/useDayMutations';
+import { useUpdateVisit, useDeleteVisit } from '../../stages/hooks/useVisitMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm, type FormAction } from '../components/TripForm';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
-import { DayDetail } from '../components/DayDetail';
+import { VisitDetail } from '../components/VisitDetail';
 import { StageForm } from '../../stages/components/StageForm';
-import { DayForm } from '../../stages/components/DayForm';
+import { VisitForm } from '../../stages/components/VisitForm';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
@@ -20,7 +20,7 @@ import type { TripDetailQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
 
 type Stage = TripDetailQuery['stages'][number];
-type Day = TripDetailQuery['tripDays'][number];
+type Visit = TripDetailQuery['tripVisits'][number];
 type StageDateRangeMap = Record<string, { start: string; end: string }>;
 type PanTarget = { lat: number; lng: number; seq: number } | null;
 
@@ -46,17 +46,17 @@ export function TripDetailPage() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedStageId = searchParams.get('stage');
-  const selectedDayId = searchParams.get('day');
+  const selectedVisitId = searchParams.get('visit');
   // Manual forms are create-only (opened via map click); editing an existing
   // entity goes through the auto-open forms driven by the URL selection.
   const [stageFormOpen, setStageFormOpen] = useState(false);
-  const [dayFormOpen, setDayFormOpen] = useState(false);
-  const [dayFormStageId, setDayFormStageId] = useState<string | null>(null);
+  const [visitFormOpen, setVisitFormOpen] = useState(false);
+  const [visitFormStageId, setVisitFormStageId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [pendingDayCoords, setPendingDayCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [pendingVisitCoords, setPendingVisitCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
   const [sheetSnap, setSheetSnap] = useState<SheetSnap>('half');
   const timelineScrollRef = useRef<HTMLDivElement>(null);
@@ -65,7 +65,7 @@ export function TripDetailPage() {
   // Per-entity in-flight drag mutation guard. Ref-based so updates don't
   // re-render the map and lose Leaflet's drag state.
   const savingStagesRef = useRef<Set<string>>(new Set());
-  const savingDaysRef = useRef<Set<string>>(new Set());
+  const savingVisitsRef = useRef<Set<string>>(new Set());
 
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
@@ -74,10 +74,10 @@ export function TripDetailPage() {
   const [, reopenTrip] = useReopenTrip();
   const [, updateStage] = useUpdateStage();
   const [, deleteStage] = useDeleteStage();
-  const [, updateDay] = useUpdateDay();
-  const [, deleteDay] = useDeleteDay();
+  const [, updateVisit] = useUpdateVisit();
+  const [, deleteVisit] = useDeleteVisit();
 
-  const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Day'] };
+  const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Visit'] };
 
   // Photos de l'album, proposées comme cover dans le formulaire voyage. En
   // pause dès qu'une étape est sélectionnée : le retour au niveau voyage
@@ -92,11 +92,11 @@ export function TripDetailPage() {
   const trip = data?.trip ?? null;
   const isModifiable = trip ? trip.status !== 'CLOSED' : false;
   const stages = useMemo(() => data?.stages ?? [], [data?.stages]);
-  const allDays = useMemo(() => data?.tripDays ?? [], [data?.tripDays]);
+  const allVisits = useMemo(() => data?.tripVisits ?? [], [data?.tripVisits]);
 
-  const selectedDay = useMemo(
-    () => (selectedDayId ? allDays.find((d) => d.id === selectedDayId) ?? null : null),
-    [selectedDayId, allDays],
+  const selectedVisit = useMemo(
+    () => (selectedVisitId ? allVisits.find((v) => v.id === selectedVisitId) ?? null : null),
+    [selectedVisitId, allVisits],
   );
 
   const selectedStage = useMemo(
@@ -106,38 +106,38 @@ export function TripDetailPage() {
 
   // Contenu rémanent : la pane détail garde son dernier contenu pendant la
   // translation de retour (adjust-during-render, pattern wasOpen).
-  const [lastDay, setLastDay] = useState<Day | null>(null);
-  if (selectedDay && selectedDay !== lastDay) setLastDay(selectedDay);
-  const displayDay = selectedDay ?? lastDay;
+  const [lastVisit, setLastVisit] = useState<Visit | null>(null);
+  if (selectedVisit && selectedVisit !== lastVisit) setLastVisit(selectedVisit);
+  const displayVisit = selectedVisit ?? lastVisit;
 
-  const daysByStage = useMemo(() => {
-    const map = new Map<string, Day[]>();
-    for (const d of allDays) {
-      for (const stageId of d.stageIDs) {
+  const visitsByStage = useMemo(() => {
+    const map = new Map<string, Visit[]>();
+    for (const v of allVisits) {
+      for (const stageId of v.stageIDs) {
         const existing = map.get(stageId);
-        if (existing) existing.push(d);
-        else map.set(stageId, [d]);
+        if (existing) existing.push(v);
+        else map.set(stageId, [v]);
       }
     }
     return map;
-  }, [allDays]);
+  }, [allVisits]);
 
   const stageDateRanges = useMemo<StageDateRangeMap>(() => {
     const ranges: StageDateRangeMap = {};
-    for (const [stageId, days] of daysByStage) {
-      const primary = days.filter((d) => d.stageIDs[0] === stageId);
+    for (const [stageId, visits] of visitsByStage) {
+      const primary = visits.filter((v) => v.stageIDs[0] === stageId);
       if (primary.length > 0) {
         const sorted = [...primary].sort((a, b) => a.date.localeCompare(b.date));
         ranges[stageId] = { start: sorted[0].date, end: sorted[sorted.length - 1].date };
       }
     }
     return ranges;
-  }, [daysByStage]);
+  }, [visitsByStage]);
 
-  const activeStageDays = useMemo(() => {
+  const activeStageVisits = useMemo(() => {
     if (!selectedStageId) return [];
-    return (daysByStage.get(selectedStageId) ?? []).filter((d) => d.stageIDs[0] === selectedStageId);
-  }, [selectedStageId, daysByStage]);
+    return (visitsByStage.get(selectedStageId) ?? []).filter((v) => v.stageIDs[0] === selectedStageId);
+  }, [selectedStageId, visitsByStage]);
 
   // Closing helpers — centralised so the "mutually exclusive forms" rule is
   // easy to enforce in the openers below.
@@ -146,17 +146,17 @@ export function TripDetailPage() {
     setPendingStageCoords(null);
   }, []);
 
-  const closeDayForm = useCallback(() => {
-    setDayFormOpen(false);
-    setDayFormStageId(null);
-    setPendingDayCoords(null);
+  const closeVisitForm = useCallback(() => {
+    setVisitFormOpen(false);
+    setVisitFormStageId(null);
+    setPendingVisitCoords(null);
   }, []);
 
   // Sélectionner une étape (timeline ou carte) ne change pas de vue : la carte
   // se centre dessus et la timeline défile pour l'amener en haut. Re-cliquer
   // l'étape active la désélectionne (la carte revient à la vue d'ensemble).
   const handleStageClick = useCallback((stageId: string) => {
-    if (selectedStageId === stageId && !selectedDayId) {
+    if (selectedStageId === stageId && !selectedVisitId) {
       setSearchParams({}, { replace: true });
       return;
     }
@@ -172,10 +172,10 @@ export function TripDetailPage() {
         behavior: 'smooth',
       });
     }
-  }, [setSearchParams, selectedStageId, selectedDayId]);
+  }, [setSearchParams, selectedStageId, selectedVisitId]);
 
-  const handleDayClickFromTimeline = useCallback((stageId: string, day: Day) => {
-    setSearchParams({ stage: stageId, day: day.id }, { replace: true });
+  const handleVisitClickFromTimeline = useCallback((stageId: string, visit: Visit) => {
+    setSearchParams({ stage: stageId, visit: visit.id }, { replace: true });
     setSheetSnap((s) => (s === 'peek' ? 'half' : s));
   }, [setSearchParams]);
 
@@ -185,7 +185,7 @@ export function TripDetailPage() {
 
   const handleBackToStage = useCallback(() => {
     setSearchParams((prev) => {
-      prev.delete('day');
+      prev.delete('visit');
       return prev;
     }, { replace: true });
   }, [setSearchParams]);
@@ -201,9 +201,9 @@ export function TripDetailPage() {
   async function handleCloseTripAction() {
     const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
     if (allDates.length === 0) return;
-    const firstDay = allDates[0];
-    const lastDay = allDates[allDates.length - 1];
-    await closeTrip({ id: id!, input: { firstDay, lastDay } }, refetchContext);
+    const firstVisitDate = allDates[0];
+    const lastVisitDate = allDates[allDates.length - 1];
+    await closeTrip({ id: id!, input: { firstVisitDate, lastVisitDate } }, refetchContext);
   }
 
   async function handleReopen() {
@@ -232,7 +232,7 @@ export function TripDetailPage() {
   const handleStageDragEnd = useCallback(
     async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
       const autoEdit = isAdmin && isModifiable;
-      const stageFormShown = autoEdit && selectedStageId === stage.id && !selectedDayId;
+      const stageFormShown = autoEdit && selectedStageId === stage.id && !selectedVisitId;
       if (savingStagesRef.current.has(stage.id)) {
         revert();
         return;
@@ -265,44 +265,44 @@ export function TripDetailPage() {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [isAdmin, isModifiable, selectedStageId, selectedDayId, updateStage, refetchAll],
+    [isAdmin, isModifiable, selectedStageId, selectedVisitId, updateStage, refetchAll],
   );
 
-  const handleDayDragEnd = useCallback(
-    async (day: Day, coords: { lat: number; lng: number }, revert: () => void) => {
+  const handleVisitDragEnd = useCallback(
+    async (visit: Visit, coords: { lat: number; lng: number }, revert: () => void) => {
       const autoEdit = isAdmin && isModifiable;
-      const dayFormShown = autoEdit && selectedDayId === day.id;
-      if (savingDaysRef.current.has(day.id)) {
+      const visitFormShown = autoEdit && selectedVisitId === visit.id;
+      if (savingVisitsRef.current.has(visit.id)) {
         revert();
         return;
       }
-      savingDaysRef.current.add(day.id);
-      if (dayFormShown) setPendingDayCoords(coords);
+      savingVisitsRef.current.add(visit.id);
+      if (visitFormShown) setPendingVisitCoords(coords);
       try {
-        const result = await updateDay(
+        const result = await updateVisit(
           {
-            id: day.id,
+            id: visit.id,
             input: {
-              title: day.title || undefined,
-              description: day.description || undefined,
+              title: visit.title || undefined,
+              description: visit.description || undefined,
               lat: coords.lat,
               lng: coords.lng,
             },
           },
-          { additionalTypenames: ['Day'] },
+          { additionalTypenames: ['Visit'] },
         );
-        if (result.error || (result.data?.updateDay.errors ?? []).length > 0) {
+        if (result.error || (result.data?.updateVisit.errors ?? []).length > 0) {
           revert();
-          if (dayFormShown) setPendingDayCoords(null);
+          if (visitFormShown) setPendingVisitCoords(null);
           refetchAll();
           return;
         }
         setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
       } finally {
-        savingDaysRef.current.delete(day.id);
+        savingVisitsRef.current.delete(visit.id);
       }
     },
-    [isAdmin, isModifiable, selectedDayId, updateDay, refetchAll],
+    [isAdmin, isModifiable, selectedVisitId, updateVisit, refetchAll],
   );
 
   if (detailFetching) {
@@ -320,11 +320,11 @@ export function TripDetailPage() {
 
   // Auto-open edit forms in edit mode based on current selection.
   // Manual opens (create via map click / menu) take priority over auto-open.
-  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !stageFormOpen && !dayFormOpen;
-  const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedDayId && !stageFormOpen && !dayFormOpen;
-  const autoDayForm = isAdmin && isModifiable && !!selectedDay && !!selectedStageId && !dayFormOpen;
+  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !stageFormOpen && !visitFormOpen;
+  const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedVisitId && !stageFormOpen && !visitFormOpen;
+  const autoVisitForm = isAdmin && isModifiable && !!selectedVisit && !!selectedStageId && !visitFormOpen;
 
-  const effectiveDayStageId = dayFormOpen ? dayFormStageId : (autoDayForm ? selectedStageId : null);
+  const effectiveVisitStageId = visitFormOpen ? visitFormStageId : (autoVisitForm ? selectedStageId : null);
 
   // F4: suppress placement mode whenever a real overlay is blocking the map.
   // Auto-open panels are in-grid and don't block.
@@ -334,17 +334,17 @@ export function TripDetailPage() {
     ? null
     : stageFormOpen
     ? 'stage'
-    : dayFormOpen
-    ? 'day'
-    : selectedDay
+    : visitFormOpen
+    ? 'visit'
+    : selectedVisit
     ? null
     : selectedStageId
-    ? 'day'
+    ? 'visit'
     : 'stage';
 
   // Golden "pending" marker for the create forms (auto-edit forms already
   // have the dragged marker visible at the dropped position).
-  const pendingMapCoords = stageFormOpen ? pendingStageCoords : dayFormOpen ? pendingDayCoords : null;
+  const pendingMapCoords = stageFormOpen ? pendingStageCoords : visitFormOpen ? pendingVisitCoords : null;
 
   const handleMapClick = (coords: { lat: number; lng: number }) => {
     // Only manual (create) forms intercept map clicks for coord placement.
@@ -353,32 +353,32 @@ export function TripDetailPage() {
       setPendingStageCoords(coords);
       return;
     }
-    if (dayFormOpen) {
-      setPendingDayCoords(coords);
+    if (visitFormOpen) {
+      setPendingVisitCoords(coords);
       return;
     }
     if (!canEditMarkers || overlayActive) return;
     if (!selectedStageId) {
-      closeDayForm();
+      closeVisitForm();
       setPendingStageCoords(coords);
       setStageFormOpen(true);
       return;
     }
-    if (!selectedDay) {
+    if (!selectedVisit) {
       closeStageForm();
-      setDayFormStageId(selectedStageId);
-      setPendingDayCoords(coords);
-      setDayFormOpen(true);
+      setVisitFormStageId(selectedStageId);
+      setPendingVisitCoords(coords);
+      setVisitFormOpen(true);
     }
   };
 
   // Auto-form is one of the three auto-open forms (panel mode in-grid).
-  const anyAutoForm = autoTripForm || autoStageForm || autoDayForm;
+  const anyAutoForm = autoTripForm || autoStageForm || autoVisitForm;
 
-  // Niveau du panneau unique : seul un jour sélectionné change de vue. En mode
-  // édition (auto-form), le panneau reste sur la timeline — c'est le
+  // Niveau du panneau unique : seule une visite sélectionnée change de vue. En
+  // mode édition (auto-form), le panneau reste sur la timeline — c'est le
   // formulaire qui porte le détail sélectionné.
-  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedDay ? 1 : 0;
+  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedVisit ? 1 : 0;
 
   // Actions for each form panel
   const tripFormActions: FormAction[] = isAdmin ? [
@@ -394,19 +394,19 @@ export function TripDetailPage() {
       label: 'Supprimer l\'étape',
       danger: true,
       onClick: async () => {
-        const result = await deleteStage({ id: selectedStage.id }, { additionalTypenames: ['Stage', 'Day'] });
+        const result = await deleteStage({ id: selectedStage.id }, { additionalTypenames: ['Stage', 'Visit'] });
         if (!result.error && result.data?.deleteStage.success) handleDetailClose();
       },
     },
   ] : [];
 
-  const dayFormActions: FormAction[] = isAdmin && selectedDay ? [
+  const visitFormActions: FormAction[] = isAdmin && selectedVisit ? [
     {
-      label: 'Supprimer le jour',
+      label: 'Supprimer la visite',
       danger: true,
       onClick: async () => {
-        const result = await deleteDay({ id: selectedDay.id }, { additionalTypenames: ['Day'] });
-        if (!result.error && result.data?.deleteDay.success) handleBackToStage();
+        const result = await deleteVisit({ id: selectedVisit.id }, { additionalTypenames: ['Visit'] });
+        if (!result.error && result.data?.deleteVisit.success) handleBackToStage();
       },
     },
   ] : [];
@@ -424,12 +424,12 @@ export function TripDetailPage() {
   return (
     <>
     <div className={`${styles.page} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
-      {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de jour ── */}
+      {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de visite ── */}
       <TripPanel
         level={panelLevel}
         snap={sheetSnap}
         onSnapChange={setSheetSnap}
-        hiddenOnMobile={anyAutoForm || stageFormOpen || dayFormOpen}
+        hiddenOnMobile={anyAutoForm || stageFormOpen || visitFormOpen}
         timeline={
           <>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -450,7 +450,7 @@ export function TripDetailPage() {
           ) : stages.length === 0 ? (
             <p className={styles.emptyStages}>
               {isAdmin && isModifiable
-                ? 'Aucune étape pour l\u2019instant. Cliquez sur la carte ou utilisez le menu ⋮ pour en ajouter une.'
+                ? 'Aucune étape pour l’instant. Cliquez sur la carte ou utilisez le menu ⋮ pour en ajouter une.'
                 : 'Aucune étape pour ce voyage.'}
             </p>
           ) : (
@@ -459,11 +459,11 @@ export function TripDetailPage() {
                 <StageSection
                   key={stage.id}
                   stage={stage}
-                  days={daysByStage.get(stage.id) ?? []}
+                  visits={visitsByStage.get(stage.id) ?? []}
                   dateRange={stageDateRanges[stage.id]}
                   active={selectedStageId === stage.id}
                   onStageClick={handleStageClick}
-                  onDayClick={handleDayClickFromTimeline}
+                  onVisitClick={handleVisitClickFromTimeline}
                 />
               ))}
             </div>
@@ -471,9 +471,9 @@ export function TripDetailPage() {
         </div>
           </>
         }
-        dayDetail={displayDay && (
-          <DayDetail
-            day={displayDay}
+        visitDetail={displayVisit && (
+          <VisitDetail
+            visit={displayVisit}
             canEdit={canEditDetail}
             onClose={handleDetailClose}
             onBack={handleBackToStage}
@@ -507,17 +507,17 @@ export function TripDetailPage() {
               actions={stageFormActions}
             />
           )}
-          {autoDayForm && selectedDay && effectiveDayStageId && (
-            <DayForm
-              key={`${effectiveDayStageId}-${selectedDay.id}`}
+          {autoVisitForm && selectedVisit && effectiveVisitStageId && (
+            <VisitForm
+              key={`${effectiveVisitStageId}-${selectedVisit.id}`}
               open
               panel
               onClose={handleBackToStage}
               tripID={id!}
-              stageID={effectiveDayStageId}
-              day={selectedDay}
-              pendingCoords={pendingDayCoords}
-              actions={dayFormActions}
+              stageID={effectiveVisitStageId}
+              visit={selectedVisit}
+              pendingCoords={pendingVisitCoords}
+              actions={visitFormActions}
             />
           )}
         </div>
@@ -529,16 +529,16 @@ export function TripDetailPage() {
           <TripMap
             stages={stages}
             activeStageId={selectedStageId}
-            activeStageDays={activeStageDays}
+            activeStageVisits={activeStageVisits}
             stageDateRanges={stageDateRanges}
             onStageClick={handleStageClick}
-            onDayClick={handleDayClickFromTimeline}
+            onVisitClick={handleVisitClickFromTimeline}
             placementMode={placementMode}
             pendingCoords={pendingMapCoords}
             onMapClick={handleMapClick}
             canEditMarkers={canEditMarkers}
             onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
-            onDayDragEnd={canEditMarkers ? handleDayDragEnd : undefined}
+            onVisitDragEnd={canEditMarkers ? handleVisitDragEnd : undefined}
             panTarget={panTarget}
             mobileSheetLayout={!anyAutoForm}
           />
@@ -559,21 +559,21 @@ export function TripDetailPage() {
           pendingCoords={pendingStageCoords}
           noBackdrop
         />
-        {dayFormStageId && (
-          <DayForm
-            key={dayFormStageId}
-            open={dayFormOpen}
-            onClose={closeDayForm}
+        {visitFormStageId && (
+          <VisitForm
+            key={visitFormStageId}
+            open={visitFormOpen}
+            onClose={closeVisitForm}
             tripID={id!}
-            stageID={dayFormStageId}
-            pendingCoords={pendingDayCoords}
+            stageID={visitFormStageId}
+            pendingCoords={pendingVisitCoords}
             noBackdrop
           />
         )}
         <ConfirmModal
           open={confirmDelete}
           title="Supprimer ce voyage ?"
-          message={deleteError ?? 'Toutes les étapes et tous les jours associés seront définitivement perdus.'}
+          message={deleteError ?? 'Toutes les étapes et toutes les visites associées seront définitivement perdues.'}
           confirmLabel="Supprimer"
           danger
           busy={deleting}
@@ -588,16 +588,16 @@ export function TripDetailPage() {
 
 interface StageSectionProps {
   stage: Stage;
-  days: Day[];
+  visits: Visit[];
   dateRange?: { start: string; end: string };
   active: boolean;
   onStageClick: (stageId: string) => void;
-  onDayClick: (stageId: string, day: Day) => void;
+  onVisitClick: (stageId: string, visit: Visit) => void;
 }
 
-function StageSection({ stage, days, dateRange, active, onStageClick, onDayClick }: StageSectionProps) {
-  // COR-008 : un jour multi-étapes n'est affiché que dans son étape principale (premier stageID)
-  const primaryDays = days.filter((day) => day.stageIDs[0] === stage.id);
+function StageSection({ stage, visits, dateRange, active, onStageClick, onVisitClick }: StageSectionProps) {
+  // COR-008 : une visite multi-étapes n'est affichée que dans son étape principale (premier stageID)
+  const primaryVisits = visits.filter((visit) => visit.stageIDs[0] === stage.id);
 
   return (
     <div id={`stage-${stage.id}`} className={styles.timelineGroup}>
@@ -614,22 +614,22 @@ function StageSection({ stage, days, dateRange, active, onStageClick, onDayClick
               : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
-      {primaryDays.map((day) => (
-        <DayRow key={day.id} day={day} onClick={() => onDayClick(stage.id, day)} />
+      {primaryVisits.map((visit) => (
+        <VisitRow key={visit.id} visit={visit} onClick={() => onVisitClick(stage.id, visit)} />
       ))}
     </div>
   );
 }
 
-function DayRow({ day, onClick }: { day: Day; onClick: () => void }) {
+function VisitRow({ visit, onClick }: { visit: Visit; onClick: () => void }) {
   return (
-    <button className={styles.dayRow} onClick={onClick}>
-      <div className={styles.dayMeta}>
-        <span className={styles.dayLabel}>Jour</span>
-        <span className={styles.dayDate}>{formatDate(day.date)}</span>
+    <button className={styles.visitRow} onClick={onClick}>
+      <div className={styles.visitMeta}>
+        <span className={styles.visitLabel}>Visite</span>
+        <span className={styles.visitDate}>{formatDate(visit.date)}</span>
       </div>
-      <div className={styles.dayInfo}>
-        <p className={styles.dayTitle}>{day.title ?? day.date}</p>
+      <div className={styles.visitInfo}>
+        <p className={styles.visitTitle}>{visit.title ?? visit.date}</p>
       </div>
     </button>
   );

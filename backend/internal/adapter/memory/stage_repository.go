@@ -60,7 +60,7 @@ func (r *StageRepository) ListByTrip(_ context.Context, tripID string) ([]*stage
 	return result, nil
 }
 
-// BelongsToTrip implements day.StageChecker.
+// BelongsToTrip implements visit.StageChecker.
 func (r *StageRepository) BelongsToTrip(_ context.Context, stageID, tripID string) (bool, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

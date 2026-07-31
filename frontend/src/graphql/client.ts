@@ -47,11 +47,11 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
             updateStage: (_result, _args, cache) => invalidateQuery(cache, 'stages'),
             deleteStage: (_result, _args, cache) => {
               invalidateQuery(cache, 'stages');
-              invalidateQuery(cache, 'tripDays');
+              invalidateQuery(cache, 'tripVisits');
             },
-            addDay: (_result, _args, cache) => invalidateQuery(cache, 'tripDays'),
-            updateDay: (_result, _args, cache) => invalidateQuery(cache, 'tripDays'),
-            deleteDay: (_result, _args, cache) => invalidateQuery(cache, 'tripDays'),
+            addVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
+            updateVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
+            deleteVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
           },
         },
       }),

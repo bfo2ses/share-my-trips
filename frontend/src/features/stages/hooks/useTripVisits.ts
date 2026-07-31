@@ -1,9 +1,9 @@
 import { useQuery } from 'urql';
 import { gql } from '../../../graphql/generated';
 
-const TRIP_DAYS_QUERY = gql(`
-  query TripDays($tripID: ID!) {
-    tripDays(tripID: $tripID) {
+const TRIP_VISITS_QUERY = gql(`
+  query TripVisits($tripID: ID!) {
+    tripVisits(tripID: $tripID) {
       id
       tripID
       stageIDs
@@ -16,9 +16,9 @@ const TRIP_DAYS_QUERY = gql(`
   }
 `);
 
-export function useTripDays(tripID: string) {
+export function useTripVisits(tripID: string) {
   return useQuery({
-    query: TRIP_DAYS_QUERY,
+    query: TRIP_VISITS_QUERY,
     variables: { tripID },
   });
 }

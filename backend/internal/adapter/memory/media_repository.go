@@ -42,13 +42,13 @@ func (r *MediaRepository) FindByID(_ context.Context, id string) (*media.Media, 
 	return &cp, nil
 }
 
-func (r *MediaRepository) ListByDay(_ context.Context, dayID string) ([]*media.Media, error) {
+func (r *MediaRepository) ListByVisit(_ context.Context, visitID string) ([]*media.Media, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	var result []*media.Media
 	for _, m := range r.media {
-		if m.DayID == dayID {
+		if m.VisitID == visitID {
 			cp := *m
 			result = append(result, &cp)
 		}
@@ -82,25 +82,25 @@ func (r *MediaRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
-func (r *MediaRepository) NextPosition(_ context.Context, dayID string) (int, error) {
+func (r *MediaRepository) NextPosition(_ context.Context, visitID string) (int, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	max := -1
 	for _, m := range r.media {
-		if m.DayID == dayID && m.Position > max {
+		if m.VisitID == visitID && m.Position > max {
 			max = m.Position
 		}
 	}
 	return max + 1, nil
 }
 
-func (r *MediaRepository) Reorder(_ context.Context, dayID string, orderedIDs []string) error {
+func (r *MediaRepository) Reorder(_ context.Context, visitID string, orderedIDs []string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	for pos, id := range orderedIDs {
-		if m, ok := r.media[id]; ok && m.DayID == dayID {
+		if m, ok := r.media[id]; ok && m.VisitID == visitID {
 			m.Position = pos
 		}
 	}

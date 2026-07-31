@@ -9,7 +9,7 @@ import (
 )
 
 // TripChecker checks trip mutability via PostgreSQL.
-// Implements stage.TripChecker, day.TripChecker, and media.TripChecker.
+// Implements stage.TripChecker, visit.TripChecker, and media.TripChecker.
 type TripChecker struct {
 	pool *pgxpool.Pool
 }

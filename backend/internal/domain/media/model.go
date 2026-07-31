@@ -12,24 +12,24 @@ var (
 	ErrFilenameRequired   = errors.New("filename is required")
 	ErrInvalidContentType = errors.New("unsupported content type")
 	ErrTripClosed         = errors.New("trip is closed and cannot be modified")
-	ErrDayNotFound        = errors.New("day not found")
-	ErrIDMismatch         = errors.New("media IDs do not match the day's media")
+	ErrVisitNotFound      = errors.New("visit not found")
+	ErrIDMismatch         = errors.New("media IDs do not match the visit's media")
 )
 
 // Supported content types.
 var allowedContentTypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/webp": true,
-	"video/mp4":  true,
+	"image/jpeg":      true,
+	"image/png":       true,
+	"image/webp":      true,
+	"video/mp4":       true,
 	"video/quicktime": true, // .mov
-	"video/webm": true,
+	"video/webm":      true,
 }
 
-// Media represents a photo or video attached to a trip day.
+// Media represents a photo or video attached to a trip visit.
 type Media struct {
 	ID          string
-	DayID       string
+	VisitID     string
 	TripID      string
 	Filename    string
 	ContentType string
@@ -39,7 +39,7 @@ type Media struct {
 }
 
 // NewMedia creates a new Media with validated fields.
-func NewMedia(id, dayID, tripID, filename, contentType string, position int) (*Media, error) {
+func NewMedia(id, visitID, tripID, filename, contentType string, position int) (*Media, error) {
 	if strings.TrimSpace(filename) == "" {
 		return nil, ErrFilenameRequired
 	}
@@ -49,7 +49,7 @@ func NewMedia(id, dayID, tripID, filename, contentType string, position int) (*M
 
 	return &Media{
 		ID:          id,
-		DayID:       dayID,
+		VisitID:     visitID,
 		TripID:      tripID,
 		Filename:    filename,
 		ContentType: contentType,

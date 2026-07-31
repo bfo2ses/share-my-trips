@@ -35,7 +35,7 @@ func (tc *testContext) stageNoLongerExists() error {
 		return fmt.Errorf("expected stage to be deleted, got: %v", err)
 	}
 	// Verify that DetachStage was called to cascade the deletion.
-	for _, id := range tc.dayDetacher.detachedStageIDs {
+	for _, id := range tc.visitDetacher.detachedStageIDs {
 		if id == tc.currentStage.ID {
 			return nil
 		}

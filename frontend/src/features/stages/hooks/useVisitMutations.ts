@@ -1,10 +1,10 @@
 import { useMutation } from 'urql';
 import { gql } from '../../../graphql/generated';
 
-const ADD_DAY = gql(`
-  mutation AddDay($input: AddDayInput!) {
-    addDay(input: $input) {
-      day {
+const ADD_VISIT = gql(`
+  mutation AddVisit($input: AddVisitInput!) {
+    addVisit(input: $input) {
+      visit {
         id
         tripID
         stageIDs
@@ -22,10 +22,10 @@ const ADD_DAY = gql(`
   }
 `);
 
-const UPDATE_DAY = gql(`
-  mutation UpdateDay($id: ID!, $input: UpdateDayInput!) {
-    updateDay(id: $id, input: $input) {
-      day {
+const UPDATE_VISIT = gql(`
+  mutation UpdateVisit($id: ID!, $input: UpdateVisitInput!) {
+    updateVisit(id: $id, input: $input) {
+      visit {
         id
         tripID
         stageIDs
@@ -43,9 +43,9 @@ const UPDATE_DAY = gql(`
   }
 `);
 
-const DELETE_DAY = gql(`
-  mutation DeleteDay($id: ID!) {
-    deleteDay(id: $id) {
+const DELETE_VISIT = gql(`
+  mutation DeleteVisit($id: ID!) {
+    deleteVisit(id: $id) {
       success
       errors {
         field
@@ -55,14 +55,14 @@ const DELETE_DAY = gql(`
   }
 `);
 
-export function useAddDay() {
-  return useMutation(ADD_DAY);
+export function useAddVisit() {
+  return useMutation(ADD_VISIT);
 }
 
-export function useUpdateDay() {
-  return useMutation(UPDATE_DAY);
+export function useUpdateVisit() {
+  return useMutation(UPDATE_VISIT);
 }
 
-export function useDeleteDay() {
-  return useMutation(DELETE_DAY);
+export function useDeleteVisit() {
+  return useMutation(DELETE_VISIT);
 }

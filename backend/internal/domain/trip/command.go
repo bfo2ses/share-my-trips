@@ -39,9 +39,9 @@ type UnpublishTripCommand struct {
 
 // CloseTripCommand identifies the trip to close, with the computed date range.
 type CloseTripCommand struct {
-	ID       string
-	FirstDay time.Time
-	LastDay  time.Time
+	ID             string
+	FirstVisitDate time.Time
+	LastVisitDate  time.Time
 }
 
 // ReopenTripCommand identifies the trip to reopen.

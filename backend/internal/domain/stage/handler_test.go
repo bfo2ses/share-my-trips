@@ -22,12 +22,12 @@ func (s *stubTripChecker) IsModifiable(_ context.Context, tripID string) (bool, 
 	return !s.closedTripIDs[tripID], nil
 }
 
-// stubDayDetacher is a test double for stage.DayDetacher.
-type stubDayDetacher struct {
+// stubVisitDetacher is a test double for stage.VisitDetacher.
+type stubVisitDetacher struct {
 	detachedStageIDs []string
 }
 
-func (s *stubDayDetacher) DetachStage(_ context.Context, stageID string) error {
+func (s *stubVisitDetacher) DetachStage(_ context.Context, stageID string) error {
 	s.detachedStageIDs = append(s.detachedStageIDs, stageID)
 	return nil
 }
@@ -75,12 +75,12 @@ func (r *stageRepository) Delete(_ context.Context, id string) error {
 }
 
 type testContext struct {
-	handler      *stage.Handler
-	tripChecker  *stubTripChecker
-	dayDetacher  *stubDayDetacher
-	repo         *stageRepository
-	currentStage *stage.Stage
-	lastErr      error
+	handler       *stage.Handler
+	tripChecker   *stubTripChecker
+	visitDetacher *stubVisitDetacher
+	repo          *stageRepository
+	currentStage  *stage.Stage
+	lastErr       error
 	// tripID for the default trip
 	defaultTripID string
 	// tripID for the closed trip
@@ -90,12 +90,12 @@ type testContext struct {
 func newTestContext() *testContext {
 	repo := newStageRepository()
 	tripChecker := newStubTripChecker()
-	dayDetacher := &stubDayDetacher{}
+	visitDetacher := &stubVisitDetacher{}
 	return &testContext{
-		handler:       stage.NewHandler(repo, tripChecker, dayDetacher),
+		handler:       stage.NewHandler(repo, tripChecker, visitDetacher),
 		repo:          repo,
 		tripChecker:   tripChecker,
-		dayDetacher:   dayDetacher,
+		visitDetacher: visitDetacher,
 		defaultTripID: "trip-iceland",
 		closedTripID:  "trip-japan",
 	}

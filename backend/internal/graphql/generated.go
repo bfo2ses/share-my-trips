@@ -53,30 +53,7 @@ type ComplexityRoot struct {
 		Token   func(childComplexity int) int
 	}
 
-	Day struct {
-		CreatedAt   func(childComplexity int) int
-		Date        func(childComplexity int) int
-		Description func(childComplexity int) int
-		ID          func(childComplexity int) int
-		Lat         func(childComplexity int) int
-		Lng         func(childComplexity int) int
-		StageIDs    func(childComplexity int) int
-		Title       func(childComplexity int) int
-		TripID      func(childComplexity int) int
-		UpdatedAt   func(childComplexity int) int
-	}
-
-	DayPayload struct {
-		Day    func(childComplexity int) int
-		Errors func(childComplexity int) int
-	}
-
 	DeleteAccountPayload struct {
-		Errors  func(childComplexity int) int
-		Success func(childComplexity int) int
-	}
-
-	DeleteDayPayload struct {
 		Errors  func(childComplexity int) int
 		Success func(childComplexity int) int
 	}
@@ -96,17 +73,22 @@ type ComplexityRoot struct {
 		Success func(childComplexity int) int
 	}
 
+	DeleteVisitPayload struct {
+		Errors  func(childComplexity int) int
+		Success func(childComplexity int) int
+	}
+
 	Media struct {
 		Caption     func(childComplexity int) int
 		ContentType func(childComplexity int) int
 		CreatedAt   func(childComplexity int) int
-		DayID       func(childComplexity int) int
 		Filename    func(childComplexity int) int
 		ID          func(childComplexity int) int
 		Position    func(childComplexity int) int
 		ThumbURL    func(childComplexity int) int
 		TripID      func(childComplexity int) int
 		URL         func(childComplexity int) int
+		VisitID     func(childComplexity int) int
 	}
 
 	MediaPayload struct {
@@ -115,47 +97,47 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddDay               func(childComplexity int, input AddDayInput) int
 		AddStage             func(childComplexity int, input AddStageInput) int
-		AttachDayToStage     func(childComplexity int, dayID string, stageID string) int
+		AddVisit             func(childComplexity int, input AddVisitInput) int
+		AttachVisitToStage   func(childComplexity int, visitID string, stageID string) int
 		ChangePassword       func(childComplexity int, input ChangePasswordInput) int
 		CloseTrip            func(childComplexity int, id string, input CloseTripInput) int
 		CreateAccount        func(childComplexity int, input CreateAccountInput) int
 		CreateTrip           func(childComplexity int, input CreateTripInput) int
 		DeleteAccount        func(childComplexity int, id string) int
-		DeleteDay            func(childComplexity int, id string) int
 		DeleteMedia          func(childComplexity int, id string) int
 		DeleteStage          func(childComplexity int, id string) int
 		DeleteTrip           func(childComplexity int, id string) int
-		DetachDayFromStage   func(childComplexity int, dayID string, stageID string) int
+		DeleteVisit          func(childComplexity int, id string) int
+		DetachVisitFromStage func(childComplexity int, visitID string, stageID string) int
 		Login                func(childComplexity int, email string, password string) int
 		Logout               func(childComplexity int) int
 		PublishTrip          func(childComplexity int, id string) int
 		ReopenTrip           func(childComplexity int, id string) int
-		ReorderMedia         func(childComplexity int, dayID string, mediaIDs []string) int
+		ReorderMedia         func(childComplexity int, visitID string, mediaIDs []string) int
 		RequestPasswordReset func(childComplexity int, email string) int
 		ResetPassword        func(childComplexity int, input ResetPasswordInput) int
 		SetupAdmin           func(childComplexity int, input SetupAdminInput) int
 		UnpublishTrip        func(childComplexity int, id string) int
-		UpdateDay            func(childComplexity int, id string, input UpdateDayInput) int
 		UpdateMediaCaption   func(childComplexity int, id string, caption *string) int
 		UpdateStage          func(childComplexity int, id string, input UpdateStageInput) int
 		UpdateTrip           func(childComplexity int, id string, input UpdateTripInput) int
+		UpdateVisit          func(childComplexity int, id string, input UpdateVisitInput) int
 	}
 
 	Query struct {
 		Accounts    func(childComplexity int) int
-		Day         func(childComplexity int, id string) int
-		DayMedia    func(childComplexity int, dayID string) int
-		Days        func(childComplexity int, stageID string) int
 		Me          func(childComplexity int) int
 		SetupStatus func(childComplexity int) int
 		Stage       func(childComplexity int, id string) int
 		Stages      func(childComplexity int, tripID string) int
 		Trip        func(childComplexity int, id string) int
-		TripDays    func(childComplexity int, tripID string) int
 		TripMedia   func(childComplexity int, tripID string) int
+		TripVisits  func(childComplexity int, tripID string) int
 		Trips       func(childComplexity int, status []TripStatus) int
+		Visit       func(childComplexity int, id string) int
+		VisitMedia  func(childComplexity int, visitID string) int
+		Visits      func(childComplexity int, stageID string) int
 	}
 
 	ReorderMediaPayload struct {
@@ -209,6 +191,24 @@ type ComplexityRoot struct {
 		Field   func(childComplexity int) int
 		Message func(childComplexity int) int
 	}
+
+	Visit struct {
+		CreatedAt   func(childComplexity int) int
+		Date        func(childComplexity int) int
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Lat         func(childComplexity int) int
+		Lng         func(childComplexity int) int
+		StageIDs    func(childComplexity int) int
+		Title       func(childComplexity int) int
+		TripID      func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
+	}
+
+	VisitPayload struct {
+		Errors func(childComplexity int) int
+		Visit  func(childComplexity int) int
+	}
 }
 
 type MutationResolver interface {
@@ -222,11 +222,11 @@ type MutationResolver interface {
 	AddStage(ctx context.Context, input AddStageInput) (*StagePayload, error)
 	UpdateStage(ctx context.Context, id string, input UpdateStageInput) (*StagePayload, error)
 	DeleteStage(ctx context.Context, id string) (*DeleteStagePayload, error)
-	AddDay(ctx context.Context, input AddDayInput) (*DayPayload, error)
-	UpdateDay(ctx context.Context, id string, input UpdateDayInput) (*DayPayload, error)
-	DeleteDay(ctx context.Context, id string) (*DeleteDayPayload, error)
-	AttachDayToStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error)
-	DetachDayFromStage(ctx context.Context, dayID string, stageID string) (*DayPayload, error)
+	AddVisit(ctx context.Context, input AddVisitInput) (*VisitPayload, error)
+	UpdateVisit(ctx context.Context, id string, input UpdateVisitInput) (*VisitPayload, error)
+	DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error)
+	AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
+	DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
 	SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error)
 	Login(ctx context.Context, email string, password string) (*AuthPayload, error)
 	Logout(ctx context.Context) (bool, error)
@@ -236,7 +236,7 @@ type MutationResolver interface {
 	ResetPassword(ctx context.Context, input ResetPasswordInput) (*AccountPayload, error)
 	ChangePassword(ctx context.Context, input ChangePasswordInput) (*AccountPayload, error)
 	UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error)
-	ReorderMedia(ctx context.Context, dayID string, mediaIDs []string) (*ReorderMediaPayload, error)
+	ReorderMedia(ctx context.Context, visitID string, mediaIDs []string) (*ReorderMediaPayload, error)
 	DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error)
 }
 type QueryResolver interface {
@@ -244,10 +244,10 @@ type QueryResolver interface {
 	Trip(ctx context.Context, id string) (*Trip, error)
 	Stage(ctx context.Context, id string) (*Stage, error)
 	Stages(ctx context.Context, tripID string) ([]*Stage, error)
-	Day(ctx context.Context, id string) (*Day, error)
-	Days(ctx context.Context, stageID string) ([]*Day, error)
-	TripDays(ctx context.Context, tripID string) ([]*Day, error)
-	DayMedia(ctx context.Context, dayID string) ([]*Media, error)
+	Visit(ctx context.Context, id string) (*Visit, error)
+	Visits(ctx context.Context, stageID string) ([]*Visit, error)
+	TripVisits(ctx context.Context, tripID string) ([]*Visit, error)
+	VisitMedia(ctx context.Context, visitID string) ([]*Media, error)
 	TripMedia(ctx context.Context, tripID string) ([]*Media, error)
 	Me(ctx context.Context) (*Account, error)
 	SetupStatus(ctx context.Context) (*SetupStatusPayload, error)
@@ -331,80 +331,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AuthPayload.Token(childComplexity), true
 
-	case "Day.createdAt":
-		if e.ComplexityRoot.Day.CreatedAt == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.CreatedAt(childComplexity), true
-	case "Day.date":
-		if e.ComplexityRoot.Day.Date == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.Date(childComplexity), true
-	case "Day.description":
-		if e.ComplexityRoot.Day.Description == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.Description(childComplexity), true
-	case "Day.id":
-		if e.ComplexityRoot.Day.ID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.ID(childComplexity), true
-	case "Day.lat":
-		if e.ComplexityRoot.Day.Lat == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.Lat(childComplexity), true
-	case "Day.lng":
-		if e.ComplexityRoot.Day.Lng == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.Lng(childComplexity), true
-	case "Day.stageIDs":
-		if e.ComplexityRoot.Day.StageIDs == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.StageIDs(childComplexity), true
-	case "Day.title":
-		if e.ComplexityRoot.Day.Title == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.Title(childComplexity), true
-	case "Day.tripID":
-		if e.ComplexityRoot.Day.TripID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.TripID(childComplexity), true
-	case "Day.updatedAt":
-		if e.ComplexityRoot.Day.UpdatedAt == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Day.UpdatedAt(childComplexity), true
-
-	case "DayPayload.day":
-		if e.ComplexityRoot.DayPayload.Day == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DayPayload.Day(childComplexity), true
-	case "DayPayload.errors":
-		if e.ComplexityRoot.DayPayload.Errors == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DayPayload.Errors(childComplexity), true
-
 	case "DeleteAccountPayload.errors":
 		if e.ComplexityRoot.DeleteAccountPayload.Errors == nil {
 			break
@@ -417,19 +343,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeleteAccountPayload.Success(childComplexity), true
-
-	case "DeleteDayPayload.errors":
-		if e.ComplexityRoot.DeleteDayPayload.Errors == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DeleteDayPayload.Errors(childComplexity), true
-	case "DeleteDayPayload.success":
-		if e.ComplexityRoot.DeleteDayPayload.Success == nil {
-			break
-		}
-
-		return e.ComplexityRoot.DeleteDayPayload.Success(childComplexity), true
 
 	case "DeleteMediaPayload.errors":
 		if e.ComplexityRoot.DeleteMediaPayload.Errors == nil {
@@ -470,6 +383,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.DeleteTripPayload.Success(childComplexity), true
 
+	case "DeleteVisitPayload.errors":
+		if e.ComplexityRoot.DeleteVisitPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteVisitPayload.Errors(childComplexity), true
+	case "DeleteVisitPayload.success":
+		if e.ComplexityRoot.DeleteVisitPayload.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteVisitPayload.Success(childComplexity), true
+
 	case "Media.caption":
 		if e.ComplexityRoot.Media.Caption == nil {
 			break
@@ -488,12 +414,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Media.CreatedAt(childComplexity), true
-	case "Media.dayID":
-		if e.ComplexityRoot.Media.DayID == nil {
-			break
-		}
-
-		return e.ComplexityRoot.Media.DayID(childComplexity), true
 	case "Media.filename":
 		if e.ComplexityRoot.Media.Filename == nil {
 			break
@@ -530,6 +450,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Media.URL(childComplexity), true
+	case "Media.visitID":
+		if e.ComplexityRoot.Media.VisitID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.VisitID(childComplexity), true
 
 	case "MediaPayload.errors":
 		if e.ComplexityRoot.MediaPayload.Errors == nil {
@@ -544,17 +470,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.MediaPayload.Media(childComplexity), true
 
-	case "Mutation.addDay":
-		if e.ComplexityRoot.Mutation.AddDay == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_addDay_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Mutation.AddDay(childComplexity, args["input"].(AddDayInput)), true
 	case "Mutation.addStage":
 		if e.ComplexityRoot.Mutation.AddStage == nil {
 			break
@@ -566,17 +481,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AddStage(childComplexity, args["input"].(AddStageInput)), true
-	case "Mutation.attachDayToStage":
-		if e.ComplexityRoot.Mutation.AttachDayToStage == nil {
+	case "Mutation.addVisit":
+		if e.ComplexityRoot.Mutation.AddVisit == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_attachDayToStage_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_addVisit_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.AttachDayToStage(childComplexity, args["dayID"].(string), args["stageID"].(string)), true
+		return e.ComplexityRoot.Mutation.AddVisit(childComplexity, args["input"].(AddVisitInput)), true
+	case "Mutation.attachVisitToStage":
+		if e.ComplexityRoot.Mutation.AttachVisitToStage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_attachVisitToStage_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.AttachVisitToStage(childComplexity, args["visitID"].(string), args["stageID"].(string)), true
 	case "Mutation.changePassword":
 		if e.ComplexityRoot.Mutation.ChangePassword == nil {
 			break
@@ -632,17 +558,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteAccount(childComplexity, args["id"].(string)), true
-	case "Mutation.deleteDay":
-		if e.ComplexityRoot.Mutation.DeleteDay == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_deleteDay_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Mutation.DeleteDay(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteMedia":
 		if e.ComplexityRoot.Mutation.DeleteMedia == nil {
 			break
@@ -676,17 +591,28 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteTrip(childComplexity, args["id"].(string)), true
-	case "Mutation.detachDayFromStage":
-		if e.ComplexityRoot.Mutation.DetachDayFromStage == nil {
+	case "Mutation.deleteVisit":
+		if e.ComplexityRoot.Mutation.DeleteVisit == nil {
 			break
 		}
 
-		args, err := ec.field_Mutation_detachDayFromStage_args(ctx, rawArgs)
+		args, err := ec.field_Mutation_deleteVisit_args(ctx, rawArgs)
 		if err != nil {
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DetachDayFromStage(childComplexity, args["dayID"].(string), args["stageID"].(string)), true
+		return e.ComplexityRoot.Mutation.DeleteVisit(childComplexity, args["id"].(string)), true
+	case "Mutation.detachVisitFromStage":
+		if e.ComplexityRoot.Mutation.DetachVisitFromStage == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_detachVisitFromStage_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DetachVisitFromStage(childComplexity, args["visitID"].(string), args["stageID"].(string)), true
 	case "Mutation.login":
 		if e.ComplexityRoot.Mutation.Login == nil {
 			break
@@ -736,7 +662,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.ReorderMedia(childComplexity, args["dayID"].(string), args["mediaIDs"].([]string)), true
+		return e.ComplexityRoot.Mutation.ReorderMedia(childComplexity, args["visitID"].(string), args["mediaIDs"].([]string)), true
 	case "Mutation.requestPasswordReset":
 		if e.ComplexityRoot.Mutation.RequestPasswordReset == nil {
 			break
@@ -781,17 +707,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UnpublishTrip(childComplexity, args["id"].(string)), true
-	case "Mutation.updateDay":
-		if e.ComplexityRoot.Mutation.UpdateDay == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateDay_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Mutation.UpdateDay(childComplexity, args["id"].(string), args["input"].(UpdateDayInput)), true
 	case "Mutation.updateMediaCaption":
 		if e.ComplexityRoot.Mutation.UpdateMediaCaption == nil {
 			break
@@ -825,6 +740,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateTrip(childComplexity, args["id"].(string), args["input"].(UpdateTripInput)), true
+	case "Mutation.updateVisit":
+		if e.ComplexityRoot.Mutation.UpdateVisit == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateVisit_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateVisit(childComplexity, args["id"].(string), args["input"].(UpdateVisitInput)), true
 
 	case "Query.accounts":
 		if e.ComplexityRoot.Query.Accounts == nil {
@@ -832,39 +758,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Accounts(childComplexity), true
-	case "Query.day":
-		if e.ComplexityRoot.Query.Day == nil {
-			break
-		}
-
-		args, err := ec.field_Query_day_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Day(childComplexity, args["id"].(string)), true
-	case "Query.dayMedia":
-		if e.ComplexityRoot.Query.DayMedia == nil {
-			break
-		}
-
-		args, err := ec.field_Query_dayMedia_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.DayMedia(childComplexity, args["dayID"].(string)), true
-	case "Query.days":
-		if e.ComplexityRoot.Query.Days == nil {
-			break
-		}
-
-		args, err := ec.field_Query_days_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.Days(childComplexity, args["stageID"].(string)), true
 
 	case "Query.me":
 		if e.ComplexityRoot.Query.Me == nil {
@@ -911,17 +804,6 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Trip(childComplexity, args["id"].(string)), true
-	case "Query.tripDays":
-		if e.ComplexityRoot.Query.TripDays == nil {
-			break
-		}
-
-		args, err := ec.field_Query_tripDays_args(ctx, rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.ComplexityRoot.Query.TripDays(childComplexity, args["tripID"].(string)), true
 	case "Query.tripMedia":
 		if e.ComplexityRoot.Query.TripMedia == nil {
 			break
@@ -933,6 +815,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.TripMedia(childComplexity, args["tripID"].(string)), true
+	case "Query.tripVisits":
+		if e.ComplexityRoot.Query.TripVisits == nil {
+			break
+		}
+
+		args, err := ec.field_Query_tripVisits_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.TripVisits(childComplexity, args["tripID"].(string)), true
 	case "Query.trips":
 		if e.ComplexityRoot.Query.Trips == nil {
 			break
@@ -944,6 +837,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Trips(childComplexity, args["status"].([]TripStatus)), true
+	case "Query.visit":
+		if e.ComplexityRoot.Query.Visit == nil {
+			break
+		}
+
+		args, err := ec.field_Query_visit_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Visit(childComplexity, args["id"].(string)), true
+	case "Query.visitMedia":
+		if e.ComplexityRoot.Query.VisitMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Query_visitMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.VisitMedia(childComplexity, args["visitID"].(string)), true
+	case "Query.visits":
+		if e.ComplexityRoot.Query.Visits == nil {
+			break
+		}
+
+		args, err := ec.field_Query_visits_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.Visits(childComplexity, args["stageID"].(string)), true
 
 	case "ReorderMediaPayload.errors":
 		if e.ComplexityRoot.ReorderMediaPayload.Errors == nil {
@@ -1138,6 +1064,80 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.UserError.Message(childComplexity), true
 
+	case "Visit.createdAt":
+		if e.ComplexityRoot.Visit.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.CreatedAt(childComplexity), true
+	case "Visit.date":
+		if e.ComplexityRoot.Visit.Date == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Date(childComplexity), true
+	case "Visit.description":
+		if e.ComplexityRoot.Visit.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Description(childComplexity), true
+	case "Visit.id":
+		if e.ComplexityRoot.Visit.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.ID(childComplexity), true
+	case "Visit.lat":
+		if e.ComplexityRoot.Visit.Lat == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Lat(childComplexity), true
+	case "Visit.lng":
+		if e.ComplexityRoot.Visit.Lng == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Lng(childComplexity), true
+	case "Visit.stageIDs":
+		if e.ComplexityRoot.Visit.StageIDs == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.StageIDs(childComplexity), true
+	case "Visit.title":
+		if e.ComplexityRoot.Visit.Title == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Title(childComplexity), true
+	case "Visit.tripID":
+		if e.ComplexityRoot.Visit.TripID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.TripID(childComplexity), true
+	case "Visit.updatedAt":
+		if e.ComplexityRoot.Visit.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.UpdatedAt(childComplexity), true
+
+	case "VisitPayload.errors":
+		if e.ComplexityRoot.VisitPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.VisitPayload.Errors(childComplexity), true
+	case "VisitPayload.visit":
+		if e.ComplexityRoot.VisitPayload.Visit == nil {
+			break
+		}
+
+		return e.ComplexityRoot.VisitPayload.Visit(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -1146,17 +1146,17 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	opCtx := graphql.GetOperationContext(ctx)
 	ec := newExecutionContext(opCtx, e, make(chan graphql.DeferredResult))
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
-		ec.unmarshalInputAddDayInput,
 		ec.unmarshalInputAddStageInput,
+		ec.unmarshalInputAddVisitInput,
 		ec.unmarshalInputChangePasswordInput,
 		ec.unmarshalInputCloseTripInput,
 		ec.unmarshalInputCreateAccountInput,
 		ec.unmarshalInputCreateTripInput,
 		ec.unmarshalInputResetPasswordInput,
 		ec.unmarshalInputSetupAdminInput,
-		ec.unmarshalInputUpdateDayInput,
 		ec.unmarshalInputUpdateStageInput,
 		ec.unmarshalInputUpdateTripInput,
+		ec.unmarshalInputUpdateVisitInput,
 	)
 	first := true
 
@@ -1297,8 +1297,8 @@ input UpdateTripInput {
 }
 
 input CloseTripInput {
-  firstDay: String!
-  lastDay: String!
+  firstVisitDate: String!
+  lastVisitDate: String!
 }
 
 type Stage {
@@ -1345,7 +1345,7 @@ input UpdateStageInput {
   description: String
 }
 
-type Day {
+type Visit {
   id: ID!
   tripID: ID!
   stageIDs: [ID!]!
@@ -1365,17 +1365,17 @@ type Day {
   updatedAt: String!
 }
 
-type DayPayload {
-  day: Day
+type VisitPayload {
+  visit: Visit
   errors: [UserError!]!
 }
 
-type DeleteDayPayload {
+type DeleteVisitPayload {
   success: Boolean!
   errors: [UserError!]!
 }
 
-input AddDayInput {
+input AddVisitInput {
   tripID: ID!
   stageID: ID!
   "Date-only, format YYYY-MM-DD."
@@ -1386,7 +1386,7 @@ input AddDayInput {
   lng: Float!
 }
 
-input UpdateDayInput {
+input UpdateVisitInput {
   date: String
   title: String
   description: String
@@ -1461,7 +1461,7 @@ input ChangePasswordInput {
 
 type Media {
   id: ID!
-  dayID: ID!
+  visitID: ID!
   tripID: ID!
   filename: String!
   contentType: String!
@@ -1498,17 +1498,17 @@ type Query {
   trip(id: ID!): Trip
   "Returns a single stage by ID, or null if not found."
   stage(id: ID!): Stage
-  "Returns all stages for a trip, sorted by the date of their first day ascending. Stages without any day appear last in undefined order."
+  "Returns all stages for a trip, sorted by the date of their first visit ascending. Stages without any visit appear last in undefined order."
   stages(tripID: ID!): [Stage!]!
-  "Returns a single day by ID, or null if not found."
-  day(id: ID!): Day
-  "Returns all days for a stage, sorted by date ascending."
-  days(stageID: ID!): [Day!]!
-  "Returns all days for a trip, sorted by date ascending."
-  tripDays(tripID: ID!): [Day!]!
-  "Returns all media for a day, sorted by position ascending."
-  dayMedia(dayID: ID!): [Media!]!
-  "Returns all media for a trip, grouped by day (stable but arbitrary day order), sorted by position within each day."
+  "Returns a single visit by ID, or null if not found."
+  visit(id: ID!): Visit
+  "Returns all visits for a stage, sorted by date ascending."
+  visits(stageID: ID!): [Visit!]!
+  "Returns all visits for a trip, sorted by date ascending."
+  tripVisits(tripID: ID!): [Visit!]!
+  "Returns all media for a visit, sorted by position ascending."
+  visitMedia(visitID: ID!): [Media!]!
+  "Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
   me: Account
@@ -1529,11 +1529,11 @@ type Mutation {
   addStage(input: AddStageInput!): StagePayload!
   updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
   deleteStage(id: ID!): DeleteStagePayload!
-  addDay(input: AddDayInput!): DayPayload!
-  updateDay(id: ID!, input: UpdateDayInput!): DayPayload!
-  deleteDay(id: ID!): DeleteDayPayload!
-  attachDayToStage(dayID: ID!, stageID: ID!): DayPayload!
-  detachDayFromStage(dayID: ID!, stageID: ID!): DayPayload!
+  addVisit(input: AddVisitInput!): VisitPayload!
+  updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
+  deleteVisit(id: ID!): DeleteVisitPayload!
+  attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
+  detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
   setupAdmin(input: SetupAdminInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
@@ -1548,8 +1548,8 @@ type Mutation {
   changePassword(input: ChangePasswordInput!): AccountPayload!
   "Updates a media's caption. Requires admin role."
   updateMediaCaption(id: ID!, caption: String): MediaPayload!
-  "Reorders media within a day. Requires admin role."
-  reorderMedia(dayID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Reorders media within a visit. Requires admin role."
+  reorderMedia(visitID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
 }
@@ -1560,17 +1560,6 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
-
-func (ec *executionContext) field_Mutation_addDay_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddDayInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddDayInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg0
-	return args, nil
-}
 
 func (ec *executionContext) field_Mutation_addStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
@@ -1583,14 +1572,25 @@ func (ec *executionContext) field_Mutation_addStage_args(ctx context.Context, ra
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_attachDayToStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_addVisit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNAddVisitInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddVisitInput)
 	if err != nil {
 		return nil, err
 	}
-	args["dayID"] = arg0
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_attachVisitToStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "visitID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["visitID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "stageID", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
@@ -1659,17 +1659,6 @@ func (ec *executionContext) field_Mutation_deleteAccount_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_deleteDay_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_deleteMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1703,14 +1692,25 @@ func (ec *executionContext) field_Mutation_deleteTrip_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_detachDayFromStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Mutation_deleteVisit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["dayID"] = arg0
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_detachVisitFromStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "visitID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["visitID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "stageID", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
@@ -1760,11 +1760,11 @@ func (ec *executionContext) field_Mutation_reopenTrip_args(ctx context.Context, 
 func (ec *executionContext) field_Mutation_reorderMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "visitID", ec.unmarshalNID2string)
 	if err != nil {
 		return nil, err
 	}
-	args["dayID"] = arg0
+	args["visitID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaIDs", ec.unmarshalNID2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
@@ -1817,22 +1817,6 @@ func (ec *executionContext) field_Mutation_unpublishTrip_args(ctx context.Contex
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updateDay_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateDayInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateDayInput)
-	if err != nil {
-		return nil, err
-	}
-	args["input"] = arg1
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_updateMediaCaption_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1881,6 +1865,22 @@ func (ec *executionContext) field_Mutation_updateTrip_args(ctx context.Context, 
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateVisit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateVisitInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateVisitInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1889,39 +1889,6 @@ func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs
 		return nil, err
 	}
 	args["name"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_dayMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "dayID", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["dayID"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_day_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["id"] = arg0
-	return args, nil
-}
-
-func (ec *executionContext) field_Query_days_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
-	var err error
-	args := map[string]any{}
-	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "stageID", ec.unmarshalNID2string)
-	if err != nil {
-		return nil, err
-	}
-	args["stageID"] = arg0
 	return args, nil
 }
 
@@ -1947,7 +1914,7 @@ func (ec *executionContext) field_Query_stages_args(ctx context.Context, rawArgs
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_tripDays_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_tripMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
@@ -1958,7 +1925,7 @@ func (ec *executionContext) field_Query_tripDays_args(ctx context.Context, rawAr
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_tripMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+func (ec *executionContext) field_Query_tripVisits_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
@@ -1988,6 +1955,39 @@ func (ec *executionContext) field_Query_trips_args(ctx context.Context, rawArgs 
 		return nil, err
 	}
 	args["status"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_visitMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "visitID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["visitID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_visit_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_visits_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "stageID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["stageID"] = arg0
 	return args, nil
 }
 
@@ -2369,382 +2369,6 @@ func (ec *executionContext) fieldContext_AuthPayload_errors(_ context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Day_id(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_id,
-		func(ctx context.Context) (any, error) {
-			return obj.ID, nil
-		},
-		nil,
-		ec.marshalNID2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_tripID(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_tripID,
-		func(ctx context.Context) (any, error) {
-			return obj.TripID, nil
-		},
-		nil,
-		ec.marshalNID2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_tripID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_stageIDs(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_stageIDs,
-		func(ctx context.Context) (any, error) {
-			return obj.StageIDs, nil
-		},
-		nil,
-		ec.marshalNID2ᚕstringᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_stageIDs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type ID does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_date(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_date,
-		func(ctx context.Context) (any, error) {
-			return obj.Date, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_title(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_title,
-		func(ctx context.Context) (any, error) {
-			return obj.Title, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_description(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_description,
-		func(ctx context.Context) (any, error) {
-			return obj.Description, nil
-		},
-		nil,
-		ec.marshalOString2ᚖstring,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_lat(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_lat,
-		func(ctx context.Context) (any, error) {
-			return obj.Lat, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_lat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_lng(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_lng,
-		func(ctx context.Context) (any, error) {
-			return obj.Lng, nil
-		},
-		nil,
-		ec.marshalNFloat2float64,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_createdAt(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_createdAt,
-		func(ctx context.Context) (any, error) {
-			return obj.CreatedAt, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Day_updatedAt(ctx context.Context, field graphql.CollectedField, obj *Day) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_Day_updatedAt,
-		func(ctx context.Context) (any, error) {
-			return obj.UpdatedAt, nil
-		},
-		nil,
-		ec.marshalNString2string,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_Day_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Day",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DayPayload_day(ctx context.Context, field graphql.CollectedField, obj *DayPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DayPayload_day,
-		func(ctx context.Context) (any, error) {
-			return obj.Day, nil
-		},
-		nil,
-		ec.marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDay,
-		true,
-		false,
-	)
-}
-
-func (ec *executionContext) fieldContext_DayPayload_day(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DayPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "id":
-				return ec.fieldContext_Day_id(ctx, field)
-			case "tripID":
-				return ec.fieldContext_Day_tripID(ctx, field)
-			case "stageIDs":
-				return ec.fieldContext_Day_stageIDs(ctx, field)
-			case "date":
-				return ec.fieldContext_Day_date(ctx, field)
-			case "title":
-				return ec.fieldContext_Day_title(ctx, field)
-			case "description":
-				return ec.fieldContext_Day_description(ctx, field)
-			case "lat":
-				return ec.fieldContext_Day_lat(ctx, field)
-			case "lng":
-				return ec.fieldContext_Day_lng(ctx, field)
-			case "createdAt":
-				return ec.fieldContext_Day_createdAt(ctx, field)
-			case "updatedAt":
-				return ec.fieldContext_Day_updatedAt(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Day", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DayPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DayPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DayPayload_errors,
-		func(ctx context.Context) (any, error) {
-			return obj.Errors, nil
-		},
-		nil,
-		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DayPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DayPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "field":
-				return ec.fieldContext_UserError_field(ctx, field)
-			case "message":
-				return ec.fieldContext_UserError_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _DeleteAccountPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteAccountPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2793,70 +2417,6 @@ func (ec *executionContext) _DeleteAccountPayload_errors(ctx context.Context, fi
 func (ec *executionContext) fieldContext_DeleteAccountPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "DeleteAccountPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "field":
-				return ec.fieldContext_UserError_field(ctx, field)
-			case "message":
-				return ec.fieldContext_UserError_message(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DeleteDayPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteDayPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DeleteDayPayload_success,
-		func(ctx context.Context) (any, error) {
-			return obj.Success, nil
-		},
-		nil,
-		ec.marshalNBoolean2bool,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DeleteDayPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DeleteDayPayload",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _DeleteDayPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DeleteDayPayload) (ret graphql.Marshaler) {
-	return graphql.ResolveField(
-		ctx,
-		ec.OperationContext,
-		field,
-		ec.fieldContext_DeleteDayPayload_errors,
-		func(ctx context.Context) (any, error) {
-			return obj.Errors, nil
-		},
-		nil,
-		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
-		true,
-		true,
-	)
-}
-
-func (ec *executionContext) fieldContext_DeleteDayPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "DeleteDayPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -3065,6 +2625,70 @@ func (ec *executionContext) fieldContext_DeleteTripPayload_errors(_ context.Cont
 	return fc, nil
 }
 
+func (ec *executionContext) _DeleteVisitPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteVisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteVisitPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteVisitPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteVisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteVisitPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DeleteVisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteVisitPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteVisitPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteVisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Media_id(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3094,14 +2718,14 @@ func (ec *executionContext) fieldContext_Media_id(_ context.Context, field graph
 	return fc, nil
 }
 
-func (ec *executionContext) _Media_dayID(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+func (ec *executionContext) _Media_visitID(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Media_dayID,
+		ec.fieldContext_Media_visitID,
 		func(ctx context.Context) (any, error) {
-			return obj.DayID, nil
+			return obj.VisitID, nil
 		},
 		nil,
 		ec.marshalNID2string,
@@ -3110,7 +2734,7 @@ func (ec *executionContext) _Media_dayID(ctx context.Context, field graphql.Coll
 	)
 }
 
-func (ec *executionContext) fieldContext_Media_dayID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Media_visitID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Media",
 		Field:      field,
@@ -3381,8 +3005,8 @@ func (ec *executionContext) fieldContext_MediaPayload_media(_ context.Context, f
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Media_id(ctx, field)
-			case "dayID":
-				return ec.fieldContext_Media_dayID(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -3911,24 +3535,24 @@ func (ec *executionContext) fieldContext_Mutation_deleteStage(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_addDay(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_addVisit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_addDay,
+		ec.fieldContext_Mutation_addVisit,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AddDay(ctx, fc.Args["input"].(AddDayInput))
+			return ec.Resolvers.Mutation().AddVisit(ctx, fc.Args["input"].(AddVisitInput))
 		},
 		nil,
-		ec.marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload,
+		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_addDay(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_addVisit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3936,12 +3560,12 @@ func (ec *executionContext) fieldContext_Mutation_addDay(ctx context.Context, fi
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "day":
-				return ec.fieldContext_DayPayload_day(ctx, field)
+			case "visit":
+				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
-				return ec.fieldContext_DayPayload_errors(ctx, field)
+				return ec.fieldContext_VisitPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DayPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -3951,31 +3575,31 @@ func (ec *executionContext) fieldContext_Mutation_addDay(ctx context.Context, fi
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_addDay_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_addVisit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updateDay(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_updateVisit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_updateDay,
+		ec.fieldContext_Mutation_updateVisit,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().UpdateDay(ctx, fc.Args["id"].(string), fc.Args["input"].(UpdateDayInput))
+			return ec.Resolvers.Mutation().UpdateVisit(ctx, fc.Args["id"].(string), fc.Args["input"].(UpdateVisitInput))
 		},
 		nil,
-		ec.marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload,
+		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_updateDay(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_updateVisit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -3983,12 +3607,12 @@ func (ec *executionContext) fieldContext_Mutation_updateDay(ctx context.Context,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "day":
-				return ec.fieldContext_DayPayload_day(ctx, field)
+			case "visit":
+				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
-				return ec.fieldContext_DayPayload_errors(ctx, field)
+				return ec.fieldContext_VisitPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DayPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -3998,31 +3622,31 @@ func (ec *executionContext) fieldContext_Mutation_updateDay(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateDay_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_updateVisit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_deleteDay(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_deleteVisit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_deleteDay,
+		ec.fieldContext_Mutation_deleteVisit,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DeleteDay(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeleteVisit(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalNDeleteDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteDayPayload,
+		ec.marshalNDeleteVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteVisitPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_deleteDay(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_deleteVisit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -4031,11 +3655,11 @@ func (ec *executionContext) fieldContext_Mutation_deleteDay(ctx context.Context,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "success":
-				return ec.fieldContext_DeleteDayPayload_success(ctx, field)
+				return ec.fieldContext_DeleteVisitPayload_success(ctx, field)
 			case "errors":
-				return ec.fieldContext_DeleteDayPayload_errors(ctx, field)
+				return ec.fieldContext_DeleteVisitPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DeleteDayPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type DeleteVisitPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -4045,31 +3669,31 @@ func (ec *executionContext) fieldContext_Mutation_deleteDay(ctx context.Context,
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deleteDay_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_deleteVisit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_attachDayToStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_attachVisitToStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_attachDayToStage,
+		ec.fieldContext_Mutation_attachVisitToStage,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AttachDayToStage(ctx, fc.Args["dayID"].(string), fc.Args["stageID"].(string))
+			return ec.Resolvers.Mutation().AttachVisitToStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string))
 		},
 		nil,
-		ec.marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload,
+		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_attachDayToStage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_attachVisitToStage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -4077,12 +3701,12 @@ func (ec *executionContext) fieldContext_Mutation_attachDayToStage(ctx context.C
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "day":
-				return ec.fieldContext_DayPayload_day(ctx, field)
+			case "visit":
+				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
-				return ec.fieldContext_DayPayload_errors(ctx, field)
+				return ec.fieldContext_VisitPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DayPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -4092,31 +3716,31 @@ func (ec *executionContext) fieldContext_Mutation_attachDayToStage(ctx context.C
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_attachDayToStage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_attachVisitToStage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_detachDayFromStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_detachVisitFromStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Mutation_detachDayFromStage,
+		ec.fieldContext_Mutation_detachVisitFromStage,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DetachDayFromStage(ctx, fc.Args["dayID"].(string), fc.Args["stageID"].(string))
+			return ec.Resolvers.Mutation().DetachVisitFromStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string))
 		},
 		nil,
-		ec.marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload,
+		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Mutation_detachDayFromStage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Mutation_detachVisitFromStage(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Mutation",
 		Field:      field,
@@ -4124,12 +3748,12 @@ func (ec *executionContext) fieldContext_Mutation_detachDayFromStage(ctx context
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
-			case "day":
-				return ec.fieldContext_DayPayload_day(ctx, field)
+			case "visit":
+				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
-				return ec.fieldContext_DayPayload_errors(ctx, field)
+				return ec.fieldContext_VisitPayload_errors(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type DayPayload", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
 	}
 	defer func() {
@@ -4139,7 +3763,7 @@ func (ec *executionContext) fieldContext_Mutation_detachDayFromStage(ctx context
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_detachDayFromStage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Mutation_detachVisitFromStage_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4557,7 +4181,7 @@ func (ec *executionContext) _Mutation_reorderMedia(ctx context.Context, field gr
 		ec.fieldContext_Mutation_reorderMedia,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().ReorderMedia(ctx, fc.Args["dayID"].(string), fc.Args["mediaIDs"].([]string))
+			return ec.Resolvers.Mutation().ReorderMedia(ctx, fc.Args["visitID"].(string), fc.Args["mediaIDs"].([]string))
 		},
 		nil,
 		ec.marshalNReorderMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderMediaPayload,
@@ -4903,24 +4527,24 @@ func (ec *executionContext) fieldContext_Query_stages(ctx context.Context, field
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_day(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_visit(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_day,
+		ec.fieldContext_Query_visit,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Day(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Query().Visit(ctx, fc.Args["id"].(string))
 		},
 		nil,
-		ec.marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDay,
+		ec.marshalOVisit2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisit,
 		true,
 		false,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_day(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_visit(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4929,27 +4553,27 @@ func (ec *executionContext) fieldContext_Query_day(ctx context.Context, field gr
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Day_id(ctx, field)
+				return ec.fieldContext_Visit_id(ctx, field)
 			case "tripID":
-				return ec.fieldContext_Day_tripID(ctx, field)
+				return ec.fieldContext_Visit_tripID(ctx, field)
 			case "stageIDs":
-				return ec.fieldContext_Day_stageIDs(ctx, field)
+				return ec.fieldContext_Visit_stageIDs(ctx, field)
 			case "date":
-				return ec.fieldContext_Day_date(ctx, field)
+				return ec.fieldContext_Visit_date(ctx, field)
 			case "title":
-				return ec.fieldContext_Day_title(ctx, field)
+				return ec.fieldContext_Visit_title(ctx, field)
 			case "description":
-				return ec.fieldContext_Day_description(ctx, field)
+				return ec.fieldContext_Visit_description(ctx, field)
 			case "lat":
-				return ec.fieldContext_Day_lat(ctx, field)
+				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
-				return ec.fieldContext_Day_lng(ctx, field)
+				return ec.fieldContext_Visit_lng(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_Day_createdAt(ctx, field)
+				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
-				return ec.fieldContext_Day_updatedAt(ctx, field)
+				return ec.fieldContext_Visit_updatedAt(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Day", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Visit", field.Name)
 		},
 	}
 	defer func() {
@@ -4959,31 +4583,31 @@ func (ec *executionContext) fieldContext_Query_day(ctx context.Context, field gr
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_day_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_visit_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_days(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_visits(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_days,
+		ec.fieldContext_Query_visits,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().Days(ctx, fc.Args["stageID"].(string))
+			return ec.Resolvers.Query().Visits(ctx, fc.Args["stageID"].(string))
 		},
 		nil,
-		ec.marshalNDay2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayᚄ,
+		ec.marshalNVisit2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_visits(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -4992,27 +4616,27 @@ func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field g
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Day_id(ctx, field)
+				return ec.fieldContext_Visit_id(ctx, field)
 			case "tripID":
-				return ec.fieldContext_Day_tripID(ctx, field)
+				return ec.fieldContext_Visit_tripID(ctx, field)
 			case "stageIDs":
-				return ec.fieldContext_Day_stageIDs(ctx, field)
+				return ec.fieldContext_Visit_stageIDs(ctx, field)
 			case "date":
-				return ec.fieldContext_Day_date(ctx, field)
+				return ec.fieldContext_Visit_date(ctx, field)
 			case "title":
-				return ec.fieldContext_Day_title(ctx, field)
+				return ec.fieldContext_Visit_title(ctx, field)
 			case "description":
-				return ec.fieldContext_Day_description(ctx, field)
+				return ec.fieldContext_Visit_description(ctx, field)
 			case "lat":
-				return ec.fieldContext_Day_lat(ctx, field)
+				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
-				return ec.fieldContext_Day_lng(ctx, field)
+				return ec.fieldContext_Visit_lng(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_Day_createdAt(ctx, field)
+				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
-				return ec.fieldContext_Day_updatedAt(ctx, field)
+				return ec.fieldContext_Visit_updatedAt(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Day", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Visit", field.Name)
 		},
 	}
 	defer func() {
@@ -5022,31 +4646,31 @@ func (ec *executionContext) fieldContext_Query_days(ctx context.Context, field g
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_days_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_visits_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_tripDays(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_tripVisits(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_tripDays,
+		ec.fieldContext_Query_tripVisits,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().TripDays(ctx, fc.Args["tripID"].(string))
+			return ec.Resolvers.Query().TripVisits(ctx, fc.Args["tripID"].(string))
 		},
 		nil,
-		ec.marshalNDay2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayᚄ,
+		ec.marshalNVisit2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitᚄ,
 		true,
 		true,
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_tripDays(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_tripVisits(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -5055,27 +4679,27 @@ func (ec *executionContext) fieldContext_Query_tripDays(ctx context.Context, fie
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
 			case "id":
-				return ec.fieldContext_Day_id(ctx, field)
+				return ec.fieldContext_Visit_id(ctx, field)
 			case "tripID":
-				return ec.fieldContext_Day_tripID(ctx, field)
+				return ec.fieldContext_Visit_tripID(ctx, field)
 			case "stageIDs":
-				return ec.fieldContext_Day_stageIDs(ctx, field)
+				return ec.fieldContext_Visit_stageIDs(ctx, field)
 			case "date":
-				return ec.fieldContext_Day_date(ctx, field)
+				return ec.fieldContext_Visit_date(ctx, field)
 			case "title":
-				return ec.fieldContext_Day_title(ctx, field)
+				return ec.fieldContext_Visit_title(ctx, field)
 			case "description":
-				return ec.fieldContext_Day_description(ctx, field)
+				return ec.fieldContext_Visit_description(ctx, field)
 			case "lat":
-				return ec.fieldContext_Day_lat(ctx, field)
+				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
-				return ec.fieldContext_Day_lng(ctx, field)
+				return ec.fieldContext_Visit_lng(ctx, field)
 			case "createdAt":
-				return ec.fieldContext_Day_createdAt(ctx, field)
+				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
-				return ec.fieldContext_Day_updatedAt(ctx, field)
+				return ec.fieldContext_Visit_updatedAt(ctx, field)
 			}
-			return nil, fmt.Errorf("no field named %q was found under type Day", field.Name)
+			return nil, fmt.Errorf("no field named %q was found under type Visit", field.Name)
 		},
 	}
 	defer func() {
@@ -5085,22 +4709,22 @@ func (ec *executionContext) fieldContext_Query_tripDays(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_tripDays_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_tripVisits_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_dayMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Query_visitMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
 		ec.OperationContext,
 		field,
-		ec.fieldContext_Query_dayMedia,
+		ec.fieldContext_Query_visitMedia,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Query().DayMedia(ctx, fc.Args["dayID"].(string))
+			return ec.Resolvers.Query().VisitMedia(ctx, fc.Args["visitID"].(string))
 		},
 		nil,
 		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
@@ -5109,7 +4733,7 @@ func (ec *executionContext) _Query_dayMedia(ctx context.Context, field graphql.C
 	)
 }
 
-func (ec *executionContext) fieldContext_Query_dayMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_visitMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -5119,8 +4743,8 @@ func (ec *executionContext) fieldContext_Query_dayMedia(ctx context.Context, fie
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Media_id(ctx, field)
-			case "dayID":
-				return ec.fieldContext_Media_dayID(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -5148,7 +4772,7 @@ func (ec *executionContext) fieldContext_Query_dayMedia(ctx context.Context, fie
 		}
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Query_dayMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+	if fc.Args, err = ec.field_Query_visitMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -5182,8 +4806,8 @@ func (ec *executionContext) fieldContext_Query_tripMedia(ctx context.Context, fi
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Media_id(ctx, field)
-			case "dayID":
-				return ec.fieldContext_Media_dayID(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -5467,8 +5091,8 @@ func (ec *executionContext) fieldContext_ReorderMediaPayload_media(_ context.Con
 			switch field.Name {
 			case "id":
 				return ec.fieldContext_Media_id(ctx, field)
-			case "dayID":
-				return ec.fieldContext_Media_dayID(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -6423,6 +6047,382 @@ func (ec *executionContext) fieldContext_UserError_message(_ context.Context, fi
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_id(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_tripID(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_tripID,
+		func(ctx context.Context) (any, error) {
+			return obj.TripID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_tripID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_stageIDs(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_stageIDs,
+		func(ctx context.Context) (any, error) {
+			return obj.StageIDs, nil
+		},
+		nil,
+		ec.marshalNID2ᚕstringᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_stageIDs(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_date(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_date,
+		func(ctx context.Context) (any, error) {
+			return obj.Date, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_date(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_title(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_title,
+		func(ctx context.Context) (any, error) {
+			return obj.Title, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_title(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_description(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_lat(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_lat,
+		func(ctx context.Context) (any, error) {
+			return obj.Lat, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_lat(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_lng(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_lng,
+		func(ctx context.Context) (any, error) {
+			return obj.Lng, nil
+		},
+		nil,
+		ec.marshalNFloat2float64,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_lng(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_createdAt(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Visit_updatedAt(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VisitPayload_visit(ctx context.Context, field graphql.CollectedField, obj *VisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_VisitPayload_visit,
+		func(ctx context.Context) (any, error) {
+			return obj.Visit, nil
+		},
+		nil,
+		ec.marshalOVisit2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisit,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_VisitPayload_visit(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Visit_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Visit_tripID(ctx, field)
+			case "stageIDs":
+				return ec.fieldContext_Visit_stageIDs(ctx, field)
+			case "date":
+				return ec.fieldContext_Visit_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Visit_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Visit_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Visit_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Visit_lng(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Visit_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Visit_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Visit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VisitPayload_errors(ctx context.Context, field graphql.CollectedField, obj *VisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_VisitPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_VisitPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
 		},
 	}
 	return fc, nil
@@ -7874,8 +7874,73 @@ func (ec *executionContext) fieldContext___Type_isOneOf(_ context.Context, field
 
 // region    **************************** input.gotpl *****************************
 
-func (ec *executionContext) unmarshalInputAddDayInput(ctx context.Context, obj any) (AddDayInput, error) {
-	var it AddDayInput
+func (ec *executionContext) unmarshalInputAddStageInput(ctx context.Context, obj any) (AddStageInput, error) {
+	var it AddStageInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tripID", "city", "name", "lat", "lng", "description"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tripID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tripID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TripID = data
+		case "city":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("city"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.City = data
+		case "name":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Name = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputAddVisitInput(ctx context.Context, obj any) (AddVisitInput, error) {
+	var it AddVisitInput
 	if obj == nil {
 		return it, nil
 	}
@@ -7946,71 +8011,6 @@ func (ec *executionContext) unmarshalInputAddDayInput(ctx context.Context, obj a
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputAddStageInput(ctx context.Context, obj any) (AddStageInput, error) {
-	var it AddStageInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"tripID", "city", "name", "lat", "lng", "description"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "tripID":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tripID"))
-			data, err := ec.unmarshalNID2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.TripID = data
-		case "city":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("city"))
-			data, err := ec.unmarshalNString2string(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.City = data
-		case "name":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Name = data
-		case "lat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Lat = data
-		case "lng":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Lng = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputChangePasswordInput(ctx context.Context, obj any) (ChangePasswordInput, error) {
 	var it ChangePasswordInput
 	if obj == nil {
@@ -8066,27 +8066,27 @@ func (ec *executionContext) unmarshalInputCloseTripInput(ctx context.Context, ob
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"firstDay", "lastDay"}
+	fieldsInOrder := [...]string{"firstVisitDate", "lastVisitDate"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
 			continue
 		}
 		switch k {
-		case "firstDay":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstDay"))
+		case "firstVisitDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("firstVisitDate"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.FirstDay = data
-		case "lastDay":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastDay"))
+			it.FirstVisitDate = data
+		case "lastVisitDate":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lastVisitDate"))
 			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.LastDay = data
+			it.LastVisitDate = data
 		}
 	}
 	return it, nil
@@ -8324,64 +8324,6 @@ func (ec *executionContext) unmarshalInputSetupAdminInput(ctx context.Context, o
 	return it, nil
 }
 
-func (ec *executionContext) unmarshalInputUpdateDayInput(ctx context.Context, obj any) (UpdateDayInput, error) {
-	var it UpdateDayInput
-	if obj == nil {
-		return it, nil
-	}
-
-	asMap := map[string]any{}
-	for k, v := range obj.(map[string]any) {
-		asMap[k] = v
-	}
-
-	fieldsInOrder := [...]string{"date", "title", "description", "lat", "lng"}
-	for _, k := range fieldsInOrder {
-		v, ok := asMap[k]
-		if !ok {
-			continue
-		}
-		switch k {
-		case "date":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Date = data
-		case "title":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Title = data
-		case "description":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Description = data
-		case "lat":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Lat = data
-		case "lng":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
-			data, err := ec.unmarshalNFloat2float64(ctx, v)
-			if err != nil {
-				return it, err
-			}
-			it.Lng = data
-		}
-	}
-	return it, nil
-}
-
 func (ec *executionContext) unmarshalInputUpdateStageInput(ctx context.Context, obj any) (UpdateStageInput, error) {
 	var it UpdateStageInput
 	if obj == nil {
@@ -8514,6 +8456,64 @@ func (ec *executionContext) unmarshalInputUpdateTripInput(ctx context.Context, o
 				return it, err
 			}
 			it.EndDate = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateVisitInput(ctx context.Context, obj any) (UpdateVisitInput, error) {
+	var it UpdateVisitInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"date", "title", "description", "lat", "lng"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "date":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("date"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Date = data
+		case "title":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Title = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "lat":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lat"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lat = data
+		case "lng":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("lng"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Lng = data
 		}
 	}
 	return it, nil
@@ -8670,125 +8670,6 @@ func (ec *executionContext) _AuthPayload(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
-var dayImplementors = []string{"Day"}
-
-func (ec *executionContext) _Day(ctx context.Context, sel ast.SelectionSet, obj *Day) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, dayImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Day")
-		case "id":
-			out.Values[i] = ec._Day_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "tripID":
-			out.Values[i] = ec._Day_tripID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "stageIDs":
-			out.Values[i] = ec._Day_stageIDs(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "date":
-			out.Values[i] = ec._Day_date(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "title":
-			out.Values[i] = ec._Day_title(ctx, field, obj)
-		case "description":
-			out.Values[i] = ec._Day_description(ctx, field, obj)
-		case "lat":
-			out.Values[i] = ec._Day_lat(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "lng":
-			out.Values[i] = ec._Day_lng(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "createdAt":
-			out.Values[i] = ec._Day_createdAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updatedAt":
-			out.Values[i] = ec._Day_updatedAt(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var dayPayloadImplementors = []string{"DayPayload"}
-
-func (ec *executionContext) _DayPayload(ctx context.Context, sel ast.SelectionSet, obj *DayPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, dayPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DayPayload")
-		case "day":
-			out.Values[i] = ec._DayPayload_day(ctx, field, obj)
-		case "errors":
-			out.Values[i] = ec._DayPayload_errors(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
 var deleteAccountPayloadImplementors = []string{"DeleteAccountPayload"}
 
 func (ec *executionContext) _DeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteAccountPayload) graphql.Marshaler {
@@ -8807,50 +8688,6 @@ func (ec *executionContext) _DeleteAccountPayload(ctx context.Context, sel ast.S
 			}
 		case "errors":
 			out.Values[i] = ec._DeleteAccountPayload_errors(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch(ctx)
-	if out.Invalids > 0 {
-		return graphql.Null
-	}
-
-	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
-
-	for label, dfs := range deferred {
-		ec.ProcessDeferredGroup(graphql.DeferredGroup{
-			Label:    label,
-			Path:     graphql.GetPath(ctx),
-			FieldSet: dfs,
-			Context:  ctx,
-		})
-	}
-
-	return out
-}
-
-var deleteDayPayloadImplementors = []string{"DeleteDayPayload"}
-
-func (ec *executionContext) _DeleteDayPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteDayPayload) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, deleteDayPayloadImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	deferred := make(map[string]*graphql.FieldSet)
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("DeleteDayPayload")
-		case "success":
-			out.Values[i] = ec._DeleteDayPayload_success(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "errors":
-			out.Values[i] = ec._DeleteDayPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -9009,6 +8846,50 @@ func (ec *executionContext) _DeleteTripPayload(ctx context.Context, sel ast.Sele
 	return out
 }
 
+var deleteVisitPayloadImplementors = []string{"DeleteVisitPayload"}
+
+func (ec *executionContext) _DeleteVisitPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteVisitPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteVisitPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteVisitPayload")
+		case "success":
+			out.Values[i] = ec._DeleteVisitPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DeleteVisitPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mediaImplementors = []string{"Media"}
 
 func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, obj *Media) graphql.Marshaler {
@@ -9025,8 +8906,8 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "dayID":
-			out.Values[i] = ec._Media_dayID(ctx, field, obj)
+		case "visitID":
+			out.Values[i] = ec._Media_visitID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -9220,37 +9101,37 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "addDay":
+		case "addVisit":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_addDay(ctx, field)
+				return ec._Mutation_addVisit(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "updateDay":
+		case "updateVisit":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateDay(ctx, field)
+				return ec._Mutation_updateVisit(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "deleteDay":
+		case "deleteVisit":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deleteDay(ctx, field)
+				return ec._Mutation_deleteVisit(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "attachDayToStage":
+		case "attachVisitToStage":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_attachDayToStage(ctx, field)
+				return ec._Mutation_attachVisitToStage(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "detachDayFromStage":
+		case "detachVisitFromStage":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_detachDayFromStage(ctx, field)
+				return ec._Mutation_detachVisitFromStage(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -9456,7 +9337,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "day":
+		case "visit":
 			field := field
 
 			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
@@ -9465,7 +9346,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_day(ctx, field)
+				res = ec._Query_visit(ctx, field)
 				return res
 			}
 
@@ -9475,7 +9356,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "days":
+		case "visits":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -9484,7 +9365,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_days(ctx, field)
+				res = ec._Query_visits(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -9497,7 +9378,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "tripDays":
+		case "tripVisits":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -9506,7 +9387,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_tripDays(ctx, field)
+				res = ec._Query_tripVisits(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -9519,7 +9400,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
-		case "dayMedia":
+		case "visitMedia":
 			field := field
 
 			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
@@ -9528,7 +9409,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_dayMedia(ctx, field)
+				res = ec._Query_visitMedia(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}
@@ -10032,6 +9913,125 @@ func (ec *executionContext) _UserError(ctx context.Context, sel ast.SelectionSet
 	return out
 }
 
+var visitImplementors = []string{"Visit"}
+
+func (ec *executionContext) _Visit(ctx context.Context, sel ast.SelectionSet, obj *Visit) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, visitImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Visit")
+		case "id":
+			out.Values[i] = ec._Visit_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tripID":
+			out.Values[i] = ec._Visit_tripID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "stageIDs":
+			out.Values[i] = ec._Visit_stageIDs(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "date":
+			out.Values[i] = ec._Visit_date(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "title":
+			out.Values[i] = ec._Visit_title(ctx, field, obj)
+		case "description":
+			out.Values[i] = ec._Visit_description(ctx, field, obj)
+		case "lat":
+			out.Values[i] = ec._Visit_lat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "lng":
+			out.Values[i] = ec._Visit_lng(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "createdAt":
+			out.Values[i] = ec._Visit_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._Visit_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var visitPayloadImplementors = []string{"VisitPayload"}
+
+func (ec *executionContext) _VisitPayload(ctx context.Context, sel ast.SelectionSet, obj *VisitPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, visitPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VisitPayload")
+		case "visit":
+			out.Values[i] = ec._VisitPayload_visit(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._VisitPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -10417,13 +10417,13 @@ func (ec *executionContext) marshalNAccountRole2githubᚗcomᚋbfossesᚋsharemy
 	return v
 }
 
-func (ec *executionContext) unmarshalNAddDayInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddDayInput(ctx context.Context, v any) (AddDayInput, error) {
-	res, err := ec.unmarshalInputAddDayInput(ctx, v)
+func (ec *executionContext) unmarshalNAddStageInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddStageInput(ctx context.Context, v any) (AddStageInput, error) {
+	res, err := ec.unmarshalInputAddStageInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) unmarshalNAddStageInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddStageInput(ctx context.Context, v any) (AddStageInput, error) {
-	res, err := ec.unmarshalInputAddStageInput(ctx, v)
+func (ec *executionContext) unmarshalNAddVisitInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐAddVisitInput(ctx context.Context, v any) (AddVisitInput, error) {
+	res, err := ec.unmarshalInputAddVisitInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -10477,46 +10477,6 @@ func (ec *executionContext) unmarshalNCreateTripInput2githubᚗcomᚋbfossesᚋs
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
-func (ec *executionContext) marshalNDay2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayᚄ(ctx context.Context, sel ast.SelectionSet, v []*Day) graphql.Marshaler {
-	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
-		fc := graphql.GetFieldContext(ctx)
-		fc.Result = &v[i]
-		return ec.marshalNDay2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDay(ctx, sel, v[i])
-	})
-
-	for _, e := range ret {
-		if e == graphql.Null {
-			return graphql.Null
-		}
-	}
-
-	return ret
-}
-
-func (ec *executionContext) marshalNDay2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDay(ctx context.Context, sel ast.SelectionSet, v *Day) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._Day(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNDayPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload(ctx context.Context, sel ast.SelectionSet, v DayPayload) graphql.Marshaler {
-	return ec._DayPayload(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDayPayload(ctx context.Context, sel ast.SelectionSet, v *DayPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._DayPayload(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalNDeleteAccountPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, v DeleteAccountPayload) graphql.Marshaler {
 	return ec._DeleteAccountPayload(ctx, sel, &v)
 }
@@ -10529,20 +10489,6 @@ func (ec *executionContext) marshalNDeleteAccountPayload2ᚖgithubᚗcomᚋbfoss
 		return graphql.Null
 	}
 	return ec._DeleteAccountPayload(ctx, sel, v)
-}
-
-func (ec *executionContext) marshalNDeleteDayPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteDayPayload(ctx context.Context, sel ast.SelectionSet, v DeleteDayPayload) graphql.Marshaler {
-	return ec._DeleteDayPayload(ctx, sel, &v)
-}
-
-func (ec *executionContext) marshalNDeleteDayPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteDayPayload(ctx context.Context, sel ast.SelectionSet, v *DeleteDayPayload) graphql.Marshaler {
-	if v == nil {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
-		}
-		return graphql.Null
-	}
-	return ec._DeleteDayPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDeleteMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteMediaPayload(ctx context.Context, sel ast.SelectionSet, v DeleteMediaPayload) graphql.Marshaler {
@@ -10585,6 +10531,20 @@ func (ec *executionContext) marshalNDeleteTripPayload2ᚖgithubᚗcomᚋbfosses�
 		return graphql.Null
 	}
 	return ec._DeleteTripPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteVisitPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteVisitPayload(ctx context.Context, sel ast.SelectionSet, v DeleteVisitPayload) graphql.Marshaler {
+	return ec._DeleteVisitPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteVisitPayload(ctx context.Context, sel ast.SelectionSet, v *DeleteVisitPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteVisitPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v any) (float64, error) {
@@ -10849,11 +10809,6 @@ func (ec *executionContext) marshalNTripStatus2githubᚗcomᚋbfossesᚋsharemyt
 	return v
 }
 
-func (ec *executionContext) unmarshalNUpdateDayInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateDayInput(ctx context.Context, v any) (UpdateDayInput, error) {
-	res, err := ec.unmarshalInputUpdateDayInput(ctx, v)
-	return res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalNUpdateStageInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateStageInput(ctx context.Context, v any) (UpdateStageInput, error) {
 	res, err := ec.unmarshalInputUpdateStageInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10861,6 +10816,11 @@ func (ec *executionContext) unmarshalNUpdateStageInput2githubᚗcomᚋbfossesᚋ
 
 func (ec *executionContext) unmarshalNUpdateTripInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateTripInput(ctx context.Context, v any) (UpdateTripInput, error) {
 	res, err := ec.unmarshalInputUpdateTripInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateVisitInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateVisitInput(ctx context.Context, v any) (UpdateVisitInput, error) {
+	res, err := ec.unmarshalInputUpdateVisitInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -10888,6 +10848,46 @@ func (ec *executionContext) marshalNUserError2ᚖgithubᚗcomᚋbfossesᚋsharem
 		return graphql.Null
 	}
 	return ec._UserError(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVisit2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitᚄ(ctx context.Context, sel ast.SelectionSet, v []*Visit) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNVisit2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisit(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNVisit2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisit(ctx context.Context, sel ast.SelectionSet, v *Visit) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._Visit(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVisitPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload(ctx context.Context, sel ast.SelectionSet, v VisitPayload) graphql.Marshaler {
+	return ec._VisitPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload(ctx context.Context, sel ast.SelectionSet, v *VisitPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VisitPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
@@ -11084,13 +11084,6 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
-func (ec *executionContext) marshalODay2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDay(ctx context.Context, sel ast.SelectionSet, v *Day) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	return ec._Day(ctx, sel, v)
-}
-
 func (ec *executionContext) marshalOMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia(ctx context.Context, sel ast.SelectionSet, v *Media) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11165,6 +11158,13 @@ func (ec *executionContext) marshalOTripStatus2ᚕgithubᚗcomᚋbfossesᚋshare
 	}
 
 	return ret
+}
+
+func (ec *executionContext) marshalOVisit2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisit(ctx context.Context, sel ast.SelectionSet, v *Visit) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Visit(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalO__EnumValue2ᚕgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐEnumValueᚄ(ctx context.Context, sel ast.SelectionSet, v []introspection.EnumValue) graphql.Marshaler {

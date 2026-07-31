@@ -1,11 +1,11 @@
 import { useQuery } from 'urql';
 import { gql } from '../../../graphql/generated';
 
-const DAY_MEDIA_QUERY = gql(`
-  query DayMedia($dayID: ID!) {
-    dayMedia(dayID: $dayID) {
+const VISIT_MEDIA_QUERY = gql(`
+  query VisitMedia($visitID: ID!) {
+    visitMedia(visitID: $visitID) {
       id
-      dayID
+      visitID
       tripID
       filename
       contentType
@@ -18,15 +18,15 @@ const DAY_MEDIA_QUERY = gql(`
   }
 `);
 
-export function useDayMedia(dayID: string) {
-  return useQuery({ query: DAY_MEDIA_QUERY, variables: { dayID } });
+export function useVisitMedia(visitID: string) {
+  return useQuery({ query: VISIT_MEDIA_QUERY, variables: { visitID } });
 }
 
 const TRIP_MEDIA_QUERY = gql(`
   query TripMedia($tripID: ID!) {
     tripMedia(tripID: $tripID) {
       id
-      dayID
+      visitID
       tripID
       contentType
       thumbUrl

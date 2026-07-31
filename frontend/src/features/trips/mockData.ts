@@ -4,7 +4,7 @@ export interface Photo {
   alt: string;
 }
 
-export interface Day {
+export interface Visit {
   id: string;
   date: string;
   title: string;
@@ -18,7 +18,7 @@ export interface Stage {
   city: string;
   description: string;
   coordinates: [number, number]; // [lat, lng]
-  days: Day[];
+  visits: Visit[];
 }
 
 export interface Trip {
@@ -40,7 +40,7 @@ const ICELAND_STAGES: Stage[] = [
     city: 'Reykjavik',
     description: "Capitale de l'Islande, Reykjavik mêle architecture colorée, musées et vie nocturne animée.",
     coordinates: [64.1355, -21.8954],
-    days: [
+    visits: [
       {
         id: 'd1', date: '2025-07-01', title: 'Arrivée et premiers pas',
         description: 'Atterrissage à Keflavik, route vers Reykjavik. Premier contact avec la lumière estivale islandaise.',
@@ -76,7 +76,7 @@ const ICELAND_STAGES: Stage[] = [
     city: 'Þingvellir',
     description: "Þingvellir, Geysir et Gullfoss — les trois sites emblématiques du Cercle d'Or.",
     coordinates: [64.2559, -20.6124],
-    days: [
+    visits: [
       {
         id: 'd4', date: '2025-07-04', title: 'Þingvellir et Geysir',
         description: 'Parc national de Þingvellir puis Strokkur qui entre en éruption toutes les 5 minutes.',
@@ -105,7 +105,7 @@ const ICELAND_STAGES: Stage[] = [
     city: 'Vík í Mýrdal',
     description: 'Le village le plus au sud de l\'Islande, bordé par la plage de sable noir de Reynisfjara.',
     coordinates: [63.4186, -19.0048],
-    days: [
+    visits: [
       {
         id: 'd6', date: '2025-07-06', title: 'Route vers le sud',
         description: 'Cascades de Seljalandsfoss et Skógafoss le long de la côte.',

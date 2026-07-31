@@ -2,14 +2,14 @@ import { useQuery } from 'urql';
 import { gql } from '../../../graphql/generated';
 
 // Lean fetch for the home page's "Clôturer" action: closing a trip needs its
-// stages (each must carry at least one day) and the days' date range.
+// stages (each must carry at least one visit) and the visits' date range.
 const TRIP_CLOSE_DATA_QUERY = gql(`
   query TripCloseData($tripID: ID!) {
     stages(tripID: $tripID) {
       id
       tripID
     }
-    tripDays(tripID: $tripID) {
+    tripVisits(tripID: $tripID) {
       id
       tripID
       date

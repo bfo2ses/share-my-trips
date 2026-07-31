@@ -23,7 +23,16 @@ type AccountPayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
-type AddDayInput struct {
+type AddStageInput struct {
+	TripID      string  `json:"tripID"`
+	City        string  `json:"city"`
+	Name        *string `json:"name,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+	Description *string `json:"description,omitempty"`
+}
+
+type AddVisitInput struct {
 	TripID  string `json:"tripID"`
 	StageID string `json:"stageID"`
 	// Date-only, format YYYY-MM-DD.
@@ -32,15 +41,6 @@ type AddDayInput struct {
 	Description *string `json:"description,omitempty"`
 	Lat         float64 `json:"lat"`
 	Lng         float64 `json:"lng"`
-}
-
-type AddStageInput struct {
-	TripID      string  `json:"tripID"`
-	City        string  `json:"city"`
-	Name        *string `json:"name,omitempty"`
-	Lat         float64 `json:"lat"`
-	Lng         float64 `json:"lng"`
-	Description *string `json:"description,omitempty"`
 }
 
 type AuthPayload struct {
@@ -57,8 +57,8 @@ type ChangePasswordInput struct {
 }
 
 type CloseTripInput struct {
-	FirstDay string `json:"firstDay"`
-	LastDay  string `json:"lastDay"`
+	FirstVisitDate string `json:"firstVisitDate"`
+	LastVisitDate  string `json:"lastVisitDate"`
 }
 
 type CreateAccountInput struct {
@@ -82,37 +82,7 @@ type CreateTripInput struct {
 	EndDate     *string `json:"endDate,omitempty"`
 }
 
-type Day struct {
-	ID       string   `json:"id"`
-	TripID   string   `json:"tripID"`
-	StageIDs []string `json:"stageIDs"`
-	// Date-only, format YYYY-MM-DD.
-	Date string `json:"date"`
-	// Null when not provided.
-	Title *string `json:"title,omitempty"`
-	// Null when not provided.
-	Description *string `json:"description,omitempty"`
-	// Latitude for map placement.
-	Lat float64 `json:"lat"`
-	// Longitude for map placement.
-	Lng float64 `json:"lng"`
-	// RFC 3339 timestamp.
-	CreatedAt string `json:"createdAt"`
-	// RFC 3339 timestamp.
-	UpdatedAt string `json:"updatedAt"`
-}
-
-type DayPayload struct {
-	Day    *Day         `json:"day,omitempty"`
-	Errors []*UserError `json:"errors"`
-}
-
 type DeleteAccountPayload struct {
-	Success bool         `json:"success"`
-	Errors  []*UserError `json:"errors"`
-}
-
-type DeleteDayPayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
 }
@@ -132,9 +102,14 @@ type DeleteTripPayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
+type DeleteVisitPayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type Media struct {
 	ID          string `json:"id"`
-	DayID       string `json:"dayID"`
+	VisitID     string `json:"visitID"`
 	TripID      string `json:"tripID"`
 	Filename    string `json:"filename"`
 	ContentType string `json:"contentType"`
@@ -224,14 +199,6 @@ type TripPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
-type UpdateDayInput struct {
-	Date        *string `json:"date,omitempty"`
-	Title       *string `json:"title,omitempty"`
-	Description *string `json:"description,omitempty"`
-	Lat         float64 `json:"lat"`
-	Lng         float64 `json:"lng"`
-}
-
 type UpdateStageInput struct {
 	City        string  `json:"city"`
 	Name        *string `json:"name,omitempty"`
@@ -251,9 +218,42 @@ type UpdateTripInput struct {
 	EndDate     *string `json:"endDate,omitempty"`
 }
 
+type UpdateVisitInput struct {
+	Date        *string `json:"date,omitempty"`
+	Title       *string `json:"title,omitempty"`
+	Description *string `json:"description,omitempty"`
+	Lat         float64 `json:"lat"`
+	Lng         float64 `json:"lng"`
+}
+
 type UserError struct {
 	Field   *string `json:"field,omitempty"`
 	Message string  `json:"message"`
+}
+
+type Visit struct {
+	ID       string   `json:"id"`
+	TripID   string   `json:"tripID"`
+	StageIDs []string `json:"stageIDs"`
+	// Date-only, format YYYY-MM-DD.
+	Date string `json:"date"`
+	// Null when not provided.
+	Title *string `json:"title,omitempty"`
+	// Null when not provided.
+	Description *string `json:"description,omitempty"`
+	// Latitude for map placement.
+	Lat float64 `json:"lat"`
+	// Longitude for map placement.
+	Lng float64 `json:"lng"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
+	// RFC 3339 timestamp.
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type VisitPayload struct {
+	Visit  *Visit       `json:"visit,omitempty"`
+	Errors []*UserError `json:"errors"`
 }
 
 type AccountRole string
