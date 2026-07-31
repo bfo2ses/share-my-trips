@@ -1,12 +1,12 @@
 import { useState, useCallback } from 'react';
-import { useAddDay, useUpdateDay } from '../hooks/useDayMutations';
-import { useDayMedia } from '../../media/hooks/useMediaQueries';
+import { useAddVisit, useUpdateVisit } from '../hooks/useVisitMutations';
+import { useVisitMedia } from '../../media/hooks/useMediaQueries';
 import { MediaGallery } from '../../media/components/MediaGallery';
 import { MediaUploader } from '../../media/components/MediaUploader';
 import type { FormAction } from '../../trips/components/TripForm';
-import styles from './DayForm.module.css';
+import styles from './VisitForm.module.css';
 
-interface DayData {
+interface VisitData {
   id: string;
   date: string;
   title?: string | null;
@@ -15,19 +15,19 @@ interface DayData {
   lng: number;
 }
 
-interface DayFormProps {
+interface VisitFormProps {
   open: boolean;
   onClose: () => void;
   tripID: string;
   stageID: string;
-  day?: DayData | null;
+  visit?: VisitData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   noBackdrop?: boolean;
   panel?: boolean;
   actions?: FormAction[];
 }
 
-export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, noBackdrop, panel, actions }: DayFormProps) {
+export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords, noBackdrop, panel, actions }: VisitFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
@@ -35,10 +35,10 @@ export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, no
       )}
       <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
         {open && (
-          <DayFormContent
+          <VisitFormContent
             tripID={tripID}
             stageID={stageID}
-            day={day}
+            visit={visit}
             pendingCoords={pendingCoords}
             onClose={onClose}
             panel={panel}
@@ -50,10 +50,10 @@ export function DayForm({ open, onClose, tripID, stageID, day, pendingCoords, no
   );
 }
 
-function DayFormContent({
+function VisitFormContent({
   tripID,
   stageID,
-  day,
+  visit,
   pendingCoords,
   onClose,
   panel,
@@ -61,47 +61,47 @@ function DayFormContent({
 }: {
   tripID: string;
   stageID: string;
-  day?: DayData | null;
+  visit?: VisitData | null;
   pendingCoords?: { lat: number; lng: number } | null;
   onClose: () => void;
   panel?: boolean;
   actions?: FormAction[];
 }) {
-  const isEdit = !!day;
+  const isEdit = !!visit;
 
-  const [date, setDate] = useState(day?.date ?? '');
-  const [title, setTitle] = useState(day?.title ?? '');
-  const [description, setDescription] = useState(day?.description ?? '');
+  const [date, setDate] = useState(visit?.date ?? '');
+  const [title, setTitle] = useState(visit?.title ?? '');
+  const [description, setDescription] = useState(visit?.description ?? '');
   const [errors, setErrors] = useState<string[]>([]);
 
-  const [, addDay] = useAddDay();
-  const [, updateDay] = useUpdateDay();
+  const [, addVisit] = useAddVisit();
+  const [, updateVisit] = useUpdateVisit();
 
-  // Media (only when editing an existing day)
-  const [{ data: mediaData }, reexecuteMedia] = useDayMedia(day?.id ?? '');
-  const media = isEdit ? (mediaData?.dayMedia ?? []) : [];
+  // Media (only when editing an existing visit)
+  const [{ data: mediaData }, reexecuteMedia] = useVisitMedia(visit?.id ?? '');
+  const media = isEdit ? (mediaData?.visitMedia ?? []) : [];
   const refetchMedia = useCallback(() => reexecuteMedia({ requestPolicy: 'network-only' }), [reexecuteMedia]);
 
-  // Live coords: pending from map click takes precedence over the existing day.
-  const lat = pendingCoords?.lat ?? day?.lat ?? null;
-  const lng = pendingCoords?.lng ?? day?.lng ?? null;
+  // Live coords: pending from map click takes precedence over the existing visit.
+  const lat = pendingCoords?.lat ?? visit?.lat ?? null;
+  const lng = pendingCoords?.lng ?? visit?.lng ?? null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErrors([]);
 
     if (lat == null || lng == null) {
-      setErrors(['Cliquez sur la carte pour placer le jour avant d\u2019enregistrer.']);
+      setErrors(['Cliquez sur la carte pour placer la visite avant d’enregistrer.']);
       return;
     }
 
-    const context = { additionalTypenames: ['Day'] };
+    const context = { additionalTypenames: ['Visit'] };
 
     if (isEdit) {
-      const result = await updateDay({
-        id: day!.id,
+      const result = await updateVisit({
+        id: visit!.id,
         input: {
-          date: date !== day!.date ? date : undefined,
+          date: date !== visit!.date ? date : undefined,
           title: title || undefined,
           description: description || undefined,
           lat,
@@ -112,13 +112,13 @@ function DayFormContent({
         setErrors(['Une erreur est survenue.']);
         return;
       }
-      const errs = result.data?.updateDay.errors ?? [];
+      const errs = result.data?.updateVisit.errors ?? [];
       if (errs.length > 0) {
         setErrors(errs.map((err) => err.message));
         return;
       }
     } else {
-      const result = await addDay({
+      const result = await addVisit({
         input: {
           tripID,
           stageID,
@@ -133,7 +133,7 @@ function DayFormContent({
         setErrors(['Une erreur est survenue.']);
         return;
       }
-      const errs = result.data?.addDay.errors ?? [];
+      const errs = result.data?.addVisit.errors ?? [];
       if (errs.length > 0) {
         setErrors(errs.map((err) => err.message));
         return;
@@ -147,7 +147,7 @@ function DayFormContent({
     <>
       <div className={styles.header}>
         <span className={styles.headerTitle}>
-          {isEdit ? 'Modifier le jour' : 'Nouveau jour'}
+          {isEdit ? 'Modifier la visite' : 'Nouvelle visite'}
         </span>
         {!panel && (
           <button className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>
@@ -184,7 +184,7 @@ function DayFormContent({
             </p>
           ) : (
             <p className={styles.coordHint}>
-              Cliquez sur la carte pour placer le jour
+              Cliquez sur la carte pour placer la visite
             </p>
           )}
         </div>
@@ -195,13 +195,13 @@ function DayFormContent({
         </label>
 
         <button type="submit" className={styles.submit}>
-          {isEdit ? 'Enregistrer' : 'Ajouter le jour'}
+          {isEdit ? 'Enregistrer' : 'Ajouter la visite'}
         </button>
 
         {isEdit && (
           <div className={styles.mediaSection}>
             <MediaGallery media={media} isAdmin onDeleted={refetchMedia} />
-            <MediaUploader dayID={day!.id} tripID={tripID} onUploadComplete={refetchMedia} />
+            <MediaUploader visitID={visit!.id} tripID={tripID} onUploadComplete={refetchMedia} />
           </div>
         )}
 

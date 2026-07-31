@@ -1,13 +1,13 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import type { StagesQuery, DaysQuery } from '../../../graphql/generated/graphql';
+import type { StagesQuery, VisitsQuery } from '../../../graphql/generated/graphql';
 import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
 type Stage = StagesQuery['stages'][number];
-type Day = DaysQuery['days'][number];
+type Visit = VisitsQuery['visits'][number];
 
 // Fix default marker icons (Leaflet + Vite issue)
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -19,7 +19,7 @@ L.Icon.Default.mergeOptions({
 
 const STAGE_COLORS = ['#c6a35d', '#7a8ebd', '#c87060', '#6aab8e', '#b07ab8'];
 const ACTIVE_STAGE_COLOR = '#c6a35d';
-const DAY_COLOR = '#f2e2bb';
+const VISIT_COLOR = '#f2e2bb';
 const PENDING_COLOR = '#f2c96a';
 const DRAWER_PAD_PX = 440; // right-drawer width + small margin
 const EDGE_PAD_PX = 60;
@@ -69,10 +69,10 @@ function makeStageIcon(n: number, color: string, active: boolean) {
     ">${n}</div>`, size, -size / 2 - 4);
 }
 
-function makeDayIcon(n: number) {
+function makeVisitIcon(n: number) {
   return makeMarkerIcon(`<div style="
       width:24px;height:24px;border-radius:50%;
-      background:${DAY_COLOR};border:2px solid ${ACTIVE_STAGE_COLOR};
+      background:${VISIT_COLOR};border:2px solid ${ACTIVE_STAGE_COLOR};
       display:flex;align-items:center;justify-content:center;
       font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:#1a1a1a;
       box-shadow:0 2px 6px rgba(0,0,0,0.4);
@@ -206,22 +206,22 @@ function PanInsideTarget({ target }: { target: { lat: number; lng: number; seq: 
   return null;
 }
 
-export type PlacementMode = 'stage' | 'day' | null;
+export type PlacementMode = 'stage' | 'visit' | null;
 
 interface TripMapProps {
   stages: Stage[];
   activeStageId?: string | null;
-  activeStageDays?: Day[];
+  activeStageVisits?: Visit[];
   stageDateRanges?: Record<string, { start: string; end: string }>;
   onStageClick?: (stageId: string) => void;
-  onDayClick?: (stageId: string, day: Day) => void;
+  onVisitClick?: (stageId: string, visit: Visit) => void;
   // Placement (click-to-create) and drag-and-drop editing.
   placementMode?: PlacementMode;
   pendingCoords?: { lat: number; lng: number } | null;
   onMapClick?: (coords: { lat: number; lng: number }) => void;
   canEditMarkers?: boolean;
   onStageDragEnd?: (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => void;
-  onDayDragEnd?: (day: Day, coords: { lat: number; lng: number }, revert: () => void) => void;
+  onVisitDragEnd?: (visit: Visit, coords: { lat: number; lng: number }, revert: () => void) => void;
   /** Imperative pan target, e.g. after a successful drag to keep the marker in view. */
   panTarget?: { lat: number; lng: number; seq: number } | null;
   /** Mobile read layout: full-screen map behind the persistent bottom sheet. */
@@ -231,16 +231,16 @@ interface TripMapProps {
 export function TripMap({
   stages,
   activeStageId,
-  activeStageDays = [],
+  activeStageVisits = [],
   stageDateRanges = {},
   onStageClick,
-  onDayClick,
+  onVisitClick,
   placementMode = null,
   pendingCoords = null,
   onMapClick,
   canEditMarkers = false,
   onStageDragEnd,
-  onDayDragEnd,
+  onVisitDragEnd,
   panTarget = null,
   mobileSheetLayout = false,
 }: TripMapProps) {
@@ -250,7 +250,7 @@ export function TripMap({
 
   // Shared across all marker click/drag handlers. Leaflet emits a click at the
   // end of a drag gesture on the same marker — this flag lets the click handler
-  // suppress the stage/day activation so drag-to-move doesn't also open the
+  // suppress the stage/visit activation so drag-to-move doesn't also open the
   // detail panel or change the active stage.
   const draggingRef = useRef(false);
 
@@ -271,21 +271,21 @@ export function TripMap({
   const boundsPositions: [number, number][] = isZoomed
     ? [
         [activeStage!.lat, activeStage!.lng] as [number, number],
-        ...activeStageDays.map((d) => [d.lat, d.lng] as [number, number]),
+        ...activeStageVisits.map((visit) => [visit.lat, visit.lng] as [number, number]),
       ]
     : stages.map((s) => [s.lat, s.lng] as [number, number]);
 
   // Include drawer state in the key so opening the form (which shrinks the
   // visible map area) triggers a re-fit with the asymmetric padding.
   const boundsKey = isZoomed
-    ? `stage-${activeStageId}-${activeStageDays.length}-${drawerOpen ? 'dw' : 'nw'}`
+    ? `stage-${activeStageId}-${activeStageVisits.length}-${drawerOpen ? 'dw' : 'nw'}`
     : `all-${drawerOpen ? 'dw' : 'nw'}`;
 
   const hintText =
     placementMode === 'stage'
       ? '← Cliquez sur la carte pour placer une nouvelle étape'
-      : placementMode === 'day' && activeStage
-      ? `← Cliquez sur la carte pour ajouter un jour à ${activeStage.displayName}`
+      : placementMode === 'visit' && activeStage
+      ? `← Cliquez sur la carte pour ajouter une visite à ${activeStage.displayName}`
       : null;
 
   return (
@@ -360,14 +360,14 @@ export function TripMap({
             );
           })}
 
-        {/* Zoomed mode: radial polylines from stage to each day */}
+        {/* Zoomed mode: radial polylines from stage to each visit */}
         {isZoomed &&
-          activeStageDays.map((day) => (
+          activeStageVisits.map((visit) => (
             <Polyline
-              key={`line-${day.id}`}
+              key={`line-${visit.id}`}
               positions={[
                 [activeStage!.lat, activeStage!.lng],
-                [day.lat, day.lng],
+                [visit.lat, visit.lng],
               ]}
               color="rgba(198,163,93,0.45)"
               weight={2}
@@ -407,32 +407,32 @@ export function TripMap({
           </Marker>
         )}
 
-        {/* Zoomed mode: day markers */}
+        {/* Zoomed mode: visit markers */}
         {isZoomed &&
-          activeStageDays.map((day, i) => (
+          activeStageVisits.map((visit, i) => (
             <Marker
-              key={day.id}
-              position={[day.lat, day.lng]}
-              icon={makeDayIcon(i + 1)}
+              key={visit.id}
+              position={[visit.lat, visit.lng]}
+              icon={makeVisitIcon(i + 1)}
               draggable={canEditMarkers}
               eventHandlers={{
                 dragstart: beginDrag,
                 dragend: (e) => {
                   const coords = markerLatLng(e);
                   const marker = e.target as L.Marker;
-                  const revert = () => marker.setLatLng([day.lat, day.lng]);
-                  onDayDragEnd?.(day, coords, revert);
+                  const revert = () => marker.setLatLng([visit.lat, visit.lng]);
+                  onVisitDragEnd?.(visit, coords, revert);
                   endDrag();
                 },
                 click: () => {
                   if (draggingRef.current) return;
-                  onDayClick?.(activeStage!.id, day);
+                  onVisitClick?.(activeStage!.id, visit);
                 },
               }}
             >
               <Tooltip direction="top" offset={[0, -14]} opacity={1} className="smt-tooltip">
-                <strong>{day.title ?? formatShortDate(day.date)}</strong>
-                <span>{formatShortDate(day.date)}</span>
+                <strong>{visit.title ?? formatShortDate(visit.date)}</strong>
+                <span>{formatShortDate(visit.date)}</span>
               </Tooltip>
             </Marker>
           ))}

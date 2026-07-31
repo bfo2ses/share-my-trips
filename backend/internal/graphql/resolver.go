@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
 
 // contextKey is the type for context keys in this package.
@@ -30,7 +30,7 @@ func sessionTokenFromContext(ctx context.Context) string {
 type Resolver struct {
 	tripHandler  *trip.Handler
 	stageHandler *stage.Handler
-	dayHandler   *day.Handler
+	visitHandler *visit.Handler
 	authHandler  *auth.Handler
 	mediaHandler *media.Handler
 }
@@ -39,14 +39,14 @@ type Resolver struct {
 func NewResolver(
 	tripHandler *trip.Handler,
 	stageHandler *stage.Handler,
-	dayHandler *day.Handler,
+	visitHandler *visit.Handler,
 	authHandler *auth.Handler,
 	mediaHandler *media.Handler,
 ) *Resolver {
 	return &Resolver{
 		tripHandler:  tripHandler,
 		stageHandler: stageHandler,
-		dayHandler:   dayHandler,
+		visitHandler: visitHandler,
 		authHandler:  authHandler,
 		mediaHandler: mediaHandler,
 	}

@@ -5,10 +5,10 @@ import (
 	"log"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
 
 // domainErrorToUserErrors maps domain errors to GraphQL UserError payloads.
@@ -33,8 +33,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: trip.ErrNotPublished.Error()}}
 	case errors.Is(err, trip.ErrClosed):
 		return []*UserError{{Message: trip.ErrClosed.Error()}}
-	case errors.Is(err, trip.ErrNoDaysToClose):
-		return []*UserError{{Message: trip.ErrNoDaysToClose.Error()}}
+	case errors.Is(err, trip.ErrNoVisitsToClose):
+		return []*UserError{{Message: trip.ErrNoVisitsToClose.Error()}}
 	case errors.Is(err, trip.ErrCannotCloseDraft):
 		return []*UserError{{Message: trip.ErrCannotCloseDraft.Error()}}
 	case errors.Is(err, trip.ErrNotClosed):
@@ -48,23 +48,23 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: stage.ErrNotFound.Error()}}
 	case errors.Is(err, stage.ErrTripClosed):
 		return []*UserError{{Message: stage.ErrTripClosed.Error()}}
-	// day errors
-	case errors.Is(err, day.ErrDateRequired):
-		return []*UserError{{Field: strPtr("date"), Message: day.ErrDateRequired.Error()}}
-	case errors.Is(err, day.ErrGPSRequired):
-		return []*UserError{{Field: strPtr("lat"), Message: day.ErrGPSRequired.Error()}}
-	case errors.Is(err, day.ErrNotFound):
-		return []*UserError{{Message: day.ErrNotFound.Error()}}
-	case errors.Is(err, day.ErrTripClosed):
-		return []*UserError{{Message: day.ErrTripClosed.Error()}}
-	case errors.Is(err, day.ErrMustBelongToStage):
-		return []*UserError{{Message: day.ErrMustBelongToStage.Error()}}
-	case errors.Is(err, day.ErrAlreadyAttached):
-		return []*UserError{{Message: day.ErrAlreadyAttached.Error()}}
-	case errors.Is(err, day.ErrNotAttached):
-		return []*UserError{{Message: day.ErrNotAttached.Error()}}
-	case errors.Is(err, day.ErrStageNotInTrip):
-		return []*UserError{{Field: strPtr("stageID"), Message: day.ErrStageNotInTrip.Error()}}
+	// visit errors
+	case errors.Is(err, visit.ErrDateRequired):
+		return []*UserError{{Field: strPtr("date"), Message: visit.ErrDateRequired.Error()}}
+	case errors.Is(err, visit.ErrGPSRequired):
+		return []*UserError{{Field: strPtr("lat"), Message: visit.ErrGPSRequired.Error()}}
+	case errors.Is(err, visit.ErrNotFound):
+		return []*UserError{{Message: visit.ErrNotFound.Error()}}
+	case errors.Is(err, visit.ErrTripClosed):
+		return []*UserError{{Message: visit.ErrTripClosed.Error()}}
+	case errors.Is(err, visit.ErrMustBelongToStage):
+		return []*UserError{{Message: visit.ErrMustBelongToStage.Error()}}
+	case errors.Is(err, visit.ErrAlreadyAttached):
+		return []*UserError{{Message: visit.ErrAlreadyAttached.Error()}}
+	case errors.Is(err, visit.ErrNotAttached):
+		return []*UserError{{Message: visit.ErrNotAttached.Error()}}
+	case errors.Is(err, visit.ErrStageNotInTrip):
+		return []*UserError{{Field: strPtr("stageID"), Message: visit.ErrStageNotInTrip.Error()}}
 	// auth errors
 	case errors.Is(err, auth.ErrNameRequired):
 		return []*UserError{{Field: strPtr("name"), Message: auth.ErrNameRequired.Error()}}
@@ -105,8 +105,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("contentType"), Message: media.ErrInvalidContentType.Error()}}
 	case errors.Is(err, media.ErrTripClosed):
 		return []*UserError{{Message: media.ErrTripClosed.Error()}}
-	case errors.Is(err, media.ErrDayNotFound):
-		return []*UserError{{Field: strPtr("dayID"), Message: media.ErrDayNotFound.Error()}}
+	case errors.Is(err, media.ErrVisitNotFound):
+		return []*UserError{{Field: strPtr("visitID"), Message: media.ErrVisitNotFound.Error()}}
 	case errors.Is(err, media.ErrIDMismatch):
 		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrIDMismatch.Error()}}
 	default:

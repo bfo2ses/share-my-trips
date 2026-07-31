@@ -44,7 +44,7 @@ Fonctionnalité: Gestion des étapes d'un voyage
     Quand je modifie la description de l'étape avec "Nouvelle description"
     Alors l'étape est mise à jour avec la description "Nouvelle description"
 
-  Scénario: Supprimer une étape supprime les jours orphelins
+  Scénario: Supprimer une étape supprime les visites orphelines
     Etant donné qu'une étape "Reykjavik" existe dans le voyage
     Quand je supprime l'étape "Reykjavik"
     Alors l'étape n'existe plus

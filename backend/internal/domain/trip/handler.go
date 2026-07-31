@@ -97,7 +97,7 @@ func (h *Handler) Close(ctx context.Context, cmd CloseTripCommand) (*Trip, error
 		return nil, fmt.Errorf("close trip: %w", err)
 	}
 
-	if err := t.Close(cmd.FirstDay, cmd.LastDay); err != nil {
+	if err := t.Close(cmd.FirstVisitDate, cmd.LastVisitDate); err != nil {
 		return nil, fmt.Errorf("close trip: %w", err)
 	}
 

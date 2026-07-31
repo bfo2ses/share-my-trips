@@ -59,7 +59,7 @@ func (h *MediaHandler) serveOriginal(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	filePath := h.storage.FilePath(m.ID, m.TripID, m.DayID, m.Ext())
+	filePath := h.storage.FilePath(m.ID, m.TripID, m.VisitID, m.Ext())
 	w.Header().Set("Content-Type", m.ContentType)
 	http.ServeFile(w, r, filePath)
 }
@@ -71,11 +71,11 @@ func (h *MediaHandler) serveThumb(w http.ResponseWriter, r *http.Request, id str
 		return
 	}
 
-	thumbPath := h.storage.ThumbPath(m.ID, m.TripID, m.DayID)
+	thumbPath := h.storage.ThumbPath(m.ID, m.TripID, m.VisitID)
 
 	// Generate thumb if it doesn't exist.
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		originalPath := h.storage.FilePath(m.ID, m.TripID, m.DayID, m.Ext())
+		originalPath := h.storage.FilePath(m.ID, m.TripID, m.VisitID, m.Ext())
 		if err := h.thumbnailer.GenerateThumb(originalPath, thumbPath, m.IsVideo()); err != nil {
 			http.Error(w, "failed to generate thumbnail", http.StatusInternalServerError)
 			return
@@ -88,7 +88,7 @@ func (h *MediaHandler) serveThumb(w http.ResponseWriter, r *http.Request, id str
 }
 
 // UploadHandler handles multipart file uploads.
-// POST /api/upload with multipart form: file, dayID, tripID.
+// POST /api/upload with multipart form: file, visitID, tripID.
 type UploadHandler struct {
 	mediaHandler *media.Handler
 	storage      media.Storage
@@ -114,10 +114,10 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dayID := r.FormValue("dayID")
+	visitID := r.FormValue("visitID")
 	tripID := r.FormValue("tripID")
-	if dayID == "" || tripID == "" {
-		http.Error(w, "dayID and tripID are required", http.StatusBadRequest)
+	if visitID == "" || tripID == "" {
+		http.Error(w, "visitID and tripID are required", http.StatusBadRequest)
 		return
 	}
 
@@ -135,7 +135,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Create media entity.
 	m, err := h.mediaHandler.Add(r.Context(), media.AddMediaCommand{
-		DayID:       dayID,
+		VisitID:     visitID,
 		TripID:      tripID,
 		Filename:    header.Filename,
 		ContentType: contentType,
@@ -146,7 +146,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store file.
-	if err := h.storage.Store(m.ID, m.TripID, m.DayID, m.Ext(), file); err != nil {
+	if err := h.storage.Store(m.ID, m.TripID, m.VisitID, m.Ext(), file); err != nil {
 		http.Error(w, "failed to store file", http.StatusInternalServerError)
 		return
 	}
@@ -223,19 +223,19 @@ func (h *StreamingUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dayID := r.URL.Query().Get("dayID")
+	visitID := r.URL.Query().Get("visitID")
 	tripID := r.URL.Query().Get("tripID")
 	filename := r.URL.Query().Get("filename")
 	contentType := r.URL.Query().Get("contentType")
 
-	if dayID == "" || tripID == "" || filename == "" || contentType == "" {
-		http.Error(w, "dayID, tripID, filename, and contentType query params are required", http.StatusBadRequest)
+	if visitID == "" || tripID == "" || filename == "" || contentType == "" {
+		http.Error(w, "visitID, tripID, filename, and contentType query params are required", http.StatusBadRequest)
 		return
 	}
 
 	// Create media entity.
 	m, err := h.mediaHandler.Add(r.Context(), media.AddMediaCommand{
-		DayID:       dayID,
+		VisitID:     visitID,
 		TripID:      tripID,
 		Filename:    filename,
 		ContentType: contentType,
@@ -246,7 +246,7 @@ func (h *StreamingUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Stream body directly to storage.
-	if err := h.storage.Store(m.ID, m.TripID, m.DayID, m.Ext(), io.LimitReader(r.Body, 2<<30)); err != nil {
+	if err := h.storage.Store(m.ID, m.TripID, m.VisitID, m.Ext(), io.LimitReader(r.Body, 2<<30)); err != nil {
 		http.Error(w, "failed to store file", http.StatusInternalServerError)
 		return
 	}

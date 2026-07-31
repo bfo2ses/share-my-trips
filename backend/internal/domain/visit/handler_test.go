@@ -1,4 +1,4 @@
-package day_test
+package visit_test
 
 import (
 	"context"
@@ -6,10 +6,10 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/bfosses/sharemytrips/internal/domain/day"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
 
-// stubTripChecker is a test double for day.TripChecker.
+// stubTripChecker is a test double for visit.TripChecker.
 type stubTripChecker struct {
 	closedTripIDs map[string]bool
 }
@@ -22,89 +22,89 @@ func (s *stubTripChecker) IsModifiable(_ context.Context, tripID string) (bool, 
 	return !s.closedTripIDs[tripID], nil
 }
 
-// dayRepository is an in-memory day.Repository for tests.
-type dayRepository struct {
-	days map[string]*day.Day
+// visitRepository is an in-memory visit.Repository for tests.
+type visitRepository struct {
+	visits map[string]*visit.Visit
 }
 
-func newDayRepository() *dayRepository {
-	return &dayRepository{days: make(map[string]*day.Day)}
+func newVisitRepository() *visitRepository {
+	return &visitRepository{visits: make(map[string]*visit.Visit)}
 }
 
-func (r *dayRepository) Save(_ context.Context, d *day.Day) error {
-	cp := *d
-	cp.StageIDs = make([]string, len(d.StageIDs))
-	copy(cp.StageIDs, d.StageIDs)
-	r.days[d.ID] = &cp
+func (r *visitRepository) Save(_ context.Context, v *visit.Visit) error {
+	cp := *v
+	cp.StageIDs = make([]string, len(v.StageIDs))
+	copy(cp.StageIDs, v.StageIDs)
+	r.visits[v.ID] = &cp
 	return nil
 }
 
-func (r *dayRepository) FindByID(_ context.Context, id string) (*day.Day, error) {
-	d, ok := r.days[id]
+func (r *visitRepository) FindByID(_ context.Context, id string) (*visit.Visit, error) {
+	v, ok := r.visits[id]
 	if !ok {
-		return nil, day.ErrNotFound
+		return nil, visit.ErrNotFound
 	}
-	cp := *d
-	cp.StageIDs = make([]string, len(d.StageIDs))
-	copy(cp.StageIDs, d.StageIDs)
+	cp := *v
+	cp.StageIDs = make([]string, len(v.StageIDs))
+	copy(cp.StageIDs, v.StageIDs)
 	return &cp, nil
 }
 
-func (r *dayRepository) ListByStage(_ context.Context, stageID string) ([]*day.Day, error) {
-	var result []*day.Day
-	for _, d := range r.days {
-		if d.HasStage(stageID) {
-			cp := *d
-			cp.StageIDs = make([]string, len(d.StageIDs))
-			copy(cp.StageIDs, d.StageIDs)
+func (r *visitRepository) ListByStage(_ context.Context, stageID string) ([]*visit.Visit, error) {
+	var result []*visit.Visit
+	for _, v := range r.visits {
+		if v.HasStage(stageID) {
+			cp := *v
+			cp.StageIDs = make([]string, len(v.StageIDs))
+			copy(cp.StageIDs, v.StageIDs)
 			result = append(result, &cp)
 		}
 	}
 	return result, nil
 }
 
-func (r *dayRepository) ListByTrip(_ context.Context, tripID string) ([]*day.Day, error) {
-	var result []*day.Day
-	for _, d := range r.days {
-		if d.TripID == tripID {
-			cp := *d
-			cp.StageIDs = make([]string, len(d.StageIDs))
-			copy(cp.StageIDs, d.StageIDs)
+func (r *visitRepository) ListByTrip(_ context.Context, tripID string) ([]*visit.Visit, error) {
+	var result []*visit.Visit
+	for _, v := range r.visits {
+		if v.TripID == tripID {
+			cp := *v
+			cp.StageIDs = make([]string, len(v.StageIDs))
+			copy(cp.StageIDs, v.StageIDs)
 			result = append(result, &cp)
 		}
 	}
 	return result, nil
 }
 
-func (r *dayRepository) Delete(_ context.Context, id string) error {
-	if _, ok := r.days[id]; !ok {
-		return day.ErrNotFound
+func (r *visitRepository) Delete(_ context.Context, id string) error {
+	if _, ok := r.visits[id]; !ok {
+		return visit.ErrNotFound
 	}
-	delete(r.days, id)
+	delete(r.visits, id)
 	return nil
 }
 
-func (r *dayRepository) DetachStage(_ context.Context, stageID string) error {
-	for id, d := range r.days {
-		if !d.HasStage(stageID) {
+func (r *visitRepository) DetachStage(_ context.Context, stageID string) error {
+	for id, v := range r.visits {
+		if !v.HasStage(stageID) {
 			continue
 		}
-		if len(d.StageIDs) == 1 {
-			delete(r.days, id)
+		if len(v.StageIDs) == 1 {
+			delete(r.visits, id)
 		} else {
-			newIDs := make([]string, 0, len(d.StageIDs)-1)
-			for _, sid := range d.StageIDs {
+			newIDs := make([]string, 0, len(v.StageIDs)-1)
+			for _, sid := range v.StageIDs {
 				if sid != stageID {
 					newIDs = append(newIDs, sid)
 				}
 			}
-			d.StageIDs = newIDs
+			v.StageIDs = newIDs
 		}
 	}
 	return nil
 }
 
-// stubStageChecker is a test double for day.StageChecker.
+// stubStageChecker is a test double for visit.StageChecker.
 type stubStageChecker struct {
 	stagesInTrip map[string]string // stageID -> tripID
 }
@@ -119,24 +119,24 @@ func (s *stubStageChecker) BelongsToTrip(_ context.Context, stageID, tripID stri
 }
 
 type testContext struct {
-	handler       *day.Handler
-	repo          *dayRepository
+	handler       *visit.Handler
+	repo          *visitRepository
 	tripChecker   *stubTripChecker
 	stageChecker  *stubStageChecker
 	defaultTripID string
 	defaultStage  string
 	secondStage   string
 	foreignStage  string
-	currentDay    *day.Day
+	currentVisit  *visit.Visit
 	lastErr       error
 }
 
 func newTestContext() *testContext {
-	repo := newDayRepository()
+	repo := newVisitRepository()
 	tripChecker := newStubTripChecker()
 	stageChecker := newStubStageChecker()
 	return &testContext{
-		handler:       day.NewHandler(repo, tripChecker, stageChecker),
+		handler:       visit.NewHandler(repo, tripChecker, stageChecker),
 		repo:          repo,
 		tripChecker:   tripChecker,
 		stageChecker:  stageChecker,

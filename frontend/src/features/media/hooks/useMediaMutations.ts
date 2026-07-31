@@ -17,8 +17,8 @@ const UPDATE_MEDIA_CAPTION = gql(`
 `);
 
 const REORDER_MEDIA = gql(`
-  mutation ReorderMedia($dayID: ID!, $mediaIDs: [ID!]!) {
-    reorderMedia(dayID: $dayID, mediaIDs: $mediaIDs) {
+  mutation ReorderMedia($visitID: ID!, $mediaIDs: [ID!]!) {
+    reorderMedia(visitID: $visitID, mediaIDs: $mediaIDs) {
       media {
         id
         position

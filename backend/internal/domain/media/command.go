@@ -1,8 +1,8 @@
 package media
 
-// AddMediaCommand contains the data needed to add a media to a day.
+// AddMediaCommand contains the data needed to add a media to a visit.
 type AddMediaCommand struct {
-	DayID       string
+	VisitID     string
 	TripID      string
 	Filename    string
 	ContentType string
@@ -14,9 +14,9 @@ type UpdateCaptionCommand struct {
 	Caption string
 }
 
-// ReorderCommand contains the new ordering for media in a day.
+// ReorderCommand contains the new ordering for media in a visit.
 type ReorderCommand struct {
-	DayID    string
+	VisitID  string
 	MediaIDs []string
 }
 

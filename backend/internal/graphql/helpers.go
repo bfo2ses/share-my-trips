@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
 
 const dateFormat = time.DateOnly
@@ -95,20 +95,20 @@ func toGraphQLStage(s *stage.Stage) *Stage {
 	}
 }
 
-func toGraphQLDay(d *day.Day) *Day {
-	stageIDs := make([]string, len(d.StageIDs))
-	copy(stageIDs, d.StageIDs)
-	return &Day{
-		ID:          d.ID,
-		TripID:      d.TripID,
+func toGraphQLVisit(v *visit.Visit) *Visit {
+	stageIDs := make([]string, len(v.StageIDs))
+	copy(stageIDs, v.StageIDs)
+	return &Visit{
+		ID:          v.ID,
+		TripID:      v.TripID,
 		StageIDs:    stageIDs,
-		Date:        d.Date.Format(dateFormat),
-		Title:       nullableString(d.Title),
-		Description: nullableString(d.Description),
-		Lat:         d.Lat,
-		Lng:         d.Lng,
-		CreatedAt:   d.CreatedAt.UTC().Format(time.RFC3339),
-		UpdatedAt:   d.UpdatedAt.UTC().Format(time.RFC3339),
+		Date:        v.Date.Format(dateFormat),
+		Title:       nullableString(v.Title),
+		Description: nullableString(v.Description),
+		Lat:         v.Lat,
+		Lng:         v.Lng,
+		CreatedAt:   v.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   v.UpdatedAt.UTC().Format(time.RFC3339),
 	}
 }
 
@@ -161,7 +161,7 @@ func (r *Resolver) requireAdmin(ctx context.Context) error {
 }
 
 // requireEditor resolves the current user from the session and verifies they
-// have the admin or editor role. Used for trip/stage/day/media mutations.
+// have the admin or editor role. Used for trip/stage/visit/media mutations.
 func (r *Resolver) requireEditor(ctx context.Context) error {
 	token := sessionTokenFromContext(ctx)
 	if token == "" {
@@ -180,7 +180,7 @@ func (r *Resolver) requireEditor(ctx context.Context) error {
 func toGraphQLMedia(m *media.Media) *Media {
 	return &Media{
 		ID:          m.ID,
-		DayID:       m.DayID,
+		VisitID:     m.VisitID,
 		TripID:      m.TripID,
 		Filename:    m.Filename,
 		ContentType: m.ContentType,

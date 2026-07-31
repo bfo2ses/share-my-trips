@@ -21,12 +21,12 @@ func NewMediaRepository(pool *pgxpool.Pool) *MediaRepository {
 
 func (r *MediaRepository) Save(ctx context.Context, m *media.Media) error {
 	_, err := r.pool.Exec(ctx, `
-		INSERT INTO media (id, day_id, trip_id, filename, content_type, caption, position, created_at)
+		INSERT INTO media (id, visit_id, trip_id, filename, content_type, caption, position, created_at)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		ON CONFLICT (id) DO UPDATE SET
 			caption = EXCLUDED.caption,
 			position = EXCLUDED.position`,
-		m.ID, m.DayID, m.TripID, m.Filename, m.ContentType, m.Caption, m.Position, m.CreatedAt,
+		m.ID, m.VisitID, m.TripID, m.Filename, m.ContentType, m.Caption, m.Position, m.CreatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("save media: %w", err)
@@ -37,9 +37,9 @@ func (r *MediaRepository) Save(ctx context.Context, m *media.Media) error {
 func (r *MediaRepository) FindByID(ctx context.Context, id string) (*media.Media, error) {
 	var m media.Media
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, day_id, trip_id, filename, content_type, caption, position, created_at
+		SELECT id, visit_id, trip_id, filename, content_type, caption, position, created_at
 		FROM media WHERE id = $1`, id).Scan(
-		&m.ID, &m.DayID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt,
+		&m.ID, &m.VisitID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -50,10 +50,10 @@ func (r *MediaRepository) FindByID(ctx context.Context, id string) (*media.Media
 	return &m, nil
 }
 
-func (r *MediaRepository) ListByDay(ctx context.Context, dayID string) ([]*media.Media, error) {
+func (r *MediaRepository) ListByVisit(ctx context.Context, visitID string) ([]*media.Media, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, day_id, trip_id, filename, content_type, caption, position, created_at
-		FROM media WHERE day_id = $1 ORDER BY position`, dayID)
+		SELECT id, visit_id, trip_id, filename, content_type, caption, position, created_at
+		FROM media WHERE visit_id = $1 ORDER BY position`, visitID)
 	if err != nil {
 		return nil, fmt.Errorf("list media: %w", err)
 	}
@@ -62,7 +62,7 @@ func (r *MediaRepository) ListByDay(ctx context.Context, dayID string) ([]*media
 	var result []*media.Media
 	for rows.Next() {
 		var m media.Media
-		if err := rows.Scan(&m.ID, &m.DayID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.VisitID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan media: %w", err)
 		}
 		result = append(result, &m)
@@ -72,8 +72,8 @@ func (r *MediaRepository) ListByDay(ctx context.Context, dayID string) ([]*media
 
 func (r *MediaRepository) ListByTrip(ctx context.Context, tripID string) ([]*media.Media, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, day_id, trip_id, filename, content_type, caption, position, created_at
-		FROM media WHERE trip_id = $1 ORDER BY day_id, position`, tripID)
+		SELECT id, visit_id, trip_id, filename, content_type, caption, position, created_at
+		FROM media WHERE trip_id = $1 ORDER BY visit_id, position`, tripID)
 	if err != nil {
 		return nil, fmt.Errorf("list media by trip: %w", err)
 	}
@@ -82,7 +82,7 @@ func (r *MediaRepository) ListByTrip(ctx context.Context, tripID string) ([]*med
 	var result []*media.Media
 	for rows.Next() {
 		var m media.Media
-		if err := rows.Scan(&m.ID, &m.DayID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt); err != nil {
+		if err := rows.Scan(&m.ID, &m.VisitID, &m.TripID, &m.Filename, &m.ContentType, &m.Caption, &m.Position, &m.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan media: %w", err)
 		}
 		result = append(result, &m)
@@ -101,17 +101,17 @@ func (r *MediaRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *MediaRepository) NextPosition(ctx context.Context, dayID string) (int, error) {
+func (r *MediaRepository) NextPosition(ctx context.Context, visitID string) (int, error) {
 	var pos int
 	err := r.pool.QueryRow(ctx,
-		`SELECT COALESCE(MAX(position), -1) + 1 FROM media WHERE day_id = $1`, dayID).Scan(&pos)
+		`SELECT COALESCE(MAX(position), -1) + 1 FROM media WHERE visit_id = $1`, visitID).Scan(&pos)
 	if err != nil {
 		return 0, fmt.Errorf("next position: %w", err)
 	}
 	return pos, nil
 }
 
-func (r *MediaRepository) Reorder(ctx context.Context, dayID string, orderedIDs []string) error {
+func (r *MediaRepository) Reorder(ctx context.Context, visitID string, orderedIDs []string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("reorder media: begin tx: %w", err)
@@ -120,8 +120,8 @@ func (r *MediaRepository) Reorder(ctx context.Context, dayID string, orderedIDs 
 
 	for i, id := range orderedIDs {
 		_, err := tx.Exec(ctx,
-			`UPDATE media SET position = $1 WHERE id = $2 AND day_id = $3`,
-			i, id, dayID,
+			`UPDATE media SET position = $1 WHERE id = $2 AND visit_id = $3`,
+			i, id, visitID,
 		)
 		if err != nil {
 			return fmt.Errorf("reorder media: update %s: %w", id, err)

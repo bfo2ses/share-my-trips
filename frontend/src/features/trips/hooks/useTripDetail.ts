@@ -24,7 +24,7 @@ const TRIP_DETAIL_QUERY = gql(`
       lng
       description
     }
-    tripDays(tripID: $id) {
+    tripVisits(tripID: $id) {
       id
       tripID
       stageIDs

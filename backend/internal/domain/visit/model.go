@@ -1,4 +1,4 @@
-package day
+package visit
 
 import (
 	"errors"
@@ -9,17 +9,17 @@ import (
 var (
 	ErrDateRequired      = errors.New("date is required")
 	ErrGPSRequired       = errors.New("GPS coordinates are required")
-	ErrNotFound          = errors.New("day not found")
+	ErrNotFound          = errors.New("visit not found")
 	ErrTripClosed        = errors.New("trip is closed and cannot be modified")
-	ErrMustBelongToStage = errors.New("day must belong to at least one stage")
-	ErrAlreadyAttached   = errors.New("day is already attached to this stage")
-	ErrNotAttached       = errors.New("day is not attached to this stage")
+	ErrMustBelongToStage = errors.New("visit must belong to at least one stage")
+	ErrAlreadyAttached   = errors.New("visit is already attached to this stage")
+	ErrNotAttached       = errors.New("visit is not attached to this stage")
 	ErrStageNotInTrip    = errors.New("stage does not belong to the trip")
 )
 
-// Day represents a single date within a stage of a trip.
-// A day can belong to multiple stages.
-type Day struct {
+// Visit represents a single dated stop within a stage of a trip.
+// A visit can belong to multiple stages.
+type Visit struct {
 	ID          string
 	TripID      string
 	StageIDs    []string
@@ -32,8 +32,8 @@ type Day struct {
 	UpdatedAt   time.Time
 }
 
-// NewDay creates a new Day with validated fields.
-func NewDay(id, tripID, stageID string, date time.Time, title, description string, lat, lng float64) (*Day, error) {
+// NewVisit creates a new Visit with validated fields.
+func NewVisit(id, tripID, stageID string, date time.Time, title, description string, lat, lng float64) (*Visit, error) {
 	if date.IsZero() {
 		return nil, ErrDateRequired
 	}
@@ -47,7 +47,7 @@ func NewDay(id, tripID, stageID string, date time.Time, title, description strin
 	}
 
 	now := time.Now()
-	return &Day{
+	return &Visit{
 		ID:          id,
 		TripID:      tripID,
 		StageIDs:    []string{stageID},
@@ -61,42 +61,42 @@ func NewDay(id, tripID, stageID string, date time.Time, title, description strin
 	}, nil
 }
 
-// Update modifies editable fields of the day.
-func (d *Day) Update(date time.Time, title, description string, lat, lng float64) error {
+// Update modifies editable fields of the visit.
+func (v *Visit) Update(date time.Time, title, description string, lat, lng float64) error {
 	if date.IsZero() {
 		return ErrDateRequired
 	}
-	// Same sentinel as NewDay — see note there.
+	// Same sentinel as NewVisit — see note there.
 	if lat == 0 && lng == 0 {
 		return ErrGPSRequired
 	}
-	d.Date = date
-	d.Title = title
-	d.Description = description
-	d.Lat = lat
-	d.Lng = lng
-	d.UpdatedAt = time.Now()
+	v.Date = date
+	v.Title = title
+	v.Description = description
+	v.Lat = lat
+	v.Lng = lng
+	v.UpdatedAt = time.Now()
 	return nil
 }
 
-// AttachToStage adds a stage to this day. Returns an error if already attached.
-func (d *Day) AttachToStage(stageID string) error {
-	for _, id := range d.StageIDs {
+// AttachToStage adds a stage to this visit. Returns an error if already attached.
+func (v *Visit) AttachToStage(stageID string) error {
+	for _, id := range v.StageIDs {
 		if id == stageID {
 			return ErrAlreadyAttached
 		}
 	}
-	d.StageIDs = append(d.StageIDs, stageID)
-	d.UpdatedAt = time.Now()
+	v.StageIDs = append(v.StageIDs, stageID)
+	v.UpdatedAt = time.Now()
 	return nil
 }
 
-// DetachFromStage removes a stage from this day.
+// DetachFromStage removes a stage from this visit.
 // Returns ErrNotAttached if the stage is not linked.
 // Returns ErrMustBelongToStage if this is the last stage.
-func (d *Day) DetachFromStage(stageID string) error {
+func (v *Visit) DetachFromStage(stageID string) error {
 	found := false
-	for _, id := range d.StageIDs {
+	for _, id := range v.StageIDs {
 		if id == stageID {
 			found = true
 			break
@@ -105,24 +105,24 @@ func (d *Day) DetachFromStage(stageID string) error {
 	if !found {
 		return ErrNotAttached
 	}
-	if len(d.StageIDs) <= 1 {
+	if len(v.StageIDs) <= 1 {
 		return ErrMustBelongToStage
 	}
 
-	newIDs := make([]string, 0, len(d.StageIDs)-1)
-	for _, id := range d.StageIDs {
+	newIDs := make([]string, 0, len(v.StageIDs)-1)
+	for _, id := range v.StageIDs {
 		if id != stageID {
 			newIDs = append(newIDs, id)
 		}
 	}
-	d.StageIDs = newIDs
-	d.UpdatedAt = time.Now()
+	v.StageIDs = newIDs
+	v.UpdatedAt = time.Now()
 	return nil
 }
 
-// HasStage returns true if the day is attached to the given stage.
-func (d *Day) HasStage(stageID string) bool {
-	for _, id := range d.StageIDs {
+// HasStage returns true if the visit is attached to the given stage.
+func (v *Visit) HasStage(stageID string) bool {
+	for _, id := range v.StageIDs {
 		if id == stageID {
 			return true
 		}

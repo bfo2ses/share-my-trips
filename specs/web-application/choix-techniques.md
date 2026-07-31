@@ -64,7 +64,7 @@ internal/
 │   │   ├── repository.go     # Port : interface du repository
 │   │   └── handler.go        # Command & Query handlers
 │   │
-│   ├── stage/         # Contexte : Étapes et jours
+│   ├── stage/         # Contexte : Étapes et visites
 │   │   ├── model.go
 │   │   ├── command.go
 │   │   ├── query.go

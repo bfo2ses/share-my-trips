@@ -58,24 +58,24 @@ export function TripsPage() {
 
   const refetchContext = { additionalTypenames: ['Trip'] };
 
-  // Données nécessaires à « Clôturer » (chaque étape doit porter au moins un
-  // jour ; les dates de clôture = bornes des jours). Chargées uniquement pour
-  // un voyage publié en cours d'édition ; filtrées par tripID (data urql
+  // Données nécessaires à « Clôturer » (chaque étape doit porter au moins une
+  // visite ; les dates de clôture = bornes des visites). Chargées uniquement
+  // pour un voyage publié en cours d'édition ; filtrées par tripID (data urql
   // conservée en pause/refetch).
   const [{ data: closeData }] = useTripCloseData(
     isAdmin && liveEditingTrip?.status === 'PUBLISHED' ? liveEditingTrip.id : null,
   );
   const closeStages = (closeData?.stages ?? []).filter((s) => s.tripID === liveEditingTrip?.id);
-  const closeDays = (closeData?.tripDays ?? []).filter((d) => d.tripID === liveEditingTrip?.id);
+  const closeVisits = (closeData?.tripVisits ?? []).filter((v) => v.tripID === liveEditingTrip?.id);
   const canCloseTrip =
     closeStages.length > 0 &&
-    closeStages.every((s) => closeDays.some((d) => d.stageIDs[0] === s.id));
+    closeStages.every((s) => closeVisits.some((v) => v.stageIDs[0] === s.id));
 
   async function handleCloseTrip() {
-    if (!liveEditingTrip || closeDays.length === 0) return;
-    const dates = closeDays.map((d) => d.date).sort();
+    if (!liveEditingTrip || closeVisits.length === 0) return;
+    const dates = closeVisits.map((v) => v.date).sort();
     await closeTrip(
-      { id: liveEditingTrip.id, input: { firstDay: dates[0], lastDay: dates[dates.length - 1] } },
+      { id: liveEditingTrip.id, input: { firstVisitDate: dates[0], lastVisitDate: dates[dates.length - 1] } },
       refetchContext,
     );
   }
@@ -229,7 +229,7 @@ export function TripsPage() {
         <ConfirmModal
           open={confirmDelete}
           title="Supprimer ce voyage ?"
-          message={deleteError ?? 'Toutes les étapes et tous les jours associés seront définitivement perdus.'}
+          message={deleteError ?? 'Toutes les étapes et toutes les visites associées seront définitivement perdues.'}
           confirmLabel="Supprimer"
           danger
           busy={deleting}

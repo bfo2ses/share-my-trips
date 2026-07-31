@@ -22,10 +22,10 @@ function toggleSnap(snap: SheetSnap): SheetSnap {
 }
 
 interface TripPanelProps {
-  /** 0 = timeline, 1 = day detail. */
+  /** 0 = timeline, 1 = visit detail. */
   level: 0 | 1;
   timeline: ReactNode;
-  dayDetail: ReactNode;
+  visitDetail: ReactNode;
   /** Mobile sheet snap — controlled by the page so map interactions can raise it. */
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
@@ -39,7 +39,7 @@ interface TripPanelProps {
 export function TripPanel({
   level,
   timeline,
-  dayDetail,
+  visitDetail,
   snap,
   onSnapChange,
   hiddenOnMobile = false,
@@ -126,7 +126,7 @@ export function TripPanel({
             {timeline}
           </section>
           <section className={styles.pane} inert={level !== 1}>
-            {dayDetail}
+            {visitDetail}
           </section>
         </div>
       </div>

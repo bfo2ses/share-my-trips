@@ -17,18 +17,18 @@ const (
 
 // Domain errors.
 var (
-	ErrTitleRequired      = errors.New("title is required")
-	ErrCountryRequired    = errors.New("country is required")
-	ErrGPSRequired        = errors.New("GPS coordinates are required")
-	ErrInvalidDates       = errors.New("end date must be after start date")
-	ErrNotFound           = errors.New("trip not found")
-	ErrAlreadyPublished   = errors.New("trip is already published")
-	ErrAlreadyClosed      = errors.New("trip is already closed")
-	ErrNotPublished       = errors.New("trip must be published to perform this action")
-	ErrClosed             = errors.New("trip is closed and cannot be modified")
-	ErrNoDaysToClose      = errors.New("trip must have at least one day to be closed")
-	ErrCannotCloseDraft   = errors.New("cannot close a draft trip")
-	ErrNotClosed          = errors.New("trip is not closed")
+	ErrTitleRequired    = errors.New("title is required")
+	ErrCountryRequired  = errors.New("country is required")
+	ErrGPSRequired      = errors.New("GPS coordinates are required")
+	ErrInvalidDates     = errors.New("end date must be after start date")
+	ErrNotFound         = errors.New("trip not found")
+	ErrAlreadyPublished = errors.New("trip is already published")
+	ErrAlreadyClosed    = errors.New("trip is already closed")
+	ErrNotPublished     = errors.New("trip must be published to perform this action")
+	ErrClosed           = errors.New("trip is closed and cannot be modified")
+	ErrNoVisitsToClose  = errors.New("trip must have at least one visit to be closed")
+	ErrCannotCloseDraft = errors.New("cannot close a draft trip")
+	ErrNotClosed        = errors.New("trip is not closed")
 )
 
 // Trip is the root aggregate for the trip context.
@@ -107,20 +107,20 @@ func (t *Trip) Unpublish() error {
 }
 
 // Close transitions the trip from published to closed, recalculating dates
-// from the actual first and last days.
-func (t *Trip) Close(firstDay, lastDay time.Time) error {
+// from the actual first and last visits.
+func (t *Trip) Close(firstVisitDate, lastVisitDate time.Time) error {
 	if t.Status == StatusDraft {
 		return ErrCannotCloseDraft
 	}
 	if t.Status == StatusClosed {
 		return ErrAlreadyClosed
 	}
-	if firstDay.IsZero() || lastDay.IsZero() {
-		return ErrNoDaysToClose
+	if firstVisitDate.IsZero() || lastVisitDate.IsZero() {
+		return ErrNoVisitsToClose
 	}
 	t.Status = StatusClosed
-	t.StartDate = firstDay
-	t.EndDate = lastDay
+	t.StartDate = firstVisitDate
+	t.EndDate = lastVisitDate
 	t.UpdatedAt = time.Now()
 	return nil
 }

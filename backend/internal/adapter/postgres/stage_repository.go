@@ -11,7 +11,7 @@ import (
 )
 
 // StageRepository is a PostgreSQL implementation of stage.Repository.
-// It also implements day.StageChecker via BelongsToTrip.
+// It also implements visit.StageChecker via BelongsToTrip.
 type StageRepository struct {
 	pool *pgxpool.Pool
 }
@@ -86,7 +86,7 @@ func (r *StageRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// BelongsToTrip implements day.StageChecker.
+// BelongsToTrip implements visit.StageChecker.
 func (r *StageRepository) BelongsToTrip(ctx context.Context, stageID, tripID string) (bool, error) {
 	var exists bool
 	err := r.pool.QueryRow(ctx,

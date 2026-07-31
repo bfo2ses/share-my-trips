@@ -7,7 +7,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 )
 
-// TripChecker wraps TripRepository to satisfy the stage.TripChecker and day.TripChecker ports.
+// TripChecker wraps TripRepository to satisfy the stage.TripChecker and visit.TripChecker ports.
 type TripChecker struct {
 	repo *TripRepository
 }

@@ -16,7 +16,7 @@
   cursor: crosshair !important;
 }
 
-/* Markers stage + day sont cliquables — affordance avant tout, même si draggable. */
+/* Markers stage + visit sont cliquables — affordance avant tout, même si draggable. */
 .map :global(.leaflet-marker-icon),
 .map :global(.leaflet-marker-draggable) {
   cursor: pointer;

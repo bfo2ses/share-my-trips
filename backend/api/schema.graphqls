@@ -63,8 +63,8 @@ input UpdateTripInput {
 }
 
 input CloseTripInput {
-  firstDay: String!
-  lastDay: String!
+  firstVisitDate: String!
+  lastVisitDate: String!
 }
 
 type Stage {
@@ -111,7 +111,7 @@ input UpdateStageInput {
   description: String
 }
 
-type Day {
+type Visit {
   id: ID!
   tripID: ID!
   stageIDs: [ID!]!
@@ -131,17 +131,17 @@ type Day {
   updatedAt: String!
 }
 
-type DayPayload {
-  day: Day
+type VisitPayload {
+  visit: Visit
   errors: [UserError!]!
 }
 
-type DeleteDayPayload {
+type DeleteVisitPayload {
   success: Boolean!
   errors: [UserError!]!
 }
 
-input AddDayInput {
+input AddVisitInput {
   tripID: ID!
   stageID: ID!
   "Date-only, format YYYY-MM-DD."
@@ -152,7 +152,7 @@ input AddDayInput {
   lng: Float!
 }
 
-input UpdateDayInput {
+input UpdateVisitInput {
   date: String
   title: String
   description: String
@@ -227,7 +227,7 @@ input ChangePasswordInput {
 
 type Media {
   id: ID!
-  dayID: ID!
+  visitID: ID!
   tripID: ID!
   filename: String!
   contentType: String!
@@ -264,17 +264,17 @@ type Query {
   trip(id: ID!): Trip
   "Returns a single stage by ID, or null if not found."
   stage(id: ID!): Stage
-  "Returns all stages for a trip, sorted by the date of their first day ascending. Stages without any day appear last in undefined order."
+  "Returns all stages for a trip, sorted by the date of their first visit ascending. Stages without any visit appear last in undefined order."
   stages(tripID: ID!): [Stage!]!
-  "Returns a single day by ID, or null if not found."
-  day(id: ID!): Day
-  "Returns all days for a stage, sorted by date ascending."
-  days(stageID: ID!): [Day!]!
-  "Returns all days for a trip, sorted by date ascending."
-  tripDays(tripID: ID!): [Day!]!
-  "Returns all media for a day, sorted by position ascending."
-  dayMedia(dayID: ID!): [Media!]!
-  "Returns all media for a trip, grouped by day (stable but arbitrary day order), sorted by position within each day."
+  "Returns a single visit by ID, or null if not found."
+  visit(id: ID!): Visit
+  "Returns all visits for a stage, sorted by date ascending."
+  visits(stageID: ID!): [Visit!]!
+  "Returns all visits for a trip, sorted by date ascending."
+  tripVisits(tripID: ID!): [Visit!]!
+  "Returns all media for a visit, sorted by position ascending."
+  visitMedia(visitID: ID!): [Media!]!
+  "Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
   me: Account
@@ -295,11 +295,11 @@ type Mutation {
   addStage(input: AddStageInput!): StagePayload!
   updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
   deleteStage(id: ID!): DeleteStagePayload!
-  addDay(input: AddDayInput!): DayPayload!
-  updateDay(id: ID!, input: UpdateDayInput!): DayPayload!
-  deleteDay(id: ID!): DeleteDayPayload!
-  attachDayToStage(dayID: ID!, stageID: ID!): DayPayload!
-  detachDayFromStage(dayID: ID!, stageID: ID!): DayPayload!
+  addVisit(input: AddVisitInput!): VisitPayload!
+  updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
+  deleteVisit(id: ID!): DeleteVisitPayload!
+  attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
+  detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
   setupAdmin(input: SetupAdminInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
@@ -314,8 +314,8 @@ type Mutation {
   changePassword(input: ChangePasswordInput!): AccountPayload!
   "Updates a media's caption. Requires admin role."
   updateMediaCaption(id: ID!, caption: String): MediaPayload!
-  "Reorders media within a day. Requires admin role."
-  reorderMedia(dayID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Reorders media within a visit. Requires admin role."
+  reorderMedia(visitID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
 }

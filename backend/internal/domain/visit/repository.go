@@ -1,15 +1,15 @@
-package day
+package visit
 
 import "context"
 
-// Repository is the port for day persistence.
+// Repository is the port for visit persistence.
 type Repository interface {
-	Save(ctx context.Context, day *Day) error
-	FindByID(ctx context.Context, id string) (*Day, error)
-	ListByStage(ctx context.Context, stageID string) ([]*Day, error)
-	ListByTrip(ctx context.Context, tripID string) ([]*Day, error)
+	Save(ctx context.Context, visit *Visit) error
+	FindByID(ctx context.Context, id string) (*Visit, error)
+	ListByStage(ctx context.Context, stageID string) ([]*Visit, error)
+	ListByTrip(ctx context.Context, tripID string) ([]*Visit, error)
 	Delete(ctx context.Context, id string) error
-	// DetachStage removes stageID from all days, deleting orphaned days.
+	// DetachStage removes stageID from all visits, deleting orphaned visits.
 	DetachStage(ctx context.Context, stageID string) error
 }
 

@@ -1,10 +1,10 @@
 import { useState, useRef, useCallback } from 'react';
 import { useDeleteMedia, useReorderMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
 import { MediaLightbox } from './MediaLightbox';
-import type { DayMediaQuery } from '../../../graphql/generated/graphql';
+import type { VisitMediaQuery } from '../../../graphql/generated/graphql';
 import styles from './MediaGallery.module.css';
 
-type Media = DayMediaQuery['dayMedia'][number];
+type Media = VisitMediaQuery['visitMedia'][number];
 
 interface MediaGalleryProps {
   media: Media[];
@@ -61,9 +61,9 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
     setLocalMedia(reordered);
 
     const newOrder = reordered.map((m) => m.id);
-    const dayID = items[0]?.dayID;
-    if (dayID) {
-      const result = await reorderMedia({ dayID, mediaIDs: newOrder }, { additionalTypenames: ['Media'] });
+    const visitID = items[0]?.visitID;
+    if (visitID) {
+      const result = await reorderMedia({ visitID, mediaIDs: newOrder }, { additionalTypenames: ['Media'] });
       if (result.error) {
         setLocalMedia(null); // Revert on error.
       }

@@ -85,8 +85,8 @@ Fonctionnalité: Consultation des voyages
 
   Scénario: Consulter la timeline d'un voyage
     Etant donné que je consulte le voyage "Road trip en Islande"
-    Alors les jours sont affichés chronologiquement
-    Et chaque groupe de jours est précédé d'une tête d'étape affichant son nom, sa ville et ses dates
+    Alors les visites sont affichées chronologiquement
+    Et chaque groupe de visites est précédé d'une tête d'étape affichant son nom, sa ville et ses dates
 
   Scénario: Sélectionner une étape
     Etant donné que je consulte le voyage "Road trip en Islande"
@@ -99,11 +99,11 @@ Fonctionnalité: Consultation des voyages
     Quand je sélectionne à nouveau la tête d'étape "Reykjavik"
     Alors la carte revient à la vue d'ensemble du voyage
 
-  Scénario: Consulter le détail d'un jour
+  Scénario: Consulter le détail d'une visite
     Etant donné que je consulte le voyage "Road trip en Islande"
-    Quand je sélectionne le jour "2025-07-01" dans la timeline
-    Alors je vois le titre et la description du jour
-    Et je vois les photos et vidéos du jour
+    Quand je sélectionne la visite "2025-07-01" dans la timeline
+    Alors je vois le titre et la description de la visite
+    Et je vois les photos et vidéos de la visite
 
   # --- Carte voyage (page d'un voyage) ---
 
@@ -146,13 +146,13 @@ Fonctionnalité: Consultation des voyages
 
   # --- Galerie photos et vidéos ---
 
-  Scénario: Afficher la galerie d'un jour sous forme de grille
-    Etant donné que je consulte le jour "2025-07-01" de l'étape "Reykjavik"
-    Et que le jour contient des photos et des vidéos
+  Scénario: Afficher la galerie d'une visite sous forme de grille
+    Etant donné que je consulte la visite "2025-07-01" de l'étape "Reykjavik"
+    Et que la visite contient des photos et des vidéos
     Alors les médias sont affichés sous forme de grille de miniatures
 
   Scénario: Lancer un diaporama depuis la galerie
-    Etant donné que je consulte la galerie du jour "2025-07-01"
+    Etant donné que je consulte la galerie de la visite "2025-07-01"
     Quand je lance le diaporama
     Alors les photos défilent automatiquement en plein écran
 
@@ -163,13 +163,13 @@ Fonctionnalité: Consultation des voyages
     Et je peux quitter le diaporama
 
   Scénario: Les vidéos sont lisibles dans la galerie
-    Etant donné que je consulte la galerie du jour "2025-07-01"
+    Etant donné que je consulte la galerie de la visite "2025-07-01"
     Et qu'une vidéo est présente
     Quand je clique sur la vidéo
     Alors la vidéo est lue avec les contrôles de lecture (play, pause, volume)
 
   Scénario: Afficher une photo en plein écran depuis la grille
-    Etant donné que je consulte la galerie du jour "2025-07-01"
+    Etant donné que je consulte la galerie de la visite "2025-07-01"
     Quand je clique sur une miniature de photo
     Alors la photo est affichée en plein écran
     Et je peux naviguer vers la photo suivante ou précédente

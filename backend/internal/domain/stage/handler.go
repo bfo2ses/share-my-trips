@@ -9,17 +9,17 @@ import (
 
 // Handler handles commands and queries for the stage context.
 type Handler struct {
-	repo        Repository
-	tripChecker TripChecker
-	dayDetacher DayDetacher
+	repo          Repository
+	tripChecker   TripChecker
+	visitDetacher VisitDetacher
 }
 
 // NewHandler creates a new stage Handler.
-func NewHandler(repo Repository, tripChecker TripChecker, dayDetacher DayDetacher) *Handler {
+func NewHandler(repo Repository, tripChecker TripChecker, visitDetacher VisitDetacher) *Handler {
 	return &Handler{
-		repo:        repo,
-		tripChecker: tripChecker,
-		dayDetacher: dayDetacher,
+		repo:          repo,
+		tripChecker:   tripChecker,
+		visitDetacher: visitDetacher,
 	}
 }
 
@@ -75,7 +75,7 @@ func (h *Handler) Update(ctx context.Context, cmd UpdateStageCommand) (*Stage, e
 }
 
 // Delete handles the DeleteStageCommand.
-// It removes all day-stage links for this stage, deleting days that become orphaned.
+// It removes all visit-stage links for this stage, deleting visits that become orphaned.
 func (h *Handler) Delete(ctx context.Context, cmd DeleteStageCommand) error {
 	s, err := h.repo.FindByID(ctx, cmd.ID)
 	if err != nil {
@@ -90,7 +90,7 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteStageCommand) error {
 		return fmt.Errorf("delete stage: %w", ErrTripClosed)
 	}
 
-	if err := h.dayDetacher.DetachStage(ctx, cmd.ID); err != nil {
+	if err := h.visitDetacher.DetachStage(ctx, cmd.ID); err != nil {
 		return fmt.Errorf("delete stage: %w", err)
 	}
 

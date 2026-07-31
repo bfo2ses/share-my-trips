@@ -15,7 +15,7 @@ type TripChecker interface {
 	IsModifiable(ctx context.Context, tripID string) (bool, error)
 }
 
-// DayDetacher detaches a stage from all days, deleting any days that become orphaned.
-type DayDetacher interface {
+// VisitDetacher detaches a stage from all visits, deleting any visits that become orphaned.
+type VisitDetacher interface {
 	DetachStage(ctx context.Context, stageID string) error
 }

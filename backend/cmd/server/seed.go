@@ -8,9 +8,9 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
-	"github.com/bfosses/sharemytrips/internal/domain/day"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
+	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
 
 func seedData(
@@ -18,7 +18,7 @@ func seedData(
 	userRepo auth.UserRepository,
 	tripRepo trip.Repository,
 	stageRepo stage.Repository,
-	dayRepo day.Repository,
+	visitRepo visit.Repository,
 ) {
 	hash, err := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
 	if err != nil {
@@ -46,21 +46,21 @@ func seedData(
 	_ = stageRepo.Save(ctx, la)
 	_ = stageRepo.Save(ctx, vegas)
 
-	trip1Days := []struct {
+	trip1Visits := []struct {
 		id, stageID, title, desc string
 		date                     time.Time
 		lat, lng                 float64
 	}{
-		{"day-1-1", "stage-1-1", "Arrivée à San Francisco", "Vol San Francisco. Installation à l'hôtel dans le quartier Mission.", time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), 37.7749, -122.4194},
-		{"day-1-2", "stage-1-1", "Golden Gate & Alcatraz", "Visite du Golden Gate Bridge et tour en bateau jusqu'à Alcatraz.", time.Date(2024, 7, 2, 0, 0, 0, 0, time.UTC), 37.8199, -122.4783},
-		{"day-1-3", "stage-1-3", "Route vers Las Vegas", "Départ de SF, traversée de la Vallée de la Mort.", time.Date(2024, 7, 5, 0, 0, 0, 0, time.UTC), 36.5054, -117.0794},
-		{"day-1-4", "stage-1-3", "Las Vegas by night", "Le Strip illuminé, spectacles et buffets à volonté.", time.Date(2024, 7, 6, 0, 0, 0, 0, time.UTC), 36.1147, -115.1728},
-		{"day-1-5", "stage-1-2", "Santa Monica & Venice Beach", "Arrivée à LA, détente sur les plages.", time.Date(2024, 7, 10, 0, 0, 0, 0, time.UTC), 34.0094, -118.4973},
-		{"day-1-6", "stage-1-2", "Hollywood & Griffith", "Balade sur le Hollywood Walk of Fame et vue depuis Griffith Observatory.", time.Date(2024, 7, 11, 0, 0, 0, 0, time.UTC), 34.1184, -118.3004},
+		{"visit-1-1", "stage-1-1", "Arrivée à San Francisco", "Vol San Francisco. Installation à l'hôtel dans le quartier Mission.", time.Date(2024, 7, 1, 0, 0, 0, 0, time.UTC), 37.7749, -122.4194},
+		{"visit-1-2", "stage-1-1", "Golden Gate & Alcatraz", "Visite du Golden Gate Bridge et tour en bateau jusqu'à Alcatraz.", time.Date(2024, 7, 2, 0, 0, 0, 0, time.UTC), 37.8199, -122.4783},
+		{"visit-1-3", "stage-1-3", "Route vers Las Vegas", "Départ de SF, traversée de la Vallée de la Mort.", time.Date(2024, 7, 5, 0, 0, 0, 0, time.UTC), 36.5054, -117.0794},
+		{"visit-1-4", "stage-1-3", "Las Vegas by night", "Le Strip illuminé, spectacles et buffets à volonté.", time.Date(2024, 7, 6, 0, 0, 0, 0, time.UTC), 36.1147, -115.1728},
+		{"visit-1-5", "stage-1-2", "Santa Monica & Venice Beach", "Arrivée à LA, détente sur les plages.", time.Date(2024, 7, 10, 0, 0, 0, 0, time.UTC), 34.0094, -118.4973},
+		{"visit-1-6", "stage-1-2", "Hollywood & Griffith", "Balade sur le Hollywood Walk of Fame et vue depuis Griffith Observatory.", time.Date(2024, 7, 11, 0, 0, 0, 0, time.UTC), 34.1184, -118.3004},
 	}
-	for _, d := range trip1Days {
-		nd, _ := day.NewDay(d.id, "trip-1", d.stageID, d.date, d.title, d.desc, d.lat, d.lng)
-		_ = dayRepo.Save(ctx, nd)
+	for _, v := range trip1Visits {
+		nv, _ := visit.NewVisit(v.id, "trip-1", v.stageID, v.date, v.title, v.desc, v.lat, v.lng)
+		_ = visitRepo.Save(ctx, nv)
 	}
 
 	// Trip 2 : Voyage au Japon — closed
@@ -82,22 +82,22 @@ func seedData(
 	_ = stageRepo.Save(ctx, kyoto)
 	_ = stageRepo.Save(ctx, osaka)
 
-	trip2Days := []struct {
+	trip2Visits := []struct {
 		id, stageID, title, desc string
 		date                     time.Time
 		lat, lng                 float64
 	}{
-		{"day-2-1", "stage-2-1", "Arrivée à Tokyo", "Atterrissage à Narita, direction Shinjuku.", time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC), 35.6938, 139.7036},
-		{"day-2-2", "stage-2-1", "Shibuya & Harajuku", "Le fameux carrefour de Shibuya et la rue Takeshita.", time.Date(2023, 10, 6, 0, 0, 0, 0, time.UTC), 35.6595, 139.7004},
-		{"day-2-3", "stage-2-1", "Senso-ji & Akihabara", "Temple bouddhiste d'Asakusa et quartier électronique.", time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), 35.7148, 139.7967},
-		{"day-2-4", "stage-2-2", "Arrivée à Kyoto", "Shinkansen depuis Tokyo, premier temple dès l'arrivée.", time.Date(2023, 10, 10, 0, 0, 0, 0, time.UTC), 34.9858, 135.7588},
-		{"day-2-5", "stage-2-2", "Fushimi Inari", "Les mille torii oranges au lever du soleil.", time.Date(2023, 10, 11, 0, 0, 0, 0, time.UTC), 34.9671, 135.7727},
-		{"day-2-6", "stage-2-3", "Osaka Food Tour", "Takoyaki, okonomiyaki et ramen dans le quartier Dotonbori.", time.Date(2023, 10, 15, 0, 0, 0, 0, time.UTC), 34.6687, 135.5030},
-		{"day-2-7", "stage-2-3", "Château d'Osaka", "Visite du château et parc environnant.", time.Date(2023, 10, 16, 0, 0, 0, 0, time.UTC), 34.6873, 135.5262},
+		{"visit-2-1", "stage-2-1", "Arrivée à Tokyo", "Atterrissage à Narita, direction Shinjuku.", time.Date(2023, 10, 5, 0, 0, 0, 0, time.UTC), 35.6938, 139.7036},
+		{"visit-2-2", "stage-2-1", "Shibuya & Harajuku", "Le fameux carrefour de Shibuya et la rue Takeshita.", time.Date(2023, 10, 6, 0, 0, 0, 0, time.UTC), 35.6595, 139.7004},
+		{"visit-2-3", "stage-2-1", "Senso-ji & Akihabara", "Temple bouddhiste d'Asakusa et quartier électronique.", time.Date(2023, 10, 7, 0, 0, 0, 0, time.UTC), 35.7148, 139.7967},
+		{"visit-2-4", "stage-2-2", "Arrivée à Kyoto", "Shinkansen depuis Tokyo, premier temple dès l'arrivée.", time.Date(2023, 10, 10, 0, 0, 0, 0, time.UTC), 34.9858, 135.7588},
+		{"visit-2-5", "stage-2-2", "Fushimi Inari", "Les mille torii oranges au lever du soleil.", time.Date(2023, 10, 11, 0, 0, 0, 0, time.UTC), 34.9671, 135.7727},
+		{"visit-2-6", "stage-2-3", "Osaka Food Tour", "Takoyaki, okonomiyaki et ramen dans le quartier Dotonbori.", time.Date(2023, 10, 15, 0, 0, 0, 0, time.UTC), 34.6687, 135.5030},
+		{"visit-2-7", "stage-2-3", "Château d'Osaka", "Visite du château et parc environnant.", time.Date(2023, 10, 16, 0, 0, 0, 0, time.UTC), 34.6873, 135.5262},
 	}
-	for _, d := range trip2Days {
-		nd, _ := day.NewDay(d.id, "trip-2", d.stageID, d.date, d.title, d.desc, d.lat, d.lng)
-		_ = dayRepo.Save(ctx, nd)
+	for _, v := range trip2Visits {
+		nv, _ := visit.NewVisit(v.id, "trip-2", v.stageID, v.date, v.title, v.desc, v.lat, v.lng)
+		_ = visitRepo.Save(ctx, nv)
 	}
 
 	t2saved, _ := tripRepo.FindByID(ctx, "trip-2")

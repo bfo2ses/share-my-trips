@@ -10,19 +10,19 @@ import (
 
 // Handler handles commands and queries for the media context.
 type Handler struct {
-	repo        Repository
-	storage     Storage
-	tripChecker TripChecker
-	dayChecker  DayChecker
+	repo         Repository
+	storage      Storage
+	tripChecker  TripChecker
+	visitChecker VisitChecker
 }
 
 // NewHandler creates a new media Handler.
-func NewHandler(repo Repository, storage Storage, tripChecker TripChecker, dayChecker DayChecker) *Handler {
+func NewHandler(repo Repository, storage Storage, tripChecker TripChecker, visitChecker VisitChecker) *Handler {
 	return &Handler{
-		repo:        repo,
-		storage:     storage,
-		tripChecker: tripChecker,
-		dayChecker:  dayChecker,
+		repo:         repo,
+		storage:      storage,
+		tripChecker:  tripChecker,
+		visitChecker: visitChecker,
 	}
 }
 
@@ -30,12 +30,12 @@ func NewHandler(repo Repository, storage Storage, tripChecker TripChecker, dayCh
 
 // Add handles the AddMediaCommand.
 func (h *Handler) Add(ctx context.Context, cmd AddMediaCommand) (*Media, error) {
-	exists, err := h.dayChecker.Exists(ctx, cmd.DayID)
+	exists, err := h.visitChecker.Exists(ctx, cmd.VisitID)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("add media: %w", ErrDayNotFound)
+		return nil, fmt.Errorf("add media: %w", ErrVisitNotFound)
 	}
 
 	modifiable, err := h.tripChecker.IsModifiable(ctx, cmd.TripID)
@@ -46,13 +46,13 @@ func (h *Handler) Add(ctx context.Context, cmd AddMediaCommand) (*Media, error) 
 		return nil, fmt.Errorf("add media: %w", ErrTripClosed)
 	}
 
-	pos, err := h.repo.NextPosition(ctx, cmd.DayID)
+	pos, err := h.repo.NextPosition(ctx, cmd.VisitID)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
 
 	id := uuid.New().String()
-	m, err := NewMedia(id, cmd.DayID, cmd.TripID, cmd.Filename, cmd.ContentType, pos)
+	m, err := NewMedia(id, cmd.VisitID, cmd.TripID, cmd.Filename, cmd.ContentType, pos)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
@@ -90,7 +90,7 @@ func (h *Handler) UpdateCaption(ctx context.Context, cmd UpdateCaptionCommand) (
 
 // Reorder handles the ReorderCommand.
 func (h *Handler) Reorder(ctx context.Context, cmd ReorderCommand) ([]*Media, error) {
-	existing, err := h.repo.ListByDay(ctx, cmd.DayID)
+	existing, err := h.repo.ListByVisit(ctx, cmd.VisitID)
 	if err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
@@ -124,11 +124,11 @@ func (h *Handler) Reorder(ctx context.Context, cmd ReorderCommand) ([]*Media, er
 		}
 	}
 
-	if err := h.repo.Reorder(ctx, cmd.DayID, cmd.MediaIDs); err != nil {
+	if err := h.repo.Reorder(ctx, cmd.VisitID, cmd.MediaIDs); err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
 
-	result, err := h.repo.ListByDay(ctx, cmd.DayID)
+	result, err := h.repo.ListByVisit(ctx, cmd.VisitID)
 	if err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
@@ -155,7 +155,7 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteMediaCommand) error {
 		return fmt.Errorf("delete media: %w", ErrTripClosed)
 	}
 
-	if err := h.storage.Delete(m.ID, m.TripID, m.DayID, m.Ext()); err != nil {
+	if err := h.storage.Delete(m.ID, m.TripID, m.VisitID, m.Ext()); err != nil {
 		return fmt.Errorf("delete media: %w", err)
 	}
 
@@ -177,11 +177,11 @@ func (h *Handler) GetByID(ctx context.Context, query GetMediaQuery) (*Media, err
 	return m, nil
 }
 
-// ListByDay handles the ListByDayQuery. Returns media sorted by position.
-func (h *Handler) ListByDay(ctx context.Context, query ListByDayQuery) ([]*Media, error) {
-	media, err := h.repo.ListByDay(ctx, query.DayID)
+// ListByVisit handles the ListByVisitQuery. Returns media sorted by position.
+func (h *Handler) ListByVisit(ctx context.Context, query ListByVisitQuery) ([]*Media, error) {
+	media, err := h.repo.ListByVisit(ctx, query.VisitID)
 	if err != nil {
-		return nil, fmt.Errorf("list media by day: %w", err)
+		return nil, fmt.Errorf("list media by visit: %w", err)
 	}
 
 	sort.Slice(media, func(i, j int) bool {
@@ -192,8 +192,8 @@ func (h *Handler) ListByDay(ctx context.Context, query ListByDayQuery) ([]*Media
 }
 
 // ListByTrip handles the ListByTripQuery. Returns media across all the trip's
-// days, grouped by day (stable but arbitrary day order — day IDs are UUIDs,
-// not chronological), sorted by position within each day.
+// visits, grouped by visit (stable but arbitrary visit order — visit IDs are
+// UUIDs, not chronological), sorted by position within each visit.
 func (h *Handler) ListByTrip(ctx context.Context, query ListByTripQuery) ([]*Media, error) {
 	media, err := h.repo.ListByTrip(ctx, query.TripID)
 	if err != nil {
@@ -201,8 +201,8 @@ func (h *Handler) ListByTrip(ctx context.Context, query ListByTripQuery) ([]*Med
 	}
 
 	sort.Slice(media, func(i, j int) bool {
-		if media[i].DayID != media[j].DayID {
-			return media[i].DayID < media[j].DayID
+		if media[i].VisitID != media[j].VisitID {
+			return media[i].VisitID < media[j].VisitID
 		}
 		return media[i].Position < media[j].Position
 	})
