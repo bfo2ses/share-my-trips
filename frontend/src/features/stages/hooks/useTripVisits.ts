@@ -12,6 +12,7 @@ const TRIP_VISITS_QUERY = gql(`
       description
       lat
       lng
+      position
     }
   }
 `);

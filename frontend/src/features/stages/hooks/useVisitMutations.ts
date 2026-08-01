@@ -55,6 +55,21 @@ const DELETE_VISIT = gql(`
   }
 `);
 
+const REORDER_VISITS = gql(`
+  mutation ReorderVisits($stageID: ID!, $date: String!, $visitIDs: [ID!]!) {
+    reorderVisits(stageID: $stageID, date: $date, visitIDs: $visitIDs) {
+      visits {
+        id
+        position
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`);
+
 export function useAddVisit() {
   return useMutation(ADD_VISIT);
 }
@@ -65,4 +80,8 @@ export function useUpdateVisit() {
 
 export function useDeleteVisit() {
   return useMutation(DELETE_VISIT);
+}
+
+export function useReorderVisits() {
+  return useMutation(REORDER_VISITS);
 }
