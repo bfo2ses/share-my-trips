@@ -53,6 +53,10 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
             updateVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
             deleteVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
             reorderVisits: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
+            reorderMedia: (_result, _args, cache) => {
+              invalidateQuery(cache, 'visitMedia');
+              invalidateQuery(cache, 'tripMedia');
+            },
           },
         },
       }),
