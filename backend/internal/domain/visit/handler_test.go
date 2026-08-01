@@ -156,20 +156,20 @@ func (s *stubStageChecker) BelongsToTrip(_ context.Context, stageID, tripID stri
 }
 
 type testContext struct {
-	handler           *visit.Handler
-	repo              *visitRepository
-	tripChecker       *stubTripChecker
-	stageChecker      *stubStageChecker
-	defaultTripID     string
-	defaultStage      string
-	secondStage       string
-	foreignStage      string
-	currentVisit      *visit.Visit
-	lastErr           error
-	dayDate           time.Time
-	dayVisitIDByTitle map[string]string
-	previousPosition  int
-	snapshotPositions map[string]int
+	handler             *visit.Handler
+	repo                *visitRepository
+	tripChecker         *stubTripChecker
+	stageChecker        *stubStageChecker
+	defaultTripID       string
+	defaultStage        string
+	secondStage         string
+	foreignStage        string
+	currentVisit        *visit.Visit
+	lastErr             error
+	groupDate           time.Time
+	groupVisitIDByTitle map[string]string
+	previousPosition    int
+	snapshotPositions   map[string]int
 }
 
 func newTestContext() *testContext {

@@ -13,6 +13,7 @@ const ADD_VISIT = gql(`
         description
         lat
         lng
+        position
       }
       errors {
         field
@@ -34,6 +35,7 @@ const UPDATE_VISIT = gql(`
         description
         lat
         lng
+        position
       }
       errors {
         field

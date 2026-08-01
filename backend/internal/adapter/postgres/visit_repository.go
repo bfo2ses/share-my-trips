@@ -139,8 +139,10 @@ func (r *VisitRepository) NextPosition(ctx context.Context, stageID string, date
 
 // Reorder updates the positions of orderedIDs to reflect their index in the
 // slice. Callers are expected to have already validated that orderedIDs is
-// exactly the (stageID, date) group's visit IDs.
-func (r *VisitRepository) Reorder(ctx context.Context, _ string, _ time.Time, orderedIDs []string) error {
+// exactly the (stageID, date) group's visit IDs; the WHERE clause below scopes
+// each update to that same group as defense in depth against a stale ID
+// having moved to a different group between validation and this call.
+func (r *VisitRepository) Reorder(ctx context.Context, stageID string, date time.Time, orderedIDs []string) error {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("reorder visits: begin tx: %w", err)
@@ -148,7 +150,16 @@ func (r *VisitRepository) Reorder(ctx context.Context, _ string, _ time.Time, or
 	defer tx.Rollback(ctx)
 
 	for pos, id := range orderedIDs {
-		if _, err := tx.Exec(ctx, `UPDATE visits SET position = $1 WHERE id = $2`, pos, id); err != nil {
+		_, err := tx.Exec(ctx, `
+			UPDATE visits SET position = $1
+			WHERE id = $2 AND date = $3
+			AND EXISTS (
+				SELECT 1 FROM visit_stages vs
+				WHERE vs.visit_id = visits.id AND vs.stage_id = $4 AND vs.position = 0
+			)`,
+			pos, id, date, stageID,
+		)
+		if err != nil {
 			return fmt.Errorf("reorder visits: update %s: %w", id, err)
 		}
 	}

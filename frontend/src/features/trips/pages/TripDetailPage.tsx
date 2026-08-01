@@ -600,9 +600,9 @@ interface StageSectionProps {
 function StageSection({ stage, visits, dateRange, active, canReorder, onStageClick, onVisitClick }: StageSectionProps) {
   // Memoized so each group's `visits` array keeps a stable reference across
   // re-renders unrelated to this data (form open/close, other stages' drags,
-  // etc.) — DayVisitGroup relies on that stability to detect real data
+  // etc.) — SameDateVisitGroup relies on that stability to detect real data
   // changes and not wipe an in-flight optimistic reorder.
-  const dayGroups = useMemo(() => {
+  const dateGroups = useMemo(() => {
     // COR-008 : une visite multi-étapes n'est affichée que dans son étape principale (premier stageID)
     const primaryVisits = visits.filter((visit) => visit.stageIDs[0] === stage.id);
 
@@ -635,8 +635,8 @@ function StageSection({ stage, visits, dateRange, active, canReorder, onStageCli
               : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
-      {dayGroups.map((group) => (
-        <DayVisitGroup
+      {dateGroups.map((group) => (
+        <SameDateVisitGroup
           key={group.date}
           stageId={stage.id}
           date={group.date}
@@ -649,7 +649,7 @@ function StageSection({ stage, visits, dateRange, active, canReorder, onStageCli
   );
 }
 
-interface DayVisitGroupProps {
+interface SameDateVisitGroupProps {
   stageId: string;
   date: string;
   visits: Visit[];
@@ -657,7 +657,7 @@ interface DayVisitGroupProps {
   onVisitClick: (visit: Visit) => void;
 }
 
-function DayVisitGroup({ stageId, date, visits, canReorder, onVisitClick }: DayVisitGroupProps) {
+function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }: SameDateVisitGroupProps) {
   const [localVisits, setLocalVisits] = useState<Visit[] | null>(null);
   const [, reorderVisits] = useReorderVisits();
   const dragItem = useRef<number | null>(null);

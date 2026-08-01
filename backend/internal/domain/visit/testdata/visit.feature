@@ -199,6 +199,10 @@ Fonctionnalité: Gestion des visites d'un voyage
     Quand je rattache la visite à l'étape "Cercle d'Or"
     Alors la position de la visite est inchangée
 
+  Scénario: Réordonner un jour sans aucune visite ne fait rien
+    Quand je réordonne un jour sans aucune visite
+    Alors aucune erreur ne se produit
+
   Scénario: Réordonner les visites d'un jour ne modifie pas les positions d'un autre jour
     Etant donné que l'étape contient les visites suivantes le "2025-07-01" :
       | titre  |
