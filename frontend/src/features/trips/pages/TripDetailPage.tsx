@@ -660,10 +660,19 @@ interface SameDateVisitGroupProps {
 function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }: SameDateVisitGroupProps) {
   const [localVisits, setLocalVisits] = useState<Visit[] | null>(null);
   const [, reorderVisits] = useReorderVisits();
-  const dragItem = useRef<number | null>(null);
-  const dragOverItem = useRef<number | null>(null);
+  // Both endpoints of the drag are tracked by visit ID, not array index: an
+  // index captured at dragstart can go stale if a re-render (e.g. a
+  // background refetch while a previous drag's mutation resolves) changes
+  // `items`' order/length before the drop — IDs stay valid regardless, and
+  // positions are recomputed against whatever `items` is at drop time.
+  const dragOverId = useRef<string | null>(null);
 
   const items = localVisits ?? visits;
+  // Nothing to reorder against when a day has a single visit — and leaving
+  // it draggable would let it be picked up and dropped onto another day's
+  // group, which silently no-ops (cross-day reorder is out of scope) and
+  // reads as "drag-and-drop doesn't work" rather than "nothing to reorder".
+  const canDrag = canReorder && items.length > 1;
 
   // Reset local state once fresh data (post-mutation refetch) arrives.
   const prevVisitsRef = useRef(visits);
@@ -672,26 +681,31 @@ function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }:
     setLocalVisits(null);
   }
 
-  const handleDragStart = useCallback((index: number) => {
-    dragItem.current = index;
+  const handleDragStart = useCallback((e: React.DragEvent, visitId: string) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', visitId);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent, visitId: string) => {
     e.preventDefault();
-    dragOverItem.current = index;
+    e.dataTransfer.dropEffect = 'move';
+    dragOverId.current = visitId;
   }, []);
 
-  const handleDrop = useCallback(async () => {
-    if (dragItem.current === null || dragOverItem.current === null) return;
-    if (dragItem.current === dragOverItem.current) {
-      dragItem.current = null;
-      dragOverItem.current = null;
-      return;
-    }
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    const sourceId = e.dataTransfer.getData('text/plain');
+    const targetId = dragOverId.current;
+    dragOverId.current = null;
+
+    if (!sourceId || !targetId || sourceId === targetId) return;
 
     const reordered = [...items];
-    const [moved] = reordered.splice(dragItem.current, 1);
-    reordered.splice(dragOverItem.current, 0, moved);
+    const sourceIndex = reordered.findIndex((v) => v.id === sourceId);
+    const targetIndex = reordered.findIndex((v) => v.id === targetId);
+    if (sourceIndex === -1 || targetIndex === -1) return;
+
+    const [moved] = reordered.splice(sourceIndex, 1);
+    reordered.splice(targetIndex, 0, moved);
 
     // Optimistic update.
     setLocalVisits(reordered);
@@ -703,21 +717,18 @@ function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }:
     if (result.error || (result.data?.reorderVisits.errors ?? []).length > 0) {
       setLocalVisits(null); // Revert on error.
     }
-
-    dragItem.current = null;
-    dragOverItem.current = null;
   }, [items, reorderVisits, stageId, date]);
 
   return (
     <>
-      {items.map((visit, i) => (
+      {items.map((visit) => (
         <VisitRow
           key={visit.id}
           visit={visit}
           onClick={() => onVisitClick(visit)}
-          draggable={canReorder}
-          onDragStart={() => handleDragStart(i)}
-          onDragOver={(e) => handleDragOver(e, i)}
+          draggable={canDrag}
+          onDragStart={(e) => handleDragStart(e, visit.id)}
+          onDragOver={(e) => handleDragOver(e, visit.id)}
           onDrop={handleDrop}
         />
       ))}
@@ -729,28 +740,31 @@ interface VisitRowProps {
   visit: Visit;
   onClick: () => void;
   draggable?: boolean;
-  onDragStart?: () => void;
+  onDragStart?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
-  onDrop?: () => void;
+  onDrop?: (e: React.DragEvent) => void;
 }
 
 function VisitRow({ visit, onClick, draggable, onDragStart, onDragOver, onDrop }: VisitRowProps) {
   return (
-    <button
-      className={styles.visitRow}
-      onClick={onClick}
+    // Dragging is attached to this wrapper, not the <button> itself — native
+    // form controls are an unreliable drag source in some browsers/engines
+    // (mirrors the same wrapper-div pattern already used in MediaGallery.tsx).
+    <div
       draggable={draggable}
       onDragStart={draggable ? onDragStart : undefined}
       onDragOver={draggable ? onDragOver : undefined}
       onDrop={draggable ? onDrop : undefined}
     >
-      <div className={styles.visitMeta}>
-        <span className={styles.visitLabel}>Visite</span>
-        <span className={styles.visitDate}>{formatDate(visit.date)}</span>
-      </div>
-      <div className={styles.visitInfo}>
-        <p className={styles.visitTitle}>{visit.title ?? visit.date}</p>
-      </div>
-    </button>
+      <button className={styles.visitRow} onClick={onClick}>
+        <div className={styles.visitMeta}>
+          <span className={styles.visitLabel}>Visite</span>
+          <span className={styles.visitDate}>{formatDate(visit.date)}</span>
+        </div>
+        <div className={styles.visitInfo}>
+          <p className={styles.visitTitle}>{visit.title ?? visit.date}</p>
+        </div>
+      </button>
+    </div>
   );
 }
