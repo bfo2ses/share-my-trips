@@ -25,13 +25,12 @@
     0 0 0 1px rgba(0, 0, 0, 0.04);
 }
 
-.thumbWrapper[draggable='true'] {
+.thumbWrapper.sortable {
   cursor: grab;
 }
 
-.thumbWrapper[draggable='true']:active {
+.thumbWrapper.sortable:active {
   cursor: grabbing;
-  opacity: 0.6;
 }
 
 /* ── Photo ── */
