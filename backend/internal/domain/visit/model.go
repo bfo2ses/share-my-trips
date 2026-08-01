@@ -15,10 +15,12 @@ var (
 	ErrAlreadyAttached   = errors.New("visit is already attached to this stage")
 	ErrNotAttached       = errors.New("visit is not attached to this stage")
 	ErrStageNotInTrip    = errors.New("stage does not belong to the trip")
+	ErrReorderIDMismatch = errors.New("visit IDs do not match the day's visits")
 )
 
 // Visit represents a single dated stop within a stage of a trip.
 // A visit can belong to multiple stages.
+// Position orders visits sharing the same primary stage (StageIDs[0]) and Date.
 type Visit struct {
 	ID          string
 	TripID      string
@@ -28,12 +30,13 @@ type Visit struct {
 	Description string
 	Lat         float64
 	Lng         float64
+	Position    int
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
 
 // NewVisit creates a new Visit with validated fields.
-func NewVisit(id, tripID, stageID string, date time.Time, title, description string, lat, lng float64) (*Visit, error) {
+func NewVisit(id, tripID, stageID string, date time.Time, title, description string, lat, lng float64, position int) (*Visit, error) {
 	if date.IsZero() {
 		return nil, ErrDateRequired
 	}
@@ -56,6 +59,7 @@ func NewVisit(id, tripID, stageID string, date time.Time, title, description str
 		Description: description,
 		Lat:         lat,
 		Lng:         lng,
+		Position:    position,
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}, nil

@@ -2,7 +2,9 @@ package visit_test
 
 import (
 	"context"
+	"sort"
 	"testing"
+	"time"
 
 	"github.com/cucumber/godog"
 
@@ -84,6 +86,41 @@ func (r *visitRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+func (r *visitRepository) ListByStageAndDate(_ context.Context, stageID string, date time.Time) ([]*visit.Visit, error) {
+	var result []*visit.Visit
+	for _, v := range r.visits {
+		if len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) {
+			cp := *v
+			cp.StageIDs = make([]string, len(v.StageIDs))
+			copy(cp.StageIDs, v.StageIDs)
+			result = append(result, &cp)
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Position < result[j].Position
+	})
+	return result, nil
+}
+
+func (r *visitRepository) NextPosition(_ context.Context, stageID string, date time.Time) (int, error) {
+	max := -1
+	for _, v := range r.visits {
+		if len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) && v.Position > max {
+			max = v.Position
+		}
+	}
+	return max + 1, nil
+}
+
+func (r *visitRepository) Reorder(_ context.Context, stageID string, date time.Time, orderedIDs []string) error {
+	for pos, id := range orderedIDs {
+		if v, ok := r.visits[id]; ok && len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) {
+			v.Position = pos
+		}
+	}
+	return nil
+}
+
 func (r *visitRepository) DetachStage(_ context.Context, stageID string) error {
 	for id, v := range r.visits {
 		if !v.HasStage(stageID) {
@@ -119,16 +156,20 @@ func (s *stubStageChecker) BelongsToTrip(_ context.Context, stageID, tripID stri
 }
 
 type testContext struct {
-	handler       *visit.Handler
-	repo          *visitRepository
-	tripChecker   *stubTripChecker
-	stageChecker  *stubStageChecker
-	defaultTripID string
-	defaultStage  string
-	secondStage   string
-	foreignStage  string
-	currentVisit  *visit.Visit
-	lastErr       error
+	handler           *visit.Handler
+	repo              *visitRepository
+	tripChecker       *stubTripChecker
+	stageChecker      *stubStageChecker
+	defaultTripID     string
+	defaultStage      string
+	secondStage       string
+	foreignStage      string
+	currentVisit      *visit.Visit
+	lastErr           error
+	dayDate           time.Time
+	dayVisitIDByTitle map[string]string
+	previousPosition  int
+	snapshotPositions map[string]int
 }
 
 func newTestContext() *testContext {
@@ -159,6 +200,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	registerMultiStageSteps(ctx, tc)
 	registerListSteps(ctx, tc)
 	registerLifecycleSteps(ctx, tc)
+	registerReorderSteps(ctx, tc)
 }
 
 func TestFeatures(t *testing.T) {

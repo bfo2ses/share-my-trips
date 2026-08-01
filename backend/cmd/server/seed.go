@@ -59,7 +59,7 @@ func seedData(
 		{"visit-1-6", "stage-1-2", "Hollywood & Griffith", "Balade sur le Hollywood Walk of Fame et vue depuis Griffith Observatory.", time.Date(2024, 7, 11, 0, 0, 0, 0, time.UTC), 34.1184, -118.3004},
 	}
 	for _, v := range trip1Visits {
-		nv, _ := visit.NewVisit(v.id, "trip-1", v.stageID, v.date, v.title, v.desc, v.lat, v.lng)
+		nv, _ := visit.NewVisit(v.id, "trip-1", v.stageID, v.date, v.title, v.desc, v.lat, v.lng, 0)
 		_ = visitRepo.Save(ctx, nv)
 	}
 
@@ -96,7 +96,7 @@ func seedData(
 		{"visit-2-7", "stage-2-3", "Château d'Osaka", "Visite du château et parc environnant.", time.Date(2023, 10, 16, 0, 0, 0, 0, time.UTC), 34.6873, 135.5262},
 	}
 	for _, v := range trip2Visits {
-		nv, _ := visit.NewVisit(v.id, "trip-2", v.stageID, v.date, v.title, v.desc, v.lat, v.lng)
+		nv, _ := visit.NewVisit(v.id, "trip-2", v.stageID, v.date, v.title, v.desc, v.lat, v.lng, 0)
 		_ = visitRepo.Save(ctx, nv)
 	}
 

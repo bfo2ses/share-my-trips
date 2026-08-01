@@ -210,3 +210,34 @@ Fonctionnalité: Gestion des étapes et des visites d'un voyage
       | Reykjavik   | 2025-07-01       |
       | Cercle d'Or | 2025-07-04       |
     Alors les étapes sont affichées dans l'ordre : "Reykjavik", "Cercle d'Or", "Vik"
+
+  # --- Réordonnancement des visites du même jour ---
+
+  Scénario: Une nouvelle visite est ajoutée en dernière position du jour
+    Etant donné que l'étape "Reykjavik" contient les visites suivantes le "2025-07-01" :
+      | titre  |
+      | Musée  |
+      | Marché |
+    Quand j'ajoute une visite à l'étape "Reykjavik" avec les informations suivantes :
+      | champ | valeur     |
+      | date  | 2025-07-01 |
+      | titre | Port       |
+    Alors les visites du "2025-07-01" de l'étape "Reykjavik" sont affichées dans l'ordre : "Musée", "Marché", "Port"
+
+  Scénario: Réordonner les visites d'un même jour par glisser-déposer
+    Etant donné que l'étape "Reykjavik" contient les visites suivantes le "2025-07-01" :
+      | titre  |
+      | Musée  |
+      | Marché |
+      | Port   |
+    Quand je réordonne les visites du "2025-07-01" dans l'ordre : "Port", "Musée", "Marché"
+    Alors les visites du "2025-07-01" de l'étape "Reykjavik" sont affichées dans l'ordre : "Port", "Musée", "Marché"
+
+  Scénario: Déplacer une visite vers un autre jour la place en fin de son nouveau jour
+    Etant donné que l'étape "Reykjavik" contient les visites suivantes le "2025-07-02" :
+      | titre   |
+      | Cascade |
+      | Volcan  |
+    Et qu'une visite "Arrivée" existe le "2025-07-01" dans l'étape "Reykjavik"
+    Quand je modifie la date de la visite "Arrivée" au "2025-07-02"
+    Alors les visites du "2025-07-02" de l'étape "Reykjavik" sont affichées dans l'ordre : "Cascade", "Volcan", "Arrivée"
