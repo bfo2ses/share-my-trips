@@ -1,5 +1,9 @@
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
+import { CSS } from '@dnd-kit/utilities';
 import { useTripDetail } from '../hooks/useTripDetail';
 import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import { useMe } from '../../auth/hooks/useMe';
@@ -660,18 +664,12 @@ interface SameDateVisitGroupProps {
 function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }: SameDateVisitGroupProps) {
   const [localVisits, setLocalVisits] = useState<Visit[] | null>(null);
   const [, reorderVisits] = useReorderVisits();
-  // Both endpoints of the drag are tracked by visit ID, not array index: an
-  // index captured at dragstart can go stale if a re-render (e.g. a
-  // background refetch while a previous drag's mutation resolves) changes
-  // `items`' order/length before the drop — IDs stay valid regardless, and
-  // positions are recomputed against whatever `items` is at drop time.
-  const dragOverId = useRef<string | null>(null);
 
   const items = localVisits ?? visits;
-  // Nothing to reorder against when a day has a single visit — and leaving
-  // it draggable would let it be picked up and dropped onto another day's
-  // group, which silently no-ops (cross-day reorder is out of scope) and
-  // reads as "drag-and-drop doesn't work" rather than "nothing to reorder".
+  // Nothing to reorder against when a day has a single visit — dnd-kit would
+  // still let it be picked up and dropped onto another day's group, which
+  // silently no-ops (cross-day reorder is out of scope) and reads as
+  // "drag-and-drop doesn't work" rather than "nothing to reorder".
   const canDrag = canReorder && items.length > 1;
 
   // Reset local state once fresh data (post-mutation refetch) arrives.
@@ -681,31 +679,19 @@ function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }:
     setLocalVisits(null);
   }
 
-  const handleDragStart = useCallback((e: React.DragEvent, visitId: string) => {
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', visitId);
-  }, []);
+  // Require a small movement before a press counts as a drag, so a plain
+  // click still opens the visit detail panel instead of being swallowed.
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
-  const handleDragOver = useCallback((e: React.DragEvent, visitId: string) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    dragOverId.current = visitId;
-  }, []);
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
 
-  const handleDrop = useCallback(async (e: React.DragEvent) => {
-    const sourceId = e.dataTransfer.getData('text/plain');
-    const targetId = dragOverId.current;
-    dragOverId.current = null;
-
-    if (!sourceId || !targetId || sourceId === targetId) return;
-
-    const reordered = [...items];
-    const sourceIndex = reordered.findIndex((v) => v.id === sourceId);
-    const targetIndex = reordered.findIndex((v) => v.id === targetId);
+    const sourceIndex = items.findIndex((v) => v.id === active.id);
+    const targetIndex = items.findIndex((v) => v.id === over.id);
     if (sourceIndex === -1 || targetIndex === -1) return;
 
-    const [moved] = reordered.splice(sourceIndex, 1);
-    reordered.splice(targetIndex, 0, moved);
+    const reordered = arrayMove(items, sourceIndex, targetIndex);
 
     // Optimistic update.
     setLocalVisits(reordered);
@@ -719,52 +705,59 @@ function SameDateVisitGroup({ stageId, date, visits, canReorder, onVisitClick }:
     }
   }, [items, reorderVisits, stageId, date]);
 
+  if (!canDrag) {
+    return (
+      <>
+        {items.map((visit) => (
+          <VisitRow key={visit.id} visit={visit} onClick={() => onVisitClick(visit)} />
+        ))}
+      </>
+    );
+  }
+
   return (
-    <>
-      {items.map((visit) => (
-        <VisitRow
-          key={visit.id}
-          visit={visit}
-          onClick={() => onVisitClick(visit)}
-          draggable={canDrag}
-          onDragStart={(e) => handleDragStart(e, visit.id)}
-          onDragOver={(e) => handleDragOver(e, visit.id)}
-          onDrop={handleDrop}
-        />
-      ))}
-    </>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext items={items.map((v) => v.id)} strategy={verticalListSortingStrategy}>
+        {items.map((visit) => (
+          <SortableVisitRow key={visit.id} visit={visit} onClick={() => onVisitClick(visit)} />
+        ))}
+      </SortableContext>
+    </DndContext>
   );
 }
 
-interface VisitRowProps {
-  visit: Visit;
-  onClick: () => void;
-  draggable?: boolean;
-  onDragStart?: (e: React.DragEvent) => void;
-  onDragOver?: (e: React.DragEvent) => void;
-  onDrop?: (e: React.DragEvent) => void;
+function SortableVisitRow({ visit, onClick }: { visit: Visit; onClick: () => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: visit.id });
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: 'relative',
+    zIndex: isDragging ? 1 : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <VisitRow visit={visit} onClick={onClick} />
+    </div>
+  );
 }
 
-function VisitRow({ visit, onClick, draggable, onDragStart, onDragOver, onDrop }: VisitRowProps) {
+function VisitRow({ visit, onClick }: { visit: Visit; onClick: () => void }) {
   return (
-    // Dragging is attached to this wrapper, not the <button> itself — native
-    // form controls are an unreliable drag source in some browsers/engines
-    // (mirrors the same wrapper-div pattern already used in MediaGallery.tsx).
-    <div
-      draggable={draggable}
-      onDragStart={draggable ? onDragStart : undefined}
-      onDragOver={draggable ? onDragOver : undefined}
-      onDrop={draggable ? onDrop : undefined}
-    >
-      <button className={styles.visitRow} onClick={onClick}>
-        <div className={styles.visitMeta}>
-          <span className={styles.visitLabel}>Visite</span>
-          <span className={styles.visitDate}>{formatDate(visit.date)}</span>
-        </div>
-        <div className={styles.visitInfo}>
-          <p className={styles.visitTitle}>{visit.title ?? visit.date}</p>
-        </div>
-      </button>
-    </div>
+    <button className={styles.visitRow} onClick={onClick}>
+      <div className={styles.visitMeta}>
+        <span className={styles.visitLabel}>Visite</span>
+        <span className={styles.visitDate}>{formatDate(visit.date)}</span>
+      </div>
+      <div className={styles.visitInfo}>
+        <p className={styles.visitTitle}>{visit.title ?? visit.date}</p>
+      </div>
+    </button>
   );
 }
