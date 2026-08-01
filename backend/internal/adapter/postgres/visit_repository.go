@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -28,16 +29,17 @@ func (r *VisitRepository) Save(ctx context.Context, v *visit.Visit) error {
 	defer tx.Rollback(ctx)
 
 	_, err = tx.Exec(ctx, `
-		INSERT INTO visits (id, trip_id, date, title, description, lat, lng, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		INSERT INTO visits (id, trip_id, date, title, description, lat, lng, position, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		ON CONFLICT (id) DO UPDATE SET
 			date = EXCLUDED.date,
 			title = EXCLUDED.title,
 			description = EXCLUDED.description,
 			lat = EXCLUDED.lat,
 			lng = EXCLUDED.lng,
+			position = EXCLUDED.position,
 			updated_at = EXCLUDED.updated_at`,
-		v.ID, v.TripID, v.Date, v.Title, v.Description, v.Lat, v.Lng, v.CreatedAt, v.UpdatedAt,
+		v.ID, v.TripID, v.Date, v.Title, v.Description, v.Lat, v.Lng, v.Position, v.CreatedAt, v.UpdatedAt,
 	)
 	if err != nil {
 		return fmt.Errorf("save visit: upsert: %w", err)
@@ -64,9 +66,9 @@ func (r *VisitRepository) Save(ctx context.Context, v *visit.Visit) error {
 func (r *VisitRepository) FindByID(ctx context.Context, id string) (*visit.Visit, error) {
 	var v visit.Visit
 	err := r.pool.QueryRow(ctx, `
-		SELECT id, trip_id, date, title, description, lat, lng, created_at, updated_at
+		SELECT id, trip_id, date, title, description, lat, lng, position, created_at, updated_at
 		FROM visits WHERE id = $1`, id).Scan(
-		&v.ID, &v.TripID, &v.Date, &v.Title, &v.Description, &v.Lat, &v.Lng, &v.CreatedAt, &v.UpdatedAt,
+		&v.ID, &v.TripID, &v.Date, &v.Title, &v.Description, &v.Lat, &v.Lng, &v.Position, &v.CreatedAt, &v.UpdatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -85,11 +87,11 @@ func (r *VisitRepository) FindByID(ctx context.Context, id string) (*visit.Visit
 
 func (r *VisitRepository) ListByStage(ctx context.Context, stageID string) ([]*visit.Visit, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT v.id, v.trip_id, v.date, v.title, v.description, v.lat, v.lng, v.created_at, v.updated_at
+		SELECT v.id, v.trip_id, v.date, v.title, v.description, v.lat, v.lng, v.position, v.created_at, v.updated_at
 		FROM visits v
 		JOIN visit_stages vs ON vs.visit_id = v.id
 		WHERE vs.stage_id = $1
-		ORDER BY v.date`, stageID)
+		ORDER BY v.date, v.position`, stageID)
 	if err != nil {
 		return nil, fmt.Errorf("list visits by stage: %w", err)
 	}
@@ -98,12 +100,60 @@ func (r *VisitRepository) ListByStage(ctx context.Context, stageID string) ([]*v
 
 func (r *VisitRepository) ListByTrip(ctx context.Context, tripID string) ([]*visit.Visit, error) {
 	rows, err := r.pool.Query(ctx, `
-		SELECT id, trip_id, date, title, description, lat, lng, created_at, updated_at
-		FROM visits WHERE trip_id = $1 ORDER BY date`, tripID)
+		SELECT id, trip_id, date, title, description, lat, lng, position, created_at, updated_at
+		FROM visits WHERE trip_id = $1 ORDER BY date, position`, tripID)
 	if err != nil {
 		return nil, fmt.Errorf("list visits by trip: %w", err)
 	}
 	return r.scanVisitsWithStages(ctx, rows)
+}
+
+// ListByStageAndDate returns visits whose primary stage (position 0 in
+// visit_stages) is stageID and whose date matches, sorted by position.
+func (r *VisitRepository) ListByStageAndDate(ctx context.Context, stageID string, date time.Time) ([]*visit.Visit, error) {
+	rows, err := r.pool.Query(ctx, `
+		SELECT v.id, v.trip_id, v.date, v.title, v.description, v.lat, v.lng, v.position, v.created_at, v.updated_at
+		FROM visits v
+		JOIN visit_stages vs ON vs.visit_id = v.id AND vs.position = 0
+		WHERE vs.stage_id = $1 AND v.date = $2
+		ORDER BY v.position`, stageID, date)
+	if err != nil {
+		return nil, fmt.Errorf("list visits by stage and date: %w", err)
+	}
+	return r.scanVisitsWithStages(ctx, rows)
+}
+
+// NextPosition returns the next available position for a (stageID, date) group.
+func (r *VisitRepository) NextPosition(ctx context.Context, stageID string, date time.Time) (int, error) {
+	var next int
+	err := r.pool.QueryRow(ctx, `
+		SELECT COALESCE(MAX(v.position), -1) + 1
+		FROM visits v
+		JOIN visit_stages vs ON vs.visit_id = v.id AND vs.position = 0
+		WHERE vs.stage_id = $1 AND v.date = $2`, stageID, date).Scan(&next)
+	if err != nil {
+		return 0, fmt.Errorf("next position: %w", err)
+	}
+	return next, nil
+}
+
+// Reorder updates the positions of orderedIDs to reflect their index in the
+// slice. Callers are expected to have already validated that orderedIDs is
+// exactly the (stageID, date) group's visit IDs.
+func (r *VisitRepository) Reorder(ctx context.Context, _ string, _ time.Time, orderedIDs []string) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("reorder visits: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for pos, id := range orderedIDs {
+		if _, err := tx.Exec(ctx, `UPDATE visits SET position = $1 WHERE id = $2`, pos, id); err != nil {
+			return fmt.Errorf("reorder visits: update %s: %w", id, err)
+		}
+	}
+
+	return tx.Commit(ctx)
 }
 
 func (r *VisitRepository) Delete(ctx context.Context, id string) error {
@@ -168,7 +218,7 @@ func (r *VisitRepository) scanVisitsWithStages(ctx context.Context, rows pgx.Row
 	var result []*visit.Visit
 	for rows.Next() {
 		var v visit.Visit
-		if err := rows.Scan(&v.ID, &v.TripID, &v.Date, &v.Title, &v.Description, &v.Lat, &v.Lng, &v.CreatedAt, &v.UpdatedAt); err != nil {
+		if err := rows.Scan(&v.ID, &v.TripID, &v.Date, &v.Title, &v.Description, &v.Lat, &v.Lng, &v.Position, &v.CreatedAt, &v.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan visit: %w", err)
 		}
 		stageIDs, err := r.loadStageIDs(ctx, v.ID)
