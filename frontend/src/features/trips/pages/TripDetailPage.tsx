@@ -6,7 +6,7 @@ import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
-import { useUpdateVisit, useDeleteVisit } from '../../stages/hooks/useVisitMutations';
+import { useUpdateVisit, useDeleteVisit, useReorderVisits } from '../../stages/hooks/useVisitMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm, type FormAction } from '../components/TripForm';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
@@ -462,6 +462,7 @@ export function TripDetailPage() {
                   visits={visitsByStage.get(stage.id) ?? []}
                   dateRange={stageDateRanges[stage.id]}
                   active={selectedStageId === stage.id}
+                  canReorder={!!isAdmin && isModifiable}
                   onStageClick={handleStageClick}
                   onVisitClick={handleVisitClickFromTimeline}
                 />
@@ -591,13 +592,33 @@ interface StageSectionProps {
   visits: Visit[];
   dateRange?: { start: string; end: string };
   active: boolean;
+  canReorder: boolean;
   onStageClick: (stageId: string) => void;
   onVisitClick: (stageId: string, visit: Visit) => void;
 }
 
-function StageSection({ stage, visits, dateRange, active, onStageClick, onVisitClick }: StageSectionProps) {
-  // COR-008 : une visite multi-étapes n'est affichée que dans son étape principale (premier stageID)
-  const primaryVisits = visits.filter((visit) => visit.stageIDs[0] === stage.id);
+function StageSection({ stage, visits, dateRange, active, canReorder, onStageClick, onVisitClick }: StageSectionProps) {
+  // Memoized so each group's `visits` array keeps a stable reference across
+  // re-renders unrelated to this data (form open/close, other stages' drags,
+  // etc.) — DayVisitGroup relies on that stability to detect real data
+  // changes and not wipe an in-flight optimistic reorder.
+  const dayGroups = useMemo(() => {
+    // COR-008 : une visite multi-étapes n'est affichée que dans son étape principale (premier stageID)
+    const primaryVisits = visits.filter((visit) => visit.stageIDs[0] === stage.id);
+
+    // Visits are already sorted by (date, position) by the backend, so
+    // consecutive same-date visits form one contiguous, reorderable group.
+    const groups: { date: string; visits: Visit[] }[] = [];
+    for (const visit of primaryVisits) {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.date === visit.date) {
+        lastGroup.visits.push(visit);
+      } else {
+        groups.push({ date: visit.date, visits: [visit] });
+      }
+    }
+    return groups;
+  }, [visits, stage.id]);
 
   return (
     <div id={`stage-${stage.id}`} className={styles.timelineGroup}>
@@ -614,16 +635,115 @@ function StageSection({ stage, visits, dateRange, active, onStageClick, onVisitC
               : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
-      {primaryVisits.map((visit) => (
-        <VisitRow key={visit.id} visit={visit} onClick={() => onVisitClick(stage.id, visit)} />
+      {dayGroups.map((group) => (
+        <DayVisitGroup
+          key={group.date}
+          stageId={stage.id}
+          date={group.date}
+          visits={group.visits}
+          canReorder={canReorder}
+          onVisitClick={(visit) => onVisitClick(stage.id, visit)}
+        />
       ))}
     </div>
   );
 }
 
-function VisitRow({ visit, onClick }: { visit: Visit; onClick: () => void }) {
+interface DayVisitGroupProps {
+  stageId: string;
+  date: string;
+  visits: Visit[];
+  canReorder: boolean;
+  onVisitClick: (visit: Visit) => void;
+}
+
+function DayVisitGroup({ stageId, date, visits, canReorder, onVisitClick }: DayVisitGroupProps) {
+  const [localVisits, setLocalVisits] = useState<Visit[] | null>(null);
+  const [, reorderVisits] = useReorderVisits();
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+
+  const items = localVisits ?? visits;
+
+  // Reset local state once fresh data (post-mutation refetch) arrives.
+  const prevVisitsRef = useRef(visits);
+  if (visits !== prevVisitsRef.current) { // eslint-disable-line react-hooks/refs
+    prevVisitsRef.current = visits; // eslint-disable-line react-hooks/refs
+    setLocalVisits(null);
+  }
+
+  const handleDragStart = useCallback((index: number) => {
+    dragItem.current = index;
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    dragOverItem.current = index;
+  }, []);
+
+  const handleDrop = useCallback(async () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) {
+      dragItem.current = null;
+      dragOverItem.current = null;
+      return;
+    }
+
+    const reordered = [...items];
+    const [moved] = reordered.splice(dragItem.current, 1);
+    reordered.splice(dragOverItem.current, 0, moved);
+
+    // Optimistic update.
+    setLocalVisits(reordered);
+
+    const result = await reorderVisits(
+      { stageID: stageId, date, visitIDs: reordered.map((v) => v.id) },
+      { additionalTypenames: ['Visit'] },
+    );
+    if (result.error || (result.data?.reorderVisits.errors ?? []).length > 0) {
+      setLocalVisits(null); // Revert on error.
+    }
+
+    dragItem.current = null;
+    dragOverItem.current = null;
+  }, [items, reorderVisits, stageId, date]);
+
   return (
-    <button className={styles.visitRow} onClick={onClick}>
+    <>
+      {items.map((visit, i) => (
+        <VisitRow
+          key={visit.id}
+          visit={visit}
+          onClick={() => onVisitClick(visit)}
+          draggable={canReorder}
+          onDragStart={() => handleDragStart(i)}
+          onDragOver={(e) => handleDragOver(e, i)}
+          onDrop={handleDrop}
+        />
+      ))}
+    </>
+  );
+}
+
+interface VisitRowProps {
+  visit: Visit;
+  onClick: () => void;
+  draggable?: boolean;
+  onDragStart?: () => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDrop?: () => void;
+}
+
+function VisitRow({ visit, onClick, draggable, onDragStart, onDragOver, onDrop }: VisitRowProps) {
+  return (
+    <button
+      className={styles.visitRow}
+      onClick={onClick}
+      draggable={draggable}
+      onDragStart={draggable ? onDragStart : undefined}
+      onDragOver={draggable ? onDragOver : undefined}
+      onDrop={draggable ? onDrop : undefined}
+    >
       <div className={styles.visitMeta}>
         <span className={styles.visitLabel}>Visite</span>
         <span className={styles.visitDate}>{formatDate(visit.date)}</span>
