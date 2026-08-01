@@ -52,6 +52,7 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
             addVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
             updateVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
             deleteVisit: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
+            reorderVisits: (_result, _args, cache) => invalidateQuery(cache, 'tripVisits'),
           },
         },
       }),

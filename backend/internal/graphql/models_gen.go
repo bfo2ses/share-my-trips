@@ -134,6 +134,11 @@ type ReorderMediaPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
+type ReorderVisitsPayload struct {
+	Visits []*Visit     `json:"visits"`
+	Errors []*UserError `json:"errors"`
+}
+
 type ResetPasswordInput struct {
 	Token              string `json:"token"`
 	NewPassword        string `json:"newPassword"`
@@ -245,6 +250,8 @@ type Visit struct {
 	Lat float64 `json:"lat"`
 	// Longitude for map placement.
 	Lng float64 `json:"lng"`
+	// Orders visits sharing the same primary stage (stageIDs[0]) and date.
+	Position int `json:"position"`
 	// RFC 3339 timestamp.
 	CreatedAt string `json:"createdAt"`
 	// RFC 3339 timestamp.

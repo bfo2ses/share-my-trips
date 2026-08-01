@@ -33,6 +33,7 @@ const TRIP_DETAIL_QUERY = gql(`
       description
       lat
       lng
+      position
     }
   }
 `);

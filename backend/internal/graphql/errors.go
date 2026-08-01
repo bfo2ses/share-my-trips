@@ -65,6 +65,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: visit.ErrNotAttached.Error()}}
 	case errors.Is(err, visit.ErrStageNotInTrip):
 		return []*UserError{{Field: strPtr("stageID"), Message: visit.ErrStageNotInTrip.Error()}}
+	case errors.Is(err, visit.ErrReorderIDMismatch):
+		return []*UserError{{Field: strPtr("visitIDs"), Message: visit.ErrReorderIDMismatch.Error()}}
 	// auth errors
 	case errors.Is(err, auth.ErrNameRequired):
 		return []*UserError{{Field: strPtr("name"), Message: auth.ErrNameRequired.Error()}}

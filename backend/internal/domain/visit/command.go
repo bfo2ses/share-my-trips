@@ -28,6 +28,14 @@ type DeleteVisitCommand struct {
 	ID string
 }
 
+// ReorderVisitsCommand contains the new ordering for visits sharing a
+// primary stage and date.
+type ReorderVisitsCommand struct {
+	StageID  string
+	Date     time.Time
+	VisitIDs []string
+}
+
 // AttachToStageCommand attaches an existing visit to an additional stage.
 type AttachToStageCommand struct {
 	VisitID string

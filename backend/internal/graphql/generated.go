@@ -115,6 +115,7 @@ type ComplexityRoot struct {
 		PublishTrip          func(childComplexity int, id string) int
 		ReopenTrip           func(childComplexity int, id string) int
 		ReorderMedia         func(childComplexity int, visitID string, mediaIDs []string) int
+		ReorderVisits        func(childComplexity int, stageID string, date string, visitIDs []string) int
 		RequestPasswordReset func(childComplexity int, email string) int
 		ResetPassword        func(childComplexity int, input ResetPasswordInput) int
 		SetupAdmin           func(childComplexity int, input SetupAdminInput) int
@@ -143,6 +144,11 @@ type ComplexityRoot struct {
 	ReorderMediaPayload struct {
 		Errors func(childComplexity int) int
 		Media  func(childComplexity int) int
+	}
+
+	ReorderVisitsPayload struct {
+		Errors func(childComplexity int) int
+		Visits func(childComplexity int) int
 	}
 
 	SetupStatusPayload struct {
@@ -199,6 +205,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Lat         func(childComplexity int) int
 		Lng         func(childComplexity int) int
+		Position    func(childComplexity int) int
 		StageIDs    func(childComplexity int) int
 		Title       func(childComplexity int) int
 		TripID      func(childComplexity int) int
@@ -227,6 +234,7 @@ type MutationResolver interface {
 	DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error)
 	AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
 	DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
+	ReorderVisits(ctx context.Context, stageID string, date string, visitIDs []string) (*ReorderVisitsPayload, error)
 	SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error)
 	Login(ctx context.Context, email string, password string) (*AuthPayload, error)
 	Logout(ctx context.Context) (bool, error)
@@ -663,6 +671,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ReorderMedia(childComplexity, args["visitID"].(string), args["mediaIDs"].([]string)), true
+	case "Mutation.reorderVisits":
+		if e.ComplexityRoot.Mutation.ReorderVisits == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reorderVisits_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReorderVisits(childComplexity, args["stageID"].(string), args["date"].(string), args["visitIDs"].([]string)), true
 	case "Mutation.requestPasswordReset":
 		if e.ComplexityRoot.Mutation.RequestPasswordReset == nil {
 			break
@@ -884,6 +903,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.ReorderMediaPayload.Media(childComplexity), true
 
+	case "ReorderVisitsPayload.errors":
+		if e.ComplexityRoot.ReorderVisitsPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderVisitsPayload.Errors(childComplexity), true
+	case "ReorderVisitsPayload.visits":
+		if e.ComplexityRoot.ReorderVisitsPayload.Visits == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderVisitsPayload.Visits(childComplexity), true
+
 	case "SetupStatusPayload.done":
 		if e.ComplexityRoot.SetupStatusPayload.Done == nil {
 			break
@@ -1100,6 +1132,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Visit.Lng(childComplexity), true
+	case "Visit.position":
+		if e.ComplexityRoot.Visit.Position == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Visit.Position(childComplexity), true
 	case "Visit.stageIDs":
 		if e.ComplexityRoot.Visit.StageIDs == nil {
 			break
@@ -1359,6 +1397,8 @@ type Visit {
   lat: Float!
   "Longitude for map placement."
   lng: Float!
+  "Orders visits sharing the same primary stage (stageIDs[0]) and date."
+  position: Int!
   "RFC 3339 timestamp."
   createdAt: String!
   "RFC 3339 timestamp."
@@ -1367,6 +1407,11 @@ type Visit {
 
 type VisitPayload {
   visit: Visit
+  errors: [UserError!]!
+}
+
+type ReorderVisitsPayload {
+  visits: [Visit!]!
   errors: [UserError!]!
 }
 
@@ -1534,6 +1579,8 @@ type Mutation {
   deleteVisit(id: ID!): DeleteVisitPayload!
   attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
   detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
+  "Reorders visits sharing a primary stage and date. Requires editor role."
+  reorderVisits(stageID: ID!, date: String!, visitIDs: [ID!]!): ReorderVisitsPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
   setupAdmin(input: SetupAdminInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
@@ -1770,6 +1817,27 @@ func (ec *executionContext) field_Mutation_reorderMedia_args(ctx context.Context
 		return nil, err
 	}
 	args["mediaIDs"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reorderVisits_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "stageID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["stageID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "date", ec.unmarshalNString2string)
+	if err != nil {
+		return nil, err
+	}
+	args["date"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "visitIDs", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["visitIDs"] = arg2
 	return args, nil
 }
 
@@ -3770,6 +3838,53 @@ func (ec *executionContext) fieldContext_Mutation_detachVisitFromStage(ctx conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_reorderVisits(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reorderVisits,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReorderVisits(ctx, fc.Args["stageID"].(string), fc.Args["date"].(string), fc.Args["visitIDs"].([]string))
+		},
+		nil,
+		ec.marshalNReorderVisitsPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderVisitsPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reorderVisits(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "visits":
+				return ec.fieldContext_ReorderVisitsPayload_visits(ctx, field)
+			case "errors":
+				return ec.fieldContext_ReorderVisitsPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReorderVisitsPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reorderVisits_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_setupAdmin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4568,6 +4683,8 @@ func (ec *executionContext) fieldContext_Query_visit(ctx context.Context, field 
 				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
 				return ec.fieldContext_Visit_lng(ctx, field)
+			case "position":
+				return ec.fieldContext_Visit_position(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
@@ -4631,6 +4748,8 @@ func (ec *executionContext) fieldContext_Query_visits(ctx context.Context, field
 				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
 				return ec.fieldContext_Visit_lng(ctx, field)
+			case "position":
+				return ec.fieldContext_Visit_position(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
@@ -4694,6 +4813,8 @@ func (ec *executionContext) fieldContext_Query_tripVisits(ctx context.Context, f
 				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
 				return ec.fieldContext_Visit_lng(ctx, field)
+			case "position":
+				return ec.fieldContext_Visit_position(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
@@ -5135,6 +5256,94 @@ func (ec *executionContext) _ReorderMediaPayload_errors(ctx context.Context, fie
 func (ec *executionContext) fieldContext_ReorderMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ReorderMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderVisitsPayload_visits(ctx context.Context, field graphql.CollectedField, obj *ReorderVisitsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderVisitsPayload_visits,
+		func(ctx context.Context) (any, error) {
+			return obj.Visits, nil
+		},
+		nil,
+		ec.marshalNVisit2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderVisitsPayload_visits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderVisitsPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Visit_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Visit_tripID(ctx, field)
+			case "stageIDs":
+				return ec.fieldContext_Visit_stageIDs(ctx, field)
+			case "date":
+				return ec.fieldContext_Visit_date(ctx, field)
+			case "title":
+				return ec.fieldContext_Visit_title(ctx, field)
+			case "description":
+				return ec.fieldContext_Visit_description(ctx, field)
+			case "lat":
+				return ec.fieldContext_Visit_lat(ctx, field)
+			case "lng":
+				return ec.fieldContext_Visit_lng(ctx, field)
+			case "position":
+				return ec.fieldContext_Visit_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Visit_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_Visit_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Visit", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderVisitsPayload_errors(ctx context.Context, field graphql.CollectedField, obj *ReorderVisitsPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderVisitsPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderVisitsPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderVisitsPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -6284,6 +6493,35 @@ func (ec *executionContext) fieldContext_Visit_lng(_ context.Context, field grap
 	return fc, nil
 }
 
+func (ec *executionContext) _Visit_position(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Visit_position,
+		func(ctx context.Context) (any, error) {
+			return obj.Position, nil
+		},
+		nil,
+		ec.marshalNInt2int,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Visit_position(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Visit",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Int does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Visit_createdAt(ctx context.Context, field graphql.CollectedField, obj *Visit) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -6382,6 +6620,8 @@ func (ec *executionContext) fieldContext_VisitPayload_visit(_ context.Context, f
 				return ec.fieldContext_Visit_lat(ctx, field)
 			case "lng":
 				return ec.fieldContext_Visit_lng(ctx, field)
+			case "position":
+				return ec.fieldContext_Visit_position(ctx, field)
 			case "createdAt":
 				return ec.fieldContext_Visit_createdAt(ctx, field)
 			case "updatedAt":
@@ -9136,6 +9376,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "reorderVisits":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reorderVisits(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "setupAdmin":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_setupAdmin(ctx, field)
@@ -9582,6 +9829,50 @@ func (ec *executionContext) _ReorderMediaPayload(ctx context.Context, sel ast.Se
 	return out
 }
 
+var reorderVisitsPayloadImplementors = []string{"ReorderVisitsPayload"}
+
+func (ec *executionContext) _ReorderVisitsPayload(ctx context.Context, sel ast.SelectionSet, obj *ReorderVisitsPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reorderVisitsPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReorderVisitsPayload")
+		case "visits":
+			out.Values[i] = ec._ReorderVisitsPayload_visits(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._ReorderVisitsPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var setupStatusPayloadImplementors = []string{"SetupStatusPayload"}
 
 func (ec *executionContext) _SetupStatusPayload(ctx context.Context, sel ast.SelectionSet, obj *SetupStatusPayload) graphql.Marshaler {
@@ -9955,6 +10246,11 @@ func (ec *executionContext) _Visit(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "lng":
 			out.Values[i] = ec._Visit_lng(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "position":
+			out.Values[i] = ec._Visit_position(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10677,6 +10973,20 @@ func (ec *executionContext) marshalNReorderMediaPayload2ᚖgithubᚗcomᚋbfosse
 		return graphql.Null
 	}
 	return ec._ReorderMediaPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReorderVisitsPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderVisitsPayload(ctx context.Context, sel ast.SelectionSet, v ReorderVisitsPayload) graphql.Marshaler {
+	return ec._ReorderVisitsPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReorderVisitsPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderVisitsPayload(ctx context.Context, sel ast.SelectionSet, v *ReorderVisitsPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReorderVisitsPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNResetPasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐResetPasswordInput(ctx context.Context, v any) (ResetPasswordInput, error) {

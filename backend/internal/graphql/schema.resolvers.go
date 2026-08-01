@@ -290,6 +290,26 @@ func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID str
 	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
 }
 
+// ReorderVisits is the resolver for the reorderVisits field.
+func (r *mutationResolver) ReorderVisits(ctx context.Context, stageID string, date string, visitIDs []string) (*ReorderVisitsPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &ReorderVisitsPayload{Visits: []*Visit{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	parsed, err := time.Parse(dateFormat, date)
+	if err != nil {
+		return &ReorderVisitsPayload{Visits: []*Visit{}, Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
+	}
+	list, err := r.visitHandler.Reorder(ctx, visit.ReorderVisitsCommand{
+		StageID:  stageID,
+		Date:     parsed,
+		VisitIDs: visitIDs,
+	})
+	if err != nil {
+		return &ReorderVisitsPayload{Visits: []*Visit{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &ReorderVisitsPayload{Visits: toGraphQLVisitList(list), Errors: []*UserError{}}, nil
+}
+
 // SetupAdmin is the resolver for the setupAdmin field.
 func (r *mutationResolver) SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error) {
 	result, err := r.authHandler.SetupAdmin(ctx, auth.SetupAdminCommand{

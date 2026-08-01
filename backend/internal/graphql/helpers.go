@@ -107,9 +107,18 @@ func toGraphQLVisit(v *visit.Visit) *Visit {
 		Description: nullableString(v.Description),
 		Lat:         v.Lat,
 		Lng:         v.Lng,
+		Position:    v.Position,
 		CreatedAt:   v.CreatedAt.UTC().Format(time.RFC3339),
 		UpdatedAt:   v.UpdatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func toGraphQLVisitList(list []*visit.Visit) []*Visit {
+	result := make([]*Visit, len(list))
+	for i, v := range list {
+		result[i] = toGraphQLVisit(v)
+	}
+	return result
 }
 
 func nullableString(s string) *string {

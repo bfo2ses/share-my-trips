@@ -125,6 +125,8 @@ type Visit {
   lat: Float!
   "Longitude for map placement."
   lng: Float!
+  "Orders visits sharing the same primary stage (stageIDs[0]) and date."
+  position: Int!
   "RFC 3339 timestamp."
   createdAt: String!
   "RFC 3339 timestamp."
@@ -133,6 +135,11 @@ type Visit {
 
 type VisitPayload {
   visit: Visit
+  errors: [UserError!]!
+}
+
+type ReorderVisitsPayload {
+  visits: [Visit!]!
   errors: [UserError!]!
 }
 
@@ -300,6 +307,8 @@ type Mutation {
   deleteVisit(id: ID!): DeleteVisitPayload!
   attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
   detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
+  "Reorders visits sharing a primary stage and date. Requires editor role."
+  reorderVisits(stageID: ID!, date: String!, visitIDs: [ID!]!): ReorderVisitsPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
   setupAdmin(input: SetupAdminInput!): AuthPayload!
   login(email: String!, password: String!): AuthPayload!
