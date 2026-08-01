@@ -99,6 +99,54 @@ func (r *VisitRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+// ListByStageAndDate returns visits whose primary stage (StageIDs[0]) is
+// stageID and whose Date matches date, sorted by position.
+func (r *VisitRepository) ListByStageAndDate(_ context.Context, stageID string, date time.Time) ([]*visit.Visit, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	var result []*visit.Visit
+	for _, v := range r.visits {
+		if len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) {
+			cp := *v
+			cp.StageIDs = make([]string, len(v.StageIDs))
+			copy(cp.StageIDs, v.StageIDs)
+			result = append(result, &cp)
+		}
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Position < result[j].Position
+	})
+	return result, nil
+}
+
+// NextPosition returns the next available position for a (stageID, date) group.
+func (r *VisitRepository) NextPosition(_ context.Context, stageID string, date time.Time) (int, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	max := -1
+	for _, v := range r.visits {
+		if len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) && v.Position > max {
+			max = v.Position
+		}
+	}
+	return max + 1, nil
+}
+
+// Reorder updates the positions of orderedIDs within the (stageID, date) group.
+func (r *VisitRepository) Reorder(_ context.Context, stageID string, date time.Time, orderedIDs []string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for pos, id := range orderedIDs {
+		if v, ok := r.visits[id]; ok && len(v.StageIDs) > 0 && v.StageIDs[0] == stageID && v.Date.Equal(date) {
+			v.Position = pos
+		}
+	}
+	return nil
+}
+
 // DetachStage removes stageID from all visits, deleting any visit that becomes orphaned.
 // This implements stage.VisitDetacher.
 func (r *VisitRepository) DetachStage(_ context.Context, stageID string) error {
