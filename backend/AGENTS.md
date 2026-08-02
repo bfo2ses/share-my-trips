@@ -77,11 +77,9 @@ En même temps, écrire les tests :
 
 **→ Pause : présenter les tests pour relecture avant de continuer.**
 
-Lancer en parallèle les agents de review suivants sur les fichiers modifiés :
-- `compound-engineering:review:correctness-reviewer` — logique métier et edge cases
-- `compound-engineering:review:testing-reviewer` — couverture et qualité des tests
-
-Corriger les problèmes remontés avant de continuer. Présenter un résumé des findings à l'utilisateur.
+Lancer `$ce-code-review` sur les fichiers modifiés. La review
+doit couvrir la logique métier, les cas limites et la qualité des tests. Corriger
+les problèmes bloquants avant de continuer et présenter un résumé des findings.
 
 ```bash
 git add -p
@@ -91,8 +89,8 @@ git commit -m "feat({contexte}): add domain and tests"
 ### 3. Adapter mémoire
 Implémenter dans `internal/adapter/memory/{contexte}_repository.go`.
 
-Lancer l'agent de review :
-- `compound-engineering:review:correctness-reviewer` — cohérence avec l'interface du port
+Lancer `$ce-code-review` pour vérifier la cohérence avec
+l'interface du port.
 
 ```bash
 git add -p
@@ -101,11 +99,11 @@ git commit -m "feat({contexte}): add memory adapter"
 
 ### 4. GraphQL (gqlgen)
 Ajouter resolvers dans `internal/graphql/`.
-*(gqlgen n'est pas encore installé — à setup à la première feature GraphQL)*
+Après une modification du schéma, exécuter `make check-generated` depuis la
+racine pour régénérer et vérifier les artefacts gqlgen et frontend.
 
-Lancer en parallèle :
-- `compound-engineering:review:correctness-reviewer` — logique des resolvers
-- `compound-engineering:review:api-contract-reviewer` — contrat GraphQL
+Lancer `$ce-code-review` sur la logique des resolvers et le
+contrat GraphQL.
 
 ```bash
 git add -p
@@ -114,8 +112,8 @@ git commit -m "feat({contexte}): add graphql resolver"
 
 ### 5. Review finale + Push
 
-Lancer `compound-engineering:ce-review` sur l'ensemble des changements de la branche.
-Corriger les problèmes bloquants, puis :
+Lancer `make check`, puis `$ce-code-review` sur l'ensemble
+des changements de la branche. Corriger les problèmes bloquants, puis :
 
 ```bash
 git push -u origin HEAD
@@ -171,4 +169,7 @@ go test ./internal/domain/{contexte}/... -v
 
 # Vérification compilation
 go build ./...
+
+# Depuis la racine : harnais complet du projet
+make check
 ```

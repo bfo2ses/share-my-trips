@@ -6,8 +6,8 @@
 
 - Organisation par feature (bounded contexts miroir du backend)
 - Séparation composants / hooks / pages dans chaque feature
-- Types et hooks GraphQL générés automatiquement (ne pas coder à la main)
-- Pas de token côté client — session via cookie httpOnly
+- Documents et types GraphQL générés automatiquement (ne pas coder à la main)
+- Authentification actuelle par token Bearer stocké dans `sessionStorage`
 
 ### Structure des dossiers
 
@@ -32,7 +32,7 @@ src/
 │       └── pages/
 ├── graphql/
 │   ├── client.ts
-│   └── generated/         # Types et hooks générés par graphql-codegen
+│   └── generated/         # Documents et types générés par graphql-codegen
 ├── router.tsx             # Configuration React Router
 ├── App.tsx
 └── main.tsx
@@ -45,7 +45,7 @@ src/
 - Un composant par fichier
 - Hooks custom préfixés par `use` dans un dossier `hooks/`
 - CSS Modules pour le styling (fichier `.module.css` à côté du composant)
-- Client GraphQL : urql avec ses hooks générés par graphql-codegen (`useTripsQuery`, `useCreateTripMutation`, etc.)
+- Client GraphQL : urql, encapsulé dans des hooks métier sous `features/*/hooks/`
 
 ## Data fetching
 
@@ -56,11 +56,11 @@ src/
 
 ## GraphQL Codegen
 
-- Les types TypeScript et les hooks urql sont générés depuis le schéma backend
+- Les documents typés et types TypeScript sont générés depuis le schéma backend
 - Fichier de config : `codegen.ts` à la racine du frontend
 - Output : `src/graphql/generated/` (ne pas éditer manuellement)
 - Commande : `npm run codegen`
-- Toujours utiliser les hooks générés plutôt qu'urql directement
+- Utiliser les documents générés dans les hooks métier ; ne jamais modifier les fichiers générés
 
 ## Routing
 
@@ -101,8 +101,9 @@ Dans l'ordre : queries/mutations → hooks → composants → pages → routing.
 
 ### 4. Review finale + Push
 
-Lancer `/ce-review` sur l'ensemble des changements de la branche.
-Corriger les problèmes bloquants, puis :
+Lancer `make check` depuis la racine, puis
+`$ce-code-review` sur l'ensemble des changements de la
+branche. Corriger les problèmes bloquants, puis :
 
 ```bash
 git push -u origin HEAD
@@ -122,4 +123,10 @@ npm run lint
 
 # Build
 npm run build
+
+# Typecheck sans produire de build
+npm run typecheck
+
+# Depuis la racine : harnais complet du projet
+make check
 ```

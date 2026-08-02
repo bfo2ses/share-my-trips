@@ -240,4 +240,4 @@ La famille consulte au téléphone mais l'app est pensée souris (see origin: do
 - Idéation : [docs/ideation/2026-07-06-open-ideation.md](../ideation/2026-07-06-open-ideation.md) (idée #1)
 - Code : `TripsPage.tsx`, `TripDetailPage.module.css`, `TripMap.tsx`, `WorldMap.tsx`, `DetailPanel.tsx`, `MediaLightbox.tsx`, `index.css`
 - Plan média (lightbox livrée) : `docs/plans/2026-04-12-001-feat-media-management-plan.md`, PR #19
-- Reviews auth à ne pas perturber : `.context/compound-engineering/ce-review/2026-07-06-cor-009|010/review-summary.md`
+- Reviews auth à ne pas perturber : `docs/reviews/compound-engineering/ce-review/2026-07-06-cor-009|010/review-summary.md`
