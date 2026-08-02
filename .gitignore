@@ -1,6 +1,7 @@
 # Go
 backend/bin/
 backend/tmp/
+backend/media_data/
 
 # Frontend
 frontend/node_modules/
