@@ -173,16 +173,12 @@ func main() {
 	mediaServing := mediahttp.NewMediaHandler(mediaHandler, mediaStorage, thumbnailer)
 	http.Handle("/media/", corsMiddleware(corsOrigin, mediaServing))
 
-	// Upload endpoint (requires auth).
-	tokenResolver := func(token string) (string, error) {
-		user, err := authHandler.GetCurrentUser(context.Background(), auth.GetCurrentUserQuery{Token: token})
-		if err != nil {
-			return "", err
-		}
-		return user.ID, nil
+	// Upload endpoint (requires an admin or editor session).
+	userResolver := func(ctx context.Context, token string) (*auth.User, error) {
+		return authHandler.GetCurrentUser(ctx, auth.GetCurrentUserQuery{Token: token})
 	}
 	uploadHandler := mediahttp.NewUploadHandler(mediaHandler, mediaStorage)
-	http.Handle("/api/upload", corsMiddleware(corsOrigin, mediahttp.RequireAuth(tokenResolver, uploadHandler)))
+	http.Handle("/api/upload", corsMiddleware(corsOrigin, mediahttp.RequireEditor(userResolver, uploadHandler)))
 
 	log.Printf("Server running at http://localhost:%s/query", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

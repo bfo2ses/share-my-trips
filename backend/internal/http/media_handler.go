@@ -1,6 +1,7 @@
 package mediahttp
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -8,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 )
 
@@ -176,17 +178,21 @@ func detectContentType(filename string) string {
 	}
 }
 
-// RequireAuth is middleware that requires a valid auth token.
-func RequireAuth(tokenResolver func(token string) (string, error), next http.Handler) http.Handler {
+// RequireEditor is middleware that requires an admin or editor session.
+func RequireEditor(userResolver func(context.Context, string) (*auth.User, error), next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := bearerToken(r.Header.Get("Authorization"))
 		if token == "" {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
 			return
 		}
-		_, err := tokenResolver(token)
+		user, err := userResolver(r.Context(), token)
 		if err != nil {
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
+			return
+		}
+		if user.Role != auth.RoleAdmin && user.Role != auth.RoleEditor {
+			http.Error(w, "forbidden", http.StatusForbidden)
 			return
 		}
 		next.ServeHTTP(w, r)
