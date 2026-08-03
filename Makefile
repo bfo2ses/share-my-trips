@@ -1,4 +1,4 @@
-.PHONY: check check-fast check-generated backend-check backend-format backend-test frontend-check
+.PHONY: check check-fast check-generated backend-check backend-format backend-test frontend-check frontend-test
 .NOTPARALLEL:
 
 check: backend-check frontend-check check-generated
@@ -29,9 +29,13 @@ backend-test:
 	cd backend && go test ./...
 
 frontend-check:
+	$(MAKE) frontend-test
 	cd frontend && npm run typecheck
 	cd frontend && npm run lint
 	cd frontend && npm run build
+
+frontend-test:
+	cd frontend && npm test
 
 check-generated:
 	./scripts/check-generated.sh
