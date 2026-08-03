@@ -1,7 +1,7 @@
-.PHONY: check check-fast check-generated backend-check backend-format backend-test frontend-check frontend-test
+.PHONY: check check-fast check-generated backend-check backend-format backend-test frontend-check frontend-test frontend-e2e
 .NOTPARALLEL:
 
-check: backend-check frontend-check check-generated
+check: backend-check frontend-check frontend-e2e check-generated
 
 check-fast: backend-format backend-test frontend-check
 
@@ -36,6 +36,9 @@ frontend-check:
 
 frontend-test:
 	cd frontend && npm test
+
+frontend-e2e:
+	cd frontend && npm run test:e2e
 
 check-generated:
 	./scripts/check-generated.sh
