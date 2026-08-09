@@ -19,6 +19,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
@@ -48,6 +49,10 @@ type noopMailer struct{}
 func (noopMailer) SendPasswordReset(context.Context, string, string) error { return nil }
 
 func newGraphQLHarness(t *testing.T) *graphqlHarness {
+	return newGraphQLHarnessWithRouteProvider(t, nil)
+}
+
+func newGraphQLHarnessWithRouteProvider(t *testing.T, routeProvider graph.RouteDistanceProvider) *graphqlHarness {
 	t.Helper()
 
 	hasher, err := crypto.NewBcryptHasher(bcrypt.DefaultCost)
@@ -76,8 +81,22 @@ func newGraphQLHarness(t *testing.T) *graphqlHarness {
 		tripChecker,
 		memory.NewVisitChecker(visitRepo),
 	)
+	travelLegRepo := memory.NewTravelLegRepository()
+	travelLegHandler := travelleg.NewHandler(
+		travelLegRepo,
+		tripChecker,
+		graph.NewTravelLegStageSequence(stageHandler, visitHandler),
+	)
 
-	resolver := graph.NewResolver(tripHandler, stageHandler, visitHandler, authHandler, mediaHandler)
+	resolver := graph.NewResolver(
+		tripHandler,
+		stageHandler,
+		visitHandler,
+		authHandler,
+		mediaHandler,
+		graph.WithTravelLegHandler(travelLegHandler),
+		graph.WithRouteDistanceProvider(routeProvider),
+	)
 	graphqlServer := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 	mux := http.NewServeMux()
 	mux.Handle("/query", corsMiddleware(testCORSOrigin, graph.AuthMiddleware(graphqlServer)))

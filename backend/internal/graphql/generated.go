@@ -53,6 +53,11 @@ type ComplexityRoot struct {
 		Token   func(childComplexity int) int
 	}
 
+	CalculateTravelLegDistancePayload struct {
+		DistanceKm func(childComplexity int) int
+		Errors     func(childComplexity int) int
+	}
+
 	DeleteAccountPayload struct {
 		Errors  func(childComplexity int) int
 		Success func(childComplexity int) int
@@ -64,6 +69,11 @@ type ComplexityRoot struct {
 	}
 
 	DeleteStagePayload struct {
+		Errors  func(childComplexity int) int
+		Success func(childComplexity int) int
+	}
+
+	DeleteTravelLegPayload struct {
 		Errors  func(childComplexity int) int
 		Success func(childComplexity int) int
 	}
@@ -86,6 +96,7 @@ type ComplexityRoot struct {
 		ID          func(childComplexity int) int
 		Position    func(childComplexity int) int
 		ThumbURL    func(childComplexity int) int
+		TravelLegID func(childComplexity int) int
 		TripID      func(childComplexity int) int
 		URL         func(childComplexity int) int
 		VisitID     func(childComplexity int) int
@@ -97,51 +108,65 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		AddStage             func(childComplexity int, input AddStageInput) int
-		AddVisit             func(childComplexity int, input AddVisitInput) int
-		AttachVisitToStage   func(childComplexity int, visitID string, stageID string) int
-		ChangePassword       func(childComplexity int, input ChangePasswordInput) int
-		CloseTrip            func(childComplexity int, id string, input CloseTripInput) int
-		CreateAccount        func(childComplexity int, input CreateAccountInput) int
-		CreateTrip           func(childComplexity int, input CreateTripInput) int
-		DeleteAccount        func(childComplexity int, id string) int
-		DeleteMedia          func(childComplexity int, id string) int
-		DeleteStage          func(childComplexity int, id string) int
-		DeleteTrip           func(childComplexity int, id string) int
-		DeleteVisit          func(childComplexity int, id string) int
-		DetachVisitFromStage func(childComplexity int, visitID string, stageID string) int
-		Login                func(childComplexity int, email string, password string) int
-		Logout               func(childComplexity int) int
-		PublishTrip          func(childComplexity int, id string) int
-		ReopenTrip           func(childComplexity int, id string) int
-		ReorderMedia         func(childComplexity int, visitID string, mediaIDs []string) int
-		ReorderVisits        func(childComplexity int, stageID string, date string, visitIDs []string) int
-		RequestPasswordReset func(childComplexity int, email string) int
-		ResetPassword        func(childComplexity int, input ResetPasswordInput) int
-		SetupAdmin           func(childComplexity int, input SetupAdminInput) int
-		UnpublishTrip        func(childComplexity int, id string) int
-		UpdateMediaCaption   func(childComplexity int, id string, caption *string) int
-		UpdateStage          func(childComplexity int, id string, input UpdateStageInput) int
-		UpdateTrip           func(childComplexity int, id string, input UpdateTripInput) int
-		UpdateVisit          func(childComplexity int, id string, input UpdateVisitInput) int
+		AddStage                   func(childComplexity int, input AddStageInput) int
+		AddVisit                   func(childComplexity int, input AddVisitInput) int
+		AttachVisitToStage         func(childComplexity int, visitID string, stageID string) int
+		CalculateTravelLegDistance func(childComplexity int, fromStageID string, toStageID string, transport TravelLegTransport) int
+		ChangePassword             func(childComplexity int, input ChangePasswordInput) int
+		CloseTrip                  func(childComplexity int, id string, input CloseTripInput) int
+		CreateAccount              func(childComplexity int, input CreateAccountInput) int
+		CreateTravelLeg            func(childComplexity int, input CreateTravelLegInput) int
+		CreateTrip                 func(childComplexity int, input CreateTripInput) int
+		DeleteAccount              func(childComplexity int, id string) int
+		DeleteMedia                func(childComplexity int, id string) int
+		DeleteStage                func(childComplexity int, id string) int
+		DeleteTravelLeg            func(childComplexity int, id string) int
+		DeleteTrip                 func(childComplexity int, id string) int
+		DeleteVisit                func(childComplexity int, id string) int
+		DetachVisitFromStage       func(childComplexity int, visitID string, stageID string) int
+		Login                      func(childComplexity int, email string, password string) int
+		Logout                     func(childComplexity int) int
+		MoveTravelLeg              func(childComplexity int, id string, input MoveTravelLegInput) int
+		PublishTrip                func(childComplexity int, id string) int
+		ReopenTrip                 func(childComplexity int, id string) int
+		ReorderMedia               func(childComplexity int, visitID string, mediaIDs []string) int
+		ReorderTravelLegMedia      func(childComplexity int, travelLegID string, mediaIDs []string) int
+		ReorderVisits              func(childComplexity int, stageID string, date string, visitIDs []string) int
+		RequestPasswordReset       func(childComplexity int, email string) int
+		ResetPassword              func(childComplexity int, input ResetPasswordInput) int
+		SetupAdmin                 func(childComplexity int, input SetupAdminInput) int
+		UnpublishTrip              func(childComplexity int, id string) int
+		UpdateMediaCaption         func(childComplexity int, id string, caption *string) int
+		UpdateStage                func(childComplexity int, id string, input UpdateStageInput) int
+		UpdateTravelLeg            func(childComplexity int, id string, input UpdateTravelLegInput) int
+		UpdateTrip                 func(childComplexity int, id string, input UpdateTripInput) int
+		UpdateVisit                func(childComplexity int, id string, input UpdateVisitInput) int
 	}
 
 	Query struct {
-		Accounts    func(childComplexity int) int
-		Me          func(childComplexity int) int
-		SetupStatus func(childComplexity int) int
-		Stage       func(childComplexity int, id string) int
-		Stages      func(childComplexity int, tripID string) int
-		Trip        func(childComplexity int, id string) int
-		TripMedia   func(childComplexity int, tripID string) int
-		TripVisits  func(childComplexity int, tripID string) int
-		Trips       func(childComplexity int, status []TripStatus) int
-		Visit       func(childComplexity int, id string) int
-		VisitMedia  func(childComplexity int, visitID string) int
-		Visits      func(childComplexity int, stageID string) int
+		Accounts       func(childComplexity int) int
+		Me             func(childComplexity int) int
+		SetupStatus    func(childComplexity int) int
+		Stage          func(childComplexity int, id string) int
+		Stages         func(childComplexity int, tripID string) int
+		TravelLeg      func(childComplexity int, id string) int
+		TravelLegMedia func(childComplexity int, travelLegID string) int
+		TravelLegs     func(childComplexity int, tripID string) int
+		Trip           func(childComplexity int, id string) int
+		TripMedia      func(childComplexity int, tripID string) int
+		TripVisits     func(childComplexity int, tripID string) int
+		Trips          func(childComplexity int, status []TripStatus) int
+		Visit          func(childComplexity int, id string) int
+		VisitMedia     func(childComplexity int, visitID string) int
+		Visits         func(childComplexity int, stageID string) int
 	}
 
 	ReorderMediaPayload struct {
+		Errors func(childComplexity int) int
+		Media  func(childComplexity int) int
+	}
+
+	ReorderTravelLegMediaPayload struct {
 		Errors func(childComplexity int) int
 		Media  func(childComplexity int) int
 	}
@@ -171,6 +196,23 @@ type ComplexityRoot struct {
 	StagePayload struct {
 		Errors func(childComplexity int) int
 		Stage  func(childComplexity int) int
+	}
+
+	TravelLeg struct {
+		CreatedAt   func(childComplexity int) int
+		Description func(childComplexity int) int
+		DistanceKm  func(childComplexity int) int
+		FromStageID func(childComplexity int) int
+		ID          func(childComplexity int) int
+		ToStageID   func(childComplexity int) int
+		Transport   func(childComplexity int) int
+		TripID      func(childComplexity int) int
+		UpdatedAt   func(childComplexity int) int
+	}
+
+	TravelLegPayload struct {
+		Errors    func(childComplexity int) int
+		TravelLeg func(childComplexity int) int
 	}
 
 	Trip struct {
@@ -232,6 +274,11 @@ type MutationResolver interface {
 	AddVisit(ctx context.Context, input AddVisitInput) (*VisitPayload, error)
 	UpdateVisit(ctx context.Context, id string, input UpdateVisitInput) (*VisitPayload, error)
 	DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error)
+	CreateTravelLeg(ctx context.Context, input CreateTravelLegInput) (*TravelLegPayload, error)
+	UpdateTravelLeg(ctx context.Context, id string, input UpdateTravelLegInput) (*TravelLegPayload, error)
+	MoveTravelLeg(ctx context.Context, id string, input MoveTravelLegInput) (*TravelLegPayload, error)
+	DeleteTravelLeg(ctx context.Context, id string) (*DeleteTravelLegPayload, error)
+	CalculateTravelLegDistance(ctx context.Context, fromStageID string, toStageID string, transport TravelLegTransport) (*CalculateTravelLegDistancePayload, error)
 	AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
 	DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
 	ReorderVisits(ctx context.Context, stageID string, date string, visitIDs []string) (*ReorderVisitsPayload, error)
@@ -245,6 +292,7 @@ type MutationResolver interface {
 	ChangePassword(ctx context.Context, input ChangePasswordInput) (*AccountPayload, error)
 	UpdateMediaCaption(ctx context.Context, id string, caption *string) (*MediaPayload, error)
 	ReorderMedia(ctx context.Context, visitID string, mediaIDs []string) (*ReorderMediaPayload, error)
+	ReorderTravelLegMedia(ctx context.Context, travelLegID string, mediaIDs []string) (*ReorderTravelLegMediaPayload, error)
 	DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error)
 }
 type QueryResolver interface {
@@ -256,6 +304,9 @@ type QueryResolver interface {
 	Visits(ctx context.Context, stageID string) ([]*Visit, error)
 	TripVisits(ctx context.Context, tripID string) ([]*Visit, error)
 	VisitMedia(ctx context.Context, visitID string) ([]*Media, error)
+	TravelLeg(ctx context.Context, id string) (*TravelLeg, error)
+	TravelLegs(ctx context.Context, tripID string) ([]*TravelLeg, error)
+	TravelLegMedia(ctx context.Context, travelLegID string) ([]*Media, error)
 	TripMedia(ctx context.Context, tripID string) ([]*Media, error)
 	Me(ctx context.Context) (*Account, error)
 	SetupStatus(ctx context.Context) (*SetupStatusPayload, error)
@@ -339,6 +390,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.AuthPayload.Token(childComplexity), true
 
+	case "CalculateTravelLegDistancePayload.distanceKm":
+		if e.ComplexityRoot.CalculateTravelLegDistancePayload.DistanceKm == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalculateTravelLegDistancePayload.DistanceKm(childComplexity), true
+	case "CalculateTravelLegDistancePayload.errors":
+		if e.ComplexityRoot.CalculateTravelLegDistancePayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.CalculateTravelLegDistancePayload.Errors(childComplexity), true
+
 	case "DeleteAccountPayload.errors":
 		if e.ComplexityRoot.DeleteAccountPayload.Errors == nil {
 			break
@@ -377,6 +441,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeleteStagePayload.Success(childComplexity), true
+
+	case "DeleteTravelLegPayload.errors":
+		if e.ComplexityRoot.DeleteTravelLegPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTravelLegPayload.Errors(childComplexity), true
+	case "DeleteTravelLegPayload.success":
+		if e.ComplexityRoot.DeleteTravelLegPayload.Success == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteTravelLegPayload.Success(childComplexity), true
 
 	case "DeleteTripPayload.errors":
 		if e.ComplexityRoot.DeleteTripPayload.Errors == nil {
@@ -446,6 +523,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Media.ThumbURL(childComplexity), true
+	case "Media.travelLegID":
+		if e.ComplexityRoot.Media.TravelLegID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.Media.TravelLegID(childComplexity), true
 	case "Media.tripID":
 		if e.ComplexityRoot.Media.TripID == nil {
 			break
@@ -511,6 +594,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.AttachVisitToStage(childComplexity, args["visitID"].(string), args["stageID"].(string)), true
+	case "Mutation.calculateTravelLegDistance":
+		if e.ComplexityRoot.Mutation.CalculateTravelLegDistance == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_calculateTravelLegDistance_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CalculateTravelLegDistance(childComplexity, args["fromStageID"].(string), args["toStageID"].(string), args["transport"].(TravelLegTransport)), true
 	case "Mutation.changePassword":
 		if e.ComplexityRoot.Mutation.ChangePassword == nil {
 			break
@@ -544,6 +638,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.CreateAccount(childComplexity, args["input"].(CreateAccountInput)), true
+	case "Mutation.createTravelLeg":
+		if e.ComplexityRoot.Mutation.CreateTravelLeg == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createTravelLeg_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.CreateTravelLeg(childComplexity, args["input"].(CreateTravelLegInput)), true
 	case "Mutation.createTrip":
 		if e.ComplexityRoot.Mutation.CreateTrip == nil {
 			break
@@ -588,6 +693,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.DeleteStage(childComplexity, args["id"].(string)), true
+	case "Mutation.deleteTravelLeg":
+		if e.ComplexityRoot.Mutation.DeleteTravelLeg == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_deleteTravelLeg_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.DeleteTravelLeg(childComplexity, args["id"].(string)), true
 	case "Mutation.deleteTrip":
 		if e.ComplexityRoot.Mutation.DeleteTrip == nil {
 			break
@@ -638,6 +754,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Logout(childComplexity), true
+	case "Mutation.moveTravelLeg":
+		if e.ComplexityRoot.Mutation.MoveTravelLeg == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_moveTravelLeg_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.MoveTravelLeg(childComplexity, args["id"].(string), args["input"].(MoveTravelLegInput)), true
 	case "Mutation.publishTrip":
 		if e.ComplexityRoot.Mutation.PublishTrip == nil {
 			break
@@ -671,6 +798,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.ReorderMedia(childComplexity, args["visitID"].(string), args["mediaIDs"].([]string)), true
+	case "Mutation.reorderTravelLegMedia":
+		if e.ComplexityRoot.Mutation.ReorderTravelLegMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_reorderTravelLegMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.ReorderTravelLegMedia(childComplexity, args["travelLegID"].(string), args["mediaIDs"].([]string)), true
 	case "Mutation.reorderVisits":
 		if e.ComplexityRoot.Mutation.ReorderVisits == nil {
 			break
@@ -748,6 +886,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.UpdateStage(childComplexity, args["id"].(string), args["input"].(UpdateStageInput)), true
+	case "Mutation.updateTravelLeg":
+		if e.ComplexityRoot.Mutation.UpdateTravelLeg == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTravelLeg_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.UpdateTravelLeg(childComplexity, args["id"].(string), args["input"].(UpdateTravelLegInput)), true
 	case "Mutation.updateTrip":
 		if e.ComplexityRoot.Mutation.UpdateTrip == nil {
 			break
@@ -812,6 +961,39 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Query.Stages(childComplexity, args["tripID"].(string)), true
+	case "Query.travelLeg":
+		if e.ComplexityRoot.Query.TravelLeg == nil {
+			break
+		}
+
+		args, err := ec.field_Query_travelLeg_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.TravelLeg(childComplexity, args["id"].(string)), true
+	case "Query.travelLegMedia":
+		if e.ComplexityRoot.Query.TravelLegMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Query_travelLegMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.TravelLegMedia(childComplexity, args["travelLegID"].(string)), true
+	case "Query.travelLegs":
+		if e.ComplexityRoot.Query.TravelLegs == nil {
+			break
+		}
+
+		args, err := ec.field_Query_travelLegs_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Query.TravelLegs(childComplexity, args["tripID"].(string)), true
 	case "Query.trip":
 		if e.ComplexityRoot.Query.Trip == nil {
 			break
@@ -902,6 +1084,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.ReorderMediaPayload.Media(childComplexity), true
+
+	case "ReorderTravelLegMediaPayload.errors":
+		if e.ComplexityRoot.ReorderTravelLegMediaPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderTravelLegMediaPayload.Errors(childComplexity), true
+	case "ReorderTravelLegMediaPayload.media":
+		if e.ComplexityRoot.ReorderTravelLegMediaPayload.Media == nil {
+			break
+		}
+
+		return e.ComplexityRoot.ReorderTravelLegMediaPayload.Media(childComplexity), true
 
 	case "ReorderVisitsPayload.errors":
 		if e.ComplexityRoot.ReorderVisitsPayload.Errors == nil {
@@ -996,6 +1191,74 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.StagePayload.Stage(childComplexity), true
+
+	case "TravelLeg.createdAt":
+		if e.ComplexityRoot.TravelLeg.CreatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.CreatedAt(childComplexity), true
+	case "TravelLeg.description":
+		if e.ComplexityRoot.TravelLeg.Description == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.Description(childComplexity), true
+	case "TravelLeg.distanceKm":
+		if e.ComplexityRoot.TravelLeg.DistanceKm == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.DistanceKm(childComplexity), true
+	case "TravelLeg.fromStageID":
+		if e.ComplexityRoot.TravelLeg.FromStageID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.FromStageID(childComplexity), true
+	case "TravelLeg.id":
+		if e.ComplexityRoot.TravelLeg.ID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.ID(childComplexity), true
+	case "TravelLeg.toStageID":
+		if e.ComplexityRoot.TravelLeg.ToStageID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.ToStageID(childComplexity), true
+	case "TravelLeg.transport":
+		if e.ComplexityRoot.TravelLeg.Transport == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.Transport(childComplexity), true
+	case "TravelLeg.tripID":
+		if e.ComplexityRoot.TravelLeg.TripID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.TripID(childComplexity), true
+	case "TravelLeg.updatedAt":
+		if e.ComplexityRoot.TravelLeg.UpdatedAt == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLeg.UpdatedAt(childComplexity), true
+
+	case "TravelLegPayload.errors":
+		if e.ComplexityRoot.TravelLegPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLegPayload.Errors(childComplexity), true
+	case "TravelLegPayload.travelLeg":
+		if e.ComplexityRoot.TravelLegPayload.TravelLeg == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLegPayload.TravelLeg(childComplexity), true
 
 	case "Trip.country":
 		if e.ComplexityRoot.Trip.Country == nil {
@@ -1189,10 +1452,13 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputChangePasswordInput,
 		ec.unmarshalInputCloseTripInput,
 		ec.unmarshalInputCreateAccountInput,
+		ec.unmarshalInputCreateTravelLegInput,
 		ec.unmarshalInputCreateTripInput,
+		ec.unmarshalInputMoveTravelLegInput,
 		ec.unmarshalInputResetPasswordInput,
 		ec.unmarshalInputSetupAdminInput,
 		ec.unmarshalInputUpdateStageInput,
+		ec.unmarshalInputUpdateTravelLegInput,
 		ec.unmarshalInputUpdateTripInput,
 		ec.unmarshalInputUpdateVisitInput,
 	)
@@ -1506,7 +1772,10 @@ input ChangePasswordInput {
 
 type Media {
   id: ID!
-  visitID: ID!
+  "The visit that owns this item, if any."
+  visitID: ID
+  "The travel leg that owns this item, if any."
+  travelLegID: ID
   tripID: ID!
   filename: String!
   contentType: String!
@@ -1536,6 +1805,69 @@ type DeleteMediaPayload {
   errors: [UserError!]!
 }
 
+enum TravelLegTransport {
+  CAR
+  TRAIN
+  PLANE
+  BOAT
+}
+
+type TravelLeg {
+  id: ID!
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  "Null when not provided or when an automatic recalculation failed."
+  description: String
+  "Distance in kilometres. Null when not provided."
+  distanceKm: Float
+  "RFC 3339 timestamp."
+  createdAt: String!
+  "RFC 3339 timestamp."
+  updatedAt: String!
+}
+
+type TravelLegPayload {
+  travelLeg: TravelLeg
+  errors: [UserError!]!
+}
+
+type DeleteTravelLegPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+type ReorderTravelLegMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
+type CalculateTravelLegDistancePayload {
+  distanceKm: Float
+  errors: [UserError!]!
+}
+
+input CreateTravelLegInput {
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input UpdateTravelLegInput {
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input MoveTravelLegInput {
+  fromStageID: ID!
+  toStageID: ID!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -1553,6 +1885,12 @@ type Query {
   tripVisits(tripID: ID!): [Visit!]!
   "Returns all media for a visit, sorted by position ascending."
   visitMedia(visitID: ID!): [Media!]!
+  "Returns a single travel leg by ID, or null if not found."
+  travelLeg(id: ID!): TravelLeg
+  "Returns every travel leg for a trip."
+  travelLegs(tripID: ID!): [TravelLeg!]!
+  "Returns all media for a travel leg, sorted by position ascending."
+  travelLegMedia(travelLegID: ID!): [Media!]!
   "Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
@@ -1577,6 +1915,12 @@ type Mutation {
   addVisit(input: AddVisitInput!): VisitPayload!
   updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
   deleteVisit(id: ID!): DeleteVisitPayload!
+  createTravelLeg(input: CreateTravelLegInput!): TravelLegPayload!
+  updateTravelLeg(id: ID!, input: UpdateTravelLegInput!): TravelLegPayload!
+  moveTravelLeg(id: ID!, input: MoveTravelLegInput!): TravelLegPayload!
+  deleteTravelLeg(id: ID!): DeleteTravelLegPayload!
+  "Calculates a candidate distance without creating or updating a travel leg. Requires editor role."
+  calculateTravelLegDistance(fromStageID: ID!, toStageID: ID!, transport: TravelLegTransport!): CalculateTravelLegDistancePayload!
   attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
   detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
   "Reorders visits sharing a primary stage and date. Requires editor role."
@@ -1597,6 +1941,8 @@ type Mutation {
   updateMediaCaption(id: ID!, caption: String): MediaPayload!
   "Reorders media within a visit. Requires admin role."
   reorderMedia(visitID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Reorders media within a travel leg. Requires editor role."
+  reorderTravelLegMedia(travelLegID: ID!, mediaIDs: [ID!]!): ReorderTravelLegMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
 }
@@ -1646,6 +1992,27 @@ func (ec *executionContext) field_Mutation_attachVisitToStage_args(ctx context.C
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_calculateTravelLegDistance_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "fromStageID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["fromStageID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "toStageID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["toStageID"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "transport", ec.unmarshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport)
+	if err != nil {
+		return nil, err
+	}
+	args["transport"] = arg2
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_changePassword_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1677,6 +2044,17 @@ func (ec *executionContext) field_Mutation_createAccount_args(ctx context.Contex
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateAccountInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateAccountInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_createTravelLeg_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNCreateTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateTravelLegInput)
 	if err != nil {
 		return nil, err
 	}
@@ -1718,6 +2096,17 @@ func (ec *executionContext) field_Mutation_deleteMedia_args(ctx context.Context,
 }
 
 func (ec *executionContext) field_Mutation_deleteStage_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_deleteTravelLeg_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
@@ -1782,6 +2171,22 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_moveTravelLeg_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMoveTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveTravelLegInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_publishTrip_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1812,6 +2217,22 @@ func (ec *executionContext) field_Mutation_reorderMedia_args(ctx context.Context
 		return nil, err
 	}
 	args["visitID"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaIDs", ec.unmarshalNID2ᚕstringᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["mediaIDs"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_reorderTravelLegMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "travelLegID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["travelLegID"] = arg0
 	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "mediaIDs", ec.unmarshalNID2ᚕstringᚄ)
 	if err != nil {
 		return nil, err
@@ -1917,6 +2338,22 @@ func (ec *executionContext) field_Mutation_updateStage_args(ctx context.Context,
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_updateTravelLeg_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNUpdateTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateTravelLegInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Mutation_updateTrip_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
@@ -1972,6 +2409,39 @@ func (ec *executionContext) field_Query_stage_args(ctx context.Context, rawArgs 
 }
 
 func (ec *executionContext) field_Query_stages_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["tripID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_travelLegMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "travelLegID", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["travelLegID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_travelLeg_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "id", ec.unmarshalNID2string)
+	if err != nil {
+		return nil, err
+	}
+	args["id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_travelLegs_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
 	var err error
 	args := map[string]any{}
 	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "tripID", ec.unmarshalNID2string)
@@ -2437,6 +2907,70 @@ func (ec *executionContext) fieldContext_AuthPayload_errors(_ context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _CalculateTravelLegDistancePayload_distanceKm(ctx context.Context, field graphql.CollectedField, obj *CalculateTravelLegDistancePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalculateTravelLegDistancePayload_distanceKm,
+		func(ctx context.Context) (any, error) {
+			return obj.DistanceKm, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalculateTravelLegDistancePayload_distanceKm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalculateTravelLegDistancePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CalculateTravelLegDistancePayload_errors(ctx context.Context, field graphql.CollectedField, obj *CalculateTravelLegDistancePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_CalculateTravelLegDistancePayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_CalculateTravelLegDistancePayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CalculateTravelLegDistancePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteAccountPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteAccountPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2629,6 +3163,70 @@ func (ec *executionContext) fieldContext_DeleteStagePayload_errors(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _DeleteTravelLegPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteTravelLegPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteTravelLegPayload_success,
+		func(ctx context.Context) (any, error) {
+			return obj.Success, nil
+		},
+		nil,
+		ec.marshalNBoolean2bool,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteTravelLegPayload_success(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteTravelLegPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteTravelLegPayload_errors(ctx context.Context, field graphql.CollectedField, obj *DeleteTravelLegPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteTravelLegPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteTravelLegPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteTravelLegPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteTripPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteTripPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -2796,13 +3394,42 @@ func (ec *executionContext) _Media_visitID(ctx context.Context, field graphql.Co
 			return obj.VisitID, nil
 		},
 		nil,
-		ec.marshalNID2string,
+		ec.marshalOID2ᚖstring,
 		true,
-		true,
+		false,
 	)
 }
 
 func (ec *executionContext) fieldContext_Media_visitID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Media",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Media_travelLegID(ctx context.Context, field graphql.CollectedField, obj *Media) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Media_travelLegID,
+		func(ctx context.Context) (any, error) {
+			return obj.TravelLegID, nil
+		},
+		nil,
+		ec.marshalOID2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Media_travelLegID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Media",
 		Field:      field,
@@ -3075,6 +3702,8 @@ func (ec *executionContext) fieldContext_MediaPayload_media(_ context.Context, f
 				return ec.fieldContext_Media_id(ctx, field)
 			case "visitID":
 				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -3744,6 +4373,241 @@ func (ec *executionContext) fieldContext_Mutation_deleteVisit(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_createTravelLeg(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_createTravelLeg,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CreateTravelLeg(ctx, fc.Args["input"].(CreateTravelLegInput))
+		},
+		nil,
+		ec.marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_createTravelLeg(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLeg":
+				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
+			case "errors":
+				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_createTravelLeg_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateTravelLeg(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_updateTravelLeg,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().UpdateTravelLeg(ctx, fc.Args["id"].(string), fc.Args["input"].(UpdateTravelLegInput))
+		},
+		nil,
+		ec.marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateTravelLeg(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLeg":
+				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
+			case "errors":
+				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateTravelLeg_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_moveTravelLeg(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_moveTravelLeg,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MoveTravelLeg(ctx, fc.Args["id"].(string), fc.Args["input"].(MoveTravelLegInput))
+		},
+		nil,
+		ec.marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_moveTravelLeg(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLeg":
+				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
+			case "errors":
+				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_moveTravelLeg_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_deleteTravelLeg(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_deleteTravelLeg,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().DeleteTravelLeg(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalNDeleteTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteTravelLegPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_deleteTravelLeg(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "success":
+				return ec.fieldContext_DeleteTravelLegPayload_success(ctx, field)
+			case "errors":
+				return ec.fieldContext_DeleteTravelLegPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type DeleteTravelLegPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_deleteTravelLeg_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_calculateTravelLegDistance(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_calculateTravelLegDistance,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().CalculateTravelLegDistance(ctx, fc.Args["fromStageID"].(string), fc.Args["toStageID"].(string), fc.Args["transport"].(TravelLegTransport))
+		},
+		nil,
+		ec.marshalNCalculateTravelLegDistancePayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCalculateTravelLegDistancePayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_calculateTravelLegDistance(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "distanceKm":
+				return ec.fieldContext_CalculateTravelLegDistancePayload_distanceKm(ctx, field)
+			case "errors":
+				return ec.fieldContext_CalculateTravelLegDistancePayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CalculateTravelLegDistancePayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_calculateTravelLegDistance_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_attachVisitToStage(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4335,6 +5199,53 @@ func (ec *executionContext) fieldContext_Mutation_reorderMedia(ctx context.Conte
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_reorderTravelLegMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_reorderTravelLegMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().ReorderTravelLegMedia(ctx, fc.Args["travelLegID"].(string), fc.Args["mediaIDs"].([]string))
+		},
+		nil,
+		ec.marshalNReorderTravelLegMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderTravelLegMediaPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_reorderTravelLegMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_ReorderTravelLegMediaPayload_media(ctx, field)
+			case "errors":
+				return ec.fieldContext_ReorderTravelLegMediaPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type ReorderTravelLegMediaPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_reorderTravelLegMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_deleteMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -4866,6 +5777,8 @@ func (ec *executionContext) fieldContext_Query_visitMedia(ctx context.Context, f
 				return ec.fieldContext_Media_id(ctx, field)
 			case "visitID":
 				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -4894,6 +5807,193 @@ func (ec *executionContext) fieldContext_Query_visitMedia(ctx context.Context, f
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_visitMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_travelLeg(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_travelLeg,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().TravelLeg(ctx, fc.Args["id"].(string))
+		},
+		nil,
+		ec.marshalOTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLeg,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_travelLeg(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TravelLeg_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_TravelLeg_tripID(ctx, field)
+			case "fromStageID":
+				return ec.fieldContext_TravelLeg_fromStageID(ctx, field)
+			case "toStageID":
+				return ec.fieldContext_TravelLeg_toStageID(ctx, field)
+			case "transport":
+				return ec.fieldContext_TravelLeg_transport(ctx, field)
+			case "description":
+				return ec.fieldContext_TravelLeg_description(ctx, field)
+			case "distanceKm":
+				return ec.fieldContext_TravelLeg_distanceKm(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TravelLeg_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TravelLeg_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLeg", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_travelLeg_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_travelLegs(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_travelLegs,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().TravelLegs(ctx, fc.Args["tripID"].(string))
+		},
+		nil,
+		ec.marshalNTravelLeg2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_travelLegs(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TravelLeg_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_TravelLeg_tripID(ctx, field)
+			case "fromStageID":
+				return ec.fieldContext_TravelLeg_fromStageID(ctx, field)
+			case "toStageID":
+				return ec.fieldContext_TravelLeg_toStageID(ctx, field)
+			case "transport":
+				return ec.fieldContext_TravelLeg_transport(ctx, field)
+			case "description":
+				return ec.fieldContext_TravelLeg_description(ctx, field)
+			case "distanceKm":
+				return ec.fieldContext_TravelLeg_distanceKm(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TravelLeg_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TravelLeg_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLeg", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_travelLegs_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_travelLegMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Query_travelLegMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Query().TravelLegMedia(ctx, fc.Args["travelLegID"].(string))
+		},
+		nil,
+		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Query_travelLegMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_travelLegMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -4929,6 +6029,8 @@ func (ec *executionContext) fieldContext_Query_tripMedia(ctx context.Context, fi
 				return ec.fieldContext_Media_id(ctx, field)
 			case "visitID":
 				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -5214,6 +6316,8 @@ func (ec *executionContext) fieldContext_ReorderMediaPayload_media(_ context.Con
 				return ec.fieldContext_Media_id(ctx, field)
 			case "visitID":
 				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
 			case "tripID":
 				return ec.fieldContext_Media_tripID(ctx, field)
 			case "filename":
@@ -5256,6 +6360,94 @@ func (ec *executionContext) _ReorderMediaPayload_errors(ctx context.Context, fie
 func (ec *executionContext) fieldContext_ReorderMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "ReorderMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderTravelLegMediaPayload_media(ctx context.Context, field graphql.CollectedField, obj *ReorderTravelLegMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderTravelLegMediaPayload_media,
+		func(ctx context.Context) (any, error) {
+			return obj.Media, nil
+		},
+		nil,
+		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderTravelLegMediaPayload_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderTravelLegMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _ReorderTravelLegMediaPayload_errors(ctx context.Context, field graphql.CollectedField, obj *ReorderTravelLegMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_ReorderTravelLegMediaPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_ReorderTravelLegMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "ReorderTravelLegMediaPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -5749,6 +6941,351 @@ func (ec *executionContext) _StagePayload_errors(ctx context.Context, field grap
 func (ec *executionContext) fieldContext_StagePayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "StagePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_id(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_id,
+		func(ctx context.Context) (any, error) {
+			return obj.ID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_id(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_tripID(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_tripID,
+		func(ctx context.Context) (any, error) {
+			return obj.TripID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_tripID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_fromStageID(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_fromStageID,
+		func(ctx context.Context) (any, error) {
+			return obj.FromStageID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_fromStageID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_toStageID(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_toStageID,
+		func(ctx context.Context) (any, error) {
+			return obj.ToStageID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_toStageID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_transport(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_transport,
+		func(ctx context.Context) (any, error) {
+			return obj.Transport, nil
+		},
+		nil,
+		ec.marshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_transport(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type TravelLegTransport does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_description(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_description,
+		func(ctx context.Context) (any, error) {
+			return obj.Description, nil
+		},
+		nil,
+		ec.marshalOString2ᚖstring,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_distanceKm(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_distanceKm,
+		func(ctx context.Context) (any, error) {
+			return obj.DistanceKm, nil
+		},
+		nil,
+		ec.marshalOFloat2ᚖfloat64,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_distanceKm(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_createdAt(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_createdAt,
+		func(ctx context.Context) (any, error) {
+			return obj.CreatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_createdAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLeg_updatedAt(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLeg_updatedAt,
+		func(ctx context.Context) (any, error) {
+			return obj.UpdatedAt, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLeg_updatedAt(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLeg",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLegPayload_travelLeg(ctx context.Context, field graphql.CollectedField, obj *TravelLegPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLegPayload_travelLeg,
+		func(ctx context.Context) (any, error) {
+			return obj.TravelLeg, nil
+		},
+		nil,
+		ec.marshalOTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLeg,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLegPayload_travelLeg(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLegPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_TravelLeg_id(ctx, field)
+			case "tripID":
+				return ec.fieldContext_TravelLeg_tripID(ctx, field)
+			case "fromStageID":
+				return ec.fieldContext_TravelLeg_fromStageID(ctx, field)
+			case "toStageID":
+				return ec.fieldContext_TravelLeg_toStageID(ctx, field)
+			case "transport":
+				return ec.fieldContext_TravelLeg_transport(ctx, field)
+			case "description":
+				return ec.fieldContext_TravelLeg_description(ctx, field)
+			case "distanceKm":
+				return ec.fieldContext_TravelLeg_distanceKm(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_TravelLeg_createdAt(ctx, field)
+			case "updatedAt":
+				return ec.fieldContext_TravelLeg_updatedAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLeg", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLegPayload_errors(ctx context.Context, field graphql.CollectedField, obj *TravelLegPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLegPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLegPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLegPayload",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
@@ -8390,6 +9927,71 @@ func (ec *executionContext) unmarshalInputCreateAccountInput(ctx context.Context
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputCreateTravelLegInput(ctx context.Context, obj any) (CreateTravelLegInput, error) {
+	var it CreateTravelLegInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"tripID", "fromStageID", "toStageID", "transport", "description", "distanceKm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "tripID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tripID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TripID = data
+		case "fromStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fromStageID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FromStageID = data
+		case "toStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("toStageID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ToStageID = data
+		case "transport":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transport"))
+			data, err := ec.unmarshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Transport = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "distanceKm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("distanceKm"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DistanceKm = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, obj any) (CreateTripInput, error) {
 	var it CreateTripInput
 	if obj == nil {
@@ -8464,6 +10066,43 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 				return it, err
 			}
 			it.EndDate = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputMoveTravelLegInput(ctx context.Context, obj any) (MoveTravelLegInput, error) {
+	var it MoveTravelLegInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"fromStageID", "toStageID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "fromStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fromStageID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FromStageID = data
+		case "toStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("toStageID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ToStageID = data
 		}
 	}
 	return it, nil
@@ -8617,6 +10256,50 @@ func (ec *executionContext) unmarshalInputUpdateStageInput(ctx context.Context, 
 				return it, err
 			}
 			it.Description = data
+		}
+	}
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputUpdateTravelLegInput(ctx context.Context, obj any) (UpdateTravelLegInput, error) {
+	var it UpdateTravelLegInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"transport", "description", "distanceKm"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "transport":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("transport"))
+			data, err := ec.unmarshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Transport = data
+		case "description":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("description"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Description = data
+		case "distanceKm":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("distanceKm"))
+			data, err := ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DistanceKm = data
 		}
 	}
 	return it, nil
@@ -8910,6 +10593,47 @@ func (ec *executionContext) _AuthPayload(ctx context.Context, sel ast.SelectionS
 	return out
 }
 
+var calculateTravelLegDistancePayloadImplementors = []string{"CalculateTravelLegDistancePayload"}
+
+func (ec *executionContext) _CalculateTravelLegDistancePayload(ctx context.Context, sel ast.SelectionSet, obj *CalculateTravelLegDistancePayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, calculateTravelLegDistancePayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CalculateTravelLegDistancePayload")
+		case "distanceKm":
+			out.Values[i] = ec._CalculateTravelLegDistancePayload_distanceKm(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._CalculateTravelLegDistancePayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteAccountPayloadImplementors = []string{"DeleteAccountPayload"}
 
 func (ec *executionContext) _DeleteAccountPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteAccountPayload) graphql.Marshaler {
@@ -9042,6 +10766,50 @@ func (ec *executionContext) _DeleteStagePayload(ctx context.Context, sel ast.Sel
 	return out
 }
 
+var deleteTravelLegPayloadImplementors = []string{"DeleteTravelLegPayload"}
+
+func (ec *executionContext) _DeleteTravelLegPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteTravelLegPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, deleteTravelLegPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("DeleteTravelLegPayload")
+		case "success":
+			out.Values[i] = ec._DeleteTravelLegPayload_success(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._DeleteTravelLegPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var deleteTripPayloadImplementors = []string{"DeleteTripPayload"}
 
 func (ec *executionContext) _DeleteTripPayload(ctx context.Context, sel ast.SelectionSet, obj *DeleteTripPayload) graphql.Marshaler {
@@ -9148,9 +10916,8 @@ func (ec *executionContext) _Media(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "visitID":
 			out.Values[i] = ec._Media_visitID(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
+		case "travelLegID":
+			out.Values[i] = ec._Media_travelLegID(ctx, field, obj)
 		case "tripID":
 			out.Values[i] = ec._Media_tripID(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -9362,6 +11129,41 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "createTravelLeg":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_createTravelLeg(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateTravelLeg":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateTravelLeg(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "moveTravelLeg":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_moveTravelLeg(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "deleteTravelLeg":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_deleteTravelLeg(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "calculateTravelLegDistance":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_calculateTravelLegDistance(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "attachVisitToStage":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_attachVisitToStage(ctx, field)
@@ -9449,6 +11251,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "reorderMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_reorderMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "reorderTravelLegMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_reorderTravelLegMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -9669,6 +11478,69 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "travelLeg":
+			field := field
+
+			innerFunc := func(ctx context.Context, _ *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_travelLeg(ctx, field)
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "travelLegs":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_travelLegs(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "travelLegMedia":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_travelLegMedia(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "tripMedia":
 			field := field
 
@@ -9803,6 +11675,50 @@ func (ec *executionContext) _ReorderMediaPayload(ctx context.Context, sel ast.Se
 			}
 		case "errors":
 			out.Values[i] = ec._ReorderMediaPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var reorderTravelLegMediaPayloadImplementors = []string{"ReorderTravelLegMediaPayload"}
+
+func (ec *executionContext) _ReorderTravelLegMediaPayload(ctx context.Context, sel ast.SelectionSet, obj *ReorderTravelLegMediaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, reorderTravelLegMediaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("ReorderTravelLegMediaPayload")
+		case "media":
+			out.Values[i] = ec._ReorderTravelLegMediaPayload_media(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._ReorderTravelLegMediaPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10008,6 +11924,120 @@ func (ec *executionContext) _StagePayload(ctx context.Context, sel ast.Selection
 			out.Values[i] = ec._StagePayload_stage(ctx, field, obj)
 		case "errors":
 			out.Values[i] = ec._StagePayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var travelLegImplementors = []string{"TravelLeg"}
+
+func (ec *executionContext) _TravelLeg(ctx context.Context, sel ast.SelectionSet, obj *TravelLeg) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, travelLegImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TravelLeg")
+		case "id":
+			out.Values[i] = ec._TravelLeg_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "tripID":
+			out.Values[i] = ec._TravelLeg_tripID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "fromStageID":
+			out.Values[i] = ec._TravelLeg_fromStageID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "toStageID":
+			out.Values[i] = ec._TravelLeg_toStageID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "transport":
+			out.Values[i] = ec._TravelLeg_transport(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "description":
+			out.Values[i] = ec._TravelLeg_description(ctx, field, obj)
+		case "distanceKm":
+			out.Values[i] = ec._TravelLeg_distanceKm(ctx, field, obj)
+		case "createdAt":
+			out.Values[i] = ec._TravelLeg_createdAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updatedAt":
+			out.Values[i] = ec._TravelLeg_updatedAt(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var travelLegPayloadImplementors = []string{"TravelLegPayload"}
+
+func (ec *executionContext) _TravelLegPayload(ctx context.Context, sel ast.SelectionSet, obj *TravelLegPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, travelLegPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TravelLegPayload")
+		case "travelLeg":
+			out.Values[i] = ec._TravelLegPayload_travelLeg(ctx, field, obj)
+		case "errors":
+			out.Values[i] = ec._TravelLegPayload_errors(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -10753,6 +12783,20 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
+func (ec *executionContext) marshalNCalculateTravelLegDistancePayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCalculateTravelLegDistancePayload(ctx context.Context, sel ast.SelectionSet, v CalculateTravelLegDistancePayload) graphql.Marshaler {
+	return ec._CalculateTravelLegDistancePayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCalculateTravelLegDistancePayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCalculateTravelLegDistancePayload(ctx context.Context, sel ast.SelectionSet, v *CalculateTravelLegDistancePayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._CalculateTravelLegDistancePayload(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNChangePasswordInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐChangePasswordInput(ctx context.Context, v any) (ChangePasswordInput, error) {
 	res, err := ec.unmarshalInputChangePasswordInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -10765,6 +12809,11 @@ func (ec *executionContext) unmarshalNCloseTripInput2githubᚗcomᚋbfossesᚋsh
 
 func (ec *executionContext) unmarshalNCreateAccountInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateAccountInput(ctx context.Context, v any) (CreateAccountInput, error) {
 	res, err := ec.unmarshalInputCreateAccountInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNCreateTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐCreateTravelLegInput(ctx context.Context, v any) (CreateTravelLegInput, error) {
+	res, err := ec.unmarshalInputCreateTravelLegInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -10813,6 +12862,20 @@ func (ec *executionContext) marshalNDeleteStagePayload2ᚖgithubᚗcomᚋbfosses
 		return graphql.Null
 	}
 	return ec._DeleteStagePayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNDeleteTravelLegPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteTravelLegPayload(ctx context.Context, sel ast.SelectionSet, v DeleteTravelLegPayload) graphql.Marshaler {
+	return ec._DeleteTravelLegPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNDeleteTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteTravelLegPayload(ctx context.Context, sel ast.SelectionSet, v *DeleteTravelLegPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._DeleteTravelLegPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNDeleteTripPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteTripPayload(ctx context.Context, sel ast.SelectionSet, v DeleteTripPayload) graphql.Marshaler {
@@ -10961,6 +13024,11 @@ func (ec *executionContext) marshalNMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsha
 	return ec._MediaPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNMoveTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveTravelLegInput(ctx context.Context, v any) (MoveTravelLegInput, error) {
+	res, err := ec.unmarshalInputMoveTravelLegInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) marshalNReorderMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderMediaPayload(ctx context.Context, sel ast.SelectionSet, v ReorderMediaPayload) graphql.Marshaler {
 	return ec._ReorderMediaPayload(ctx, sel, &v)
 }
@@ -10973,6 +13041,20 @@ func (ec *executionContext) marshalNReorderMediaPayload2ᚖgithubᚗcomᚋbfosse
 		return graphql.Null
 	}
 	return ec._ReorderMediaPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNReorderTravelLegMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderTravelLegMediaPayload(ctx context.Context, sel ast.SelectionSet, v ReorderTravelLegMediaPayload) graphql.Marshaler {
+	return ec._ReorderTravelLegMediaPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNReorderTravelLegMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderTravelLegMediaPayload(ctx context.Context, sel ast.SelectionSet, v *ReorderTravelLegMediaPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._ReorderTravelLegMediaPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNReorderVisitsPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐReorderVisitsPayload(ctx context.Context, sel ast.SelectionSet, v ReorderVisitsPayload) graphql.Marshaler {
@@ -11069,6 +13151,56 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 	return res
 }
 
+func (ec *executionContext) marshalNTravelLeg2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegᚄ(ctx context.Context, sel ast.SelectionSet, v []*TravelLeg) graphql.Marshaler {
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLeg(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLeg(ctx context.Context, sel ast.SelectionSet, v *TravelLeg) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TravelLeg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNTravelLegPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegPayload(ctx context.Context, sel ast.SelectionSet, v TravelLegPayload) graphql.Marshaler {
+	return ec._TravelLegPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegPayload(ctx context.Context, sel ast.SelectionSet, v *TravelLegPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TravelLegPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport(ctx context.Context, v any) (TravelLegTransport, error) {
+	var res TravelLegTransport
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport(ctx context.Context, sel ast.SelectionSet, v TravelLegTransport) graphql.Marshaler {
+	return v
+}
+
 func (ec *executionContext) marshalNTrip2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTripᚄ(ctx context.Context, sel ast.SelectionSet, v []*Trip) graphql.Marshaler {
 	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
 		fc := graphql.GetFieldContext(ctx)
@@ -11121,6 +13253,11 @@ func (ec *executionContext) marshalNTripStatus2githubᚗcomᚋbfossesᚋsharemyt
 
 func (ec *executionContext) unmarshalNUpdateStageInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateStageInput(ctx context.Context, v any) (UpdateStageInput, error) {
 	res, err := ec.unmarshalInputUpdateStageInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNUpdateTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUpdateTravelLegInput(ctx context.Context, v any) (UpdateTravelLegInput, error) {
+	res, err := ec.unmarshalInputUpdateTravelLegInput(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
 }
 
@@ -11394,6 +13531,41 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return res
 }
 
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v any) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOID2ᚖstring(ctx context.Context, v any) (*string, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalID(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOID2ᚖstring(ctx context.Context, sel ast.SelectionSet, v *string) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	_ = sel
+	_ = ctx
+	res := graphql.MarshalID(*v)
+	return res
+}
+
 func (ec *executionContext) marshalOMedia2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMedia(ctx context.Context, sel ast.SelectionSet, v *Media) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
@@ -11424,6 +13596,13 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 	_ = ctx
 	res := graphql.MarshalString(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLeg(ctx context.Context, sel ast.SelectionSet, v *TravelLeg) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._TravelLeg(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOTrip2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTrip(ctx context.Context, sel ast.SelectionSet, v *Trip) graphql.Marshaler {

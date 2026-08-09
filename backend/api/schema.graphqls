@@ -234,7 +234,10 @@ input ChangePasswordInput {
 
 type Media {
   id: ID!
-  visitID: ID!
+  "The visit that owns this item, if any."
+  visitID: ID
+  "The travel leg that owns this item, if any."
+  travelLegID: ID
   tripID: ID!
   filename: String!
   contentType: String!
@@ -264,6 +267,69 @@ type DeleteMediaPayload {
   errors: [UserError!]!
 }
 
+enum TravelLegTransport {
+  CAR
+  TRAIN
+  PLANE
+  BOAT
+}
+
+type TravelLeg {
+  id: ID!
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  "Null when not provided or when an automatic recalculation failed."
+  description: String
+  "Distance in kilometres. Null when not provided."
+  distanceKm: Float
+  "RFC 3339 timestamp."
+  createdAt: String!
+  "RFC 3339 timestamp."
+  updatedAt: String!
+}
+
+type TravelLegPayload {
+  travelLeg: TravelLeg
+  errors: [UserError!]!
+}
+
+type DeleteTravelLegPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+type ReorderTravelLegMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
+type CalculateTravelLegDistancePayload {
+  distanceKm: Float
+  errors: [UserError!]!
+}
+
+input CreateTravelLegInput {
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input UpdateTravelLegInput {
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input MoveTravelLegInput {
+  fromStageID: ID!
+  toStageID: ID!
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -281,6 +347,12 @@ type Query {
   tripVisits(tripID: ID!): [Visit!]!
   "Returns all media for a visit, sorted by position ascending."
   visitMedia(visitID: ID!): [Media!]!
+  "Returns a single travel leg by ID, or null if not found."
+  travelLeg(id: ID!): TravelLeg
+  "Returns every travel leg for a trip."
+  travelLegs(tripID: ID!): [TravelLeg!]!
+  "Returns all media for a travel leg, sorted by position ascending."
+  travelLegMedia(travelLegID: ID!): [Media!]!
   "Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
@@ -305,6 +377,12 @@ type Mutation {
   addVisit(input: AddVisitInput!): VisitPayload!
   updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
   deleteVisit(id: ID!): DeleteVisitPayload!
+  createTravelLeg(input: CreateTravelLegInput!): TravelLegPayload!
+  updateTravelLeg(id: ID!, input: UpdateTravelLegInput!): TravelLegPayload!
+  moveTravelLeg(id: ID!, input: MoveTravelLegInput!): TravelLegPayload!
+  deleteTravelLeg(id: ID!): DeleteTravelLegPayload!
+  "Calculates a candidate distance without creating or updating a travel leg. Requires editor role."
+  calculateTravelLegDistance(fromStageID: ID!, toStageID: ID!, transport: TravelLegTransport!): CalculateTravelLegDistancePayload!
   attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
   detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
   "Reorders visits sharing a primary stage and date. Requires editor role."
@@ -325,6 +403,8 @@ type Mutation {
   updateMediaCaption(id: ID!, caption: String): MediaPayload!
   "Reorders media within a visit. Requires admin role."
   reorderMedia(visitID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Reorders media within a travel leg. Requires editor role."
+  reorderTravelLegMedia(travelLegID: ID!, mediaIDs: [ID!]!): ReorderTravelLegMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
 }

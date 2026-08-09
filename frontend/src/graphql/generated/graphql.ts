@@ -65,6 +65,12 @@ export type AuthPayload = {
   token?: Maybe<Scalars['String']['output']>;
 };
 
+export type CalculateTravelLegDistancePayload = {
+  __typename?: 'CalculateTravelLegDistancePayload';
+  distanceKm?: Maybe<Scalars['Float']['output']>;
+  errors: Array<UserError>;
+};
+
 export type ChangePasswordInput = {
   currentPassword: Scalars['String']['input'];
   newPassword: Scalars['String']['input'];
@@ -84,6 +90,15 @@ export type CreateAccountInput = {
   passwordConfirm?: InputMaybe<Scalars['String']['input']>;
   /** Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed. */
   role?: InputMaybe<AccountRole>;
+};
+
+export type CreateTravelLegInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  distanceKm?: InputMaybe<Scalars['Float']['input']>;
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+  transport: TravelLegTransport;
+  tripID: Scalars['ID']['input'];
 };
 
 export type CreateTripInput = {
@@ -115,6 +130,12 @@ export type DeleteStagePayload = {
   success: Scalars['Boolean']['output'];
 };
 
+export type DeleteTravelLegPayload = {
+  __typename?: 'DeleteTravelLegPayload';
+  errors: Array<UserError>;
+  success: Scalars['Boolean']['output'];
+};
+
 export type DeleteTripPayload = {
   __typename?: 'DeleteTripPayload';
   errors: Array<UserError>;
@@ -139,10 +160,13 @@ export type Media = {
   position: Scalars['Int']['output'];
   /** URL to serve the thumbnail. */
   thumbUrl: Scalars['String']['output'];
+  /** The travel leg that owns this item, if any. */
+  travelLegID?: Maybe<Scalars['ID']['output']>;
   tripID: Scalars['ID']['output'];
   /** URL to serve the original file. */
   url: Scalars['String']['output'];
-  visitID: Scalars['ID']['output'];
+  /** The visit that owns this item, if any. */
+  visitID?: Maybe<Scalars['ID']['output']>;
 };
 
 export type MediaPayload = {
@@ -151,30 +175,42 @@ export type MediaPayload = {
   media?: Maybe<Media>;
 };
 
+export type MoveTravelLegInput = {
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addStage: StagePayload;
   addVisit: VisitPayload;
   attachVisitToStage: VisitPayload;
+  /** Calculates a candidate distance without creating or updating a travel leg. Requires editor role. */
+  calculateTravelLegDistance: CalculateTravelLegDistancePayload;
   changePassword: AccountPayload;
   closeTrip: TripPayload;
   /** Creates a family account. Requires admin role. */
   createAccount: AccountPayload;
+  createTravelLeg: TravelLegPayload;
   createTrip: TripPayload;
   /** Deletes an account. Requires admin role. Cannot delete own account. */
   deleteAccount: DeleteAccountPayload;
   /** Deletes a media and its files. Requires admin role. */
   deleteMedia: DeleteMediaPayload;
   deleteStage: DeleteStagePayload;
+  deleteTravelLeg: DeleteTravelLegPayload;
   deleteTrip: DeleteTripPayload;
   deleteVisit: DeleteVisitPayload;
   detachVisitFromStage: VisitPayload;
   login: AuthPayload;
   logout: Scalars['Boolean']['output'];
+  moveTravelLeg: TravelLegPayload;
   publishTrip: TripPayload;
   reopenTrip: TripPayload;
   /** Reorders media within a visit. Requires admin role. */
   reorderMedia: ReorderMediaPayload;
+  /** Reorders media within a travel leg. Requires editor role. */
+  reorderTravelLegMedia: ReorderTravelLegMediaPayload;
   /** Reorders visits sharing a primary stage and date. Requires editor role. */
   reorderVisits: ReorderVisitsPayload;
   /** Sends a password reset email. Always returns true regardless of whether the email exists. */
@@ -186,6 +222,7 @@ export type Mutation = {
   /** Updates a media's caption. Requires admin role. */
   updateMediaCaption: MediaPayload;
   updateStage: StagePayload;
+  updateTravelLeg: TravelLegPayload;
   updateTrip: TripPayload;
   updateVisit: VisitPayload;
 };
@@ -207,6 +244,13 @@ export type MutationAttachVisitToStageArgs = {
 };
 
 
+export type MutationCalculateTravelLegDistanceArgs = {
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+  transport: TravelLegTransport;
+};
+
+
 export type MutationChangePasswordArgs = {
   input: ChangePasswordInput;
 };
@@ -220,6 +264,11 @@ export type MutationCloseTripArgs = {
 
 export type MutationCreateAccountArgs = {
   input: CreateAccountInput;
+};
+
+
+export type MutationCreateTravelLegArgs = {
+  input: CreateTravelLegInput;
 };
 
 
@@ -239,6 +288,11 @@ export type MutationDeleteMediaArgs = {
 
 
 export type MutationDeleteStageArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type MutationDeleteTravelLegArgs = {
   id: Scalars['ID']['input'];
 };
 
@@ -265,6 +319,12 @@ export type MutationLoginArgs = {
 };
 
 
+export type MutationMoveTravelLegArgs = {
+  id: Scalars['ID']['input'];
+  input: MoveTravelLegInput;
+};
+
+
 export type MutationPublishTripArgs = {
   id: Scalars['ID']['input'];
 };
@@ -278,6 +338,12 @@ export type MutationReopenTripArgs = {
 export type MutationReorderMediaArgs = {
   mediaIDs: Array<Scalars['ID']['input']>;
   visitID: Scalars['ID']['input'];
+};
+
+
+export type MutationReorderTravelLegMediaArgs = {
+  mediaIDs: Array<Scalars['ID']['input']>;
+  travelLegID: Scalars['ID']['input'];
 };
 
 
@@ -320,6 +386,12 @@ export type MutationUpdateStageArgs = {
 };
 
 
+export type MutationUpdateTravelLegArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateTravelLegInput;
+};
+
+
 export type MutationUpdateTripArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTripInput;
@@ -343,6 +415,12 @@ export type Query = {
   stage?: Maybe<Stage>;
   /** Returns all stages for a trip, sorted by the date of their first visit ascending. Stages without any visit appear last in undefined order. */
   stages: Array<Stage>;
+  /** Returns a single travel leg by ID, or null if not found. */
+  travelLeg?: Maybe<TravelLeg>;
+  /** Returns all media for a travel leg, sorted by position ascending. */
+  travelLegMedia: Array<Media>;
+  /** Returns every travel leg for a trip. */
+  travelLegs: Array<TravelLeg>;
   /** Returns a single trip by ID, or null if not found. */
   trip?: Maybe<Trip>;
   /** Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit. */
@@ -366,6 +444,21 @@ export type QueryStageArgs = {
 
 
 export type QueryStagesArgs = {
+  tripID: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegMediaArgs = {
+  travelLegID: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegsArgs = {
   tripID: Scalars['ID']['input'];
 };
 
@@ -406,6 +499,12 @@ export type QueryVisitsArgs = {
 
 export type ReorderMediaPayload = {
   __typename?: 'ReorderMediaPayload';
+  errors: Array<UserError>;
+  media: Array<Media>;
+};
+
+export type ReorderTravelLegMediaPayload = {
+  __typename?: 'ReorderTravelLegMediaPayload';
   errors: Array<UserError>;
   media: Array<Media>;
 };
@@ -458,6 +557,35 @@ export type StagePayload = {
   stage?: Maybe<Stage>;
 };
 
+export type TravelLeg = {
+  __typename?: 'TravelLeg';
+  /** RFC 3339 timestamp. */
+  createdAt: Scalars['String']['output'];
+  /** Null when not provided or when an automatic recalculation failed. */
+  description?: Maybe<Scalars['String']['output']>;
+  /** Distance in kilometres. Null when not provided. */
+  distanceKm?: Maybe<Scalars['Float']['output']>;
+  fromStageID: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  toStageID: Scalars['ID']['output'];
+  transport: TravelLegTransport;
+  tripID: Scalars['ID']['output'];
+  /** RFC 3339 timestamp. */
+  updatedAt: Scalars['String']['output'];
+};
+
+export type TravelLegPayload = {
+  __typename?: 'TravelLegPayload';
+  errors: Array<UserError>;
+  travelLeg?: Maybe<TravelLeg>;
+};
+
+export type TravelLegTransport =
+  | 'BOAT'
+  | 'CAR'
+  | 'PLANE'
+  | 'TRAIN';
+
 export type Trip = {
   __typename?: 'Trip';
   country: Scalars['String']['output'];
@@ -497,6 +625,12 @@ export type UpdateStageInput = {
   lat: Scalars['Float']['input'];
   lng: Scalars['Float']['input'];
   name?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type UpdateTravelLegInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  distanceKm?: InputMaybe<Scalars['Float']['input']>;
+  transport: TravelLegTransport;
 };
 
 export type UpdateTripInput = {
@@ -651,14 +785,14 @@ export type VisitMediaQueryVariables = Exact<{
 }>;
 
 
-export type VisitMediaQuery = { __typename?: 'Query', visitMedia: Array<{ __typename?: 'Media', id: string, visitID: string, tripID: string, filename: string, contentType: string, caption?: string | null, url: string, thumbUrl: string, position: number, createdAt: string }> };
+export type VisitMediaQuery = { __typename?: 'Query', visitMedia: Array<{ __typename?: 'Media', id: string, visitID?: string | null, tripID: string, filename: string, contentType: string, caption?: string | null, url: string, thumbUrl: string, position: number, createdAt: string }> };
 
 export type TripMediaQueryVariables = Exact<{
   tripID: Scalars['ID']['input'];
 }>;
 
 
-export type TripMediaQuery = { __typename?: 'Query', tripMedia: Array<{ __typename?: 'Media', id: string, visitID: string, tripID: string, contentType: string, thumbUrl: string }> };
+export type TripMediaQuery = { __typename?: 'Query', tripMedia: Array<{ __typename?: 'Media', id: string, visitID?: string | null, tripID: string, contentType: string, thumbUrl: string }> };
 
 export type AddStageMutationVariables = Exact<{
   input: AddStageInput;

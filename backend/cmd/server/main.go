@@ -16,6 +16,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/adapter/mailer"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
 	pg "github.com/bfosses/sharemytrips/internal/adapter/postgres"
+	"github.com/bfosses/sharemytrips/internal/adapter/routing"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
@@ -85,6 +86,7 @@ func main() {
 	var authHandler *auth.Handler
 	var mediaHandler *media.Handler
 	var travelLegRepo travelleg.Repository
+	var travelLegHandler *travelleg.Handler
 
 	dsn := os.Getenv("DATABASE_URL")
 
@@ -117,6 +119,7 @@ func main() {
 		mediaRepo := pg.NewMediaRepository(pool)
 		visitChecker := pg.NewVisitChecker(pool)
 		travelLegRepo = pg.NewTravelLegRepository(pool)
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler))
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, pg.NewTravelLegChecker(pool))
 
 		if os.Getenv("ENV") == "dev" {
@@ -143,6 +146,7 @@ func main() {
 		mediaRepo := memory.NewMediaRepository()
 		visitChecker := memory.NewVisitChecker(visitRepo)
 		travelLegRepo = memory.NewTravelLegRepository()
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler))
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, memory.NewTravelLegChecker(travelLegRepo))
 
 		if os.Getenv("ENV") == "dev" {
@@ -153,7 +157,15 @@ func main() {
 	}
 
 	// GraphQL
-	resolver := graph.NewResolver(tripHandler, stageHandler, visitHandler, authHandler, mediaHandler)
+	resolver := graph.NewResolver(
+		tripHandler,
+		stageHandler,
+		visitHandler,
+		authHandler,
+		mediaHandler,
+		graph.WithTravelLegHandler(travelLegHandler),
+		graph.WithRouteDistanceProvider(routing.NewOpenRouteServiceClient(os.Getenv("OPENROUTESERVICE_API_KEY"))),
+	)
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	port := os.Getenv("PORT")

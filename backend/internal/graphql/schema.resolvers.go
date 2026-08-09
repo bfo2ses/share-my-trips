@@ -11,6 +11,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
@@ -265,6 +266,109 @@ func (r *mutationResolver) DeleteVisit(ctx context.Context, id string) (*DeleteV
 	return &DeleteVisitPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
+// CreateTravelLeg is the resolver for the createTravelLeg field.
+func (r *mutationResolver) CreateTravelLeg(ctx context.Context, input CreateTravelLegInput) (*TravelLegPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if r.travelLegHandler == nil {
+		return &TravelLegPayload{Errors: travelLegUnavailableErrors()}, nil
+	}
+	leg, err := r.travelLegHandler.Add(ctx, travelleg.CreateTravelLegCommand{
+		TripID:      input.TripID,
+		FromStageID: input.FromStageID,
+		ToStageID:   input.ToStageID,
+		Transport:   toDomainTravelLegTransport(input.Transport),
+		Description: derefString(input.Description),
+		DistanceKm:  input.DistanceKm,
+	})
+	if err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: []*UserError{}}, nil
+}
+
+// UpdateTravelLeg is the resolver for the updateTravelLeg field.
+func (r *mutationResolver) UpdateTravelLeg(ctx context.Context, id string, input UpdateTravelLegInput) (*TravelLegPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if r.travelLegHandler == nil {
+		return &TravelLegPayload{Errors: travelLegUnavailableErrors()}, nil
+	}
+	leg, err := r.travelLegHandler.Update(ctx, travelleg.UpdateTravelLegCommand{
+		ID:          id,
+		Transport:   toDomainTravelLegTransport(input.Transport),
+		Description: derefString(input.Description),
+		DistanceKm:  input.DistanceKm,
+	})
+	if err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: []*UserError{}}, nil
+}
+
+// MoveTravelLeg is the resolver for the moveTravelLeg field.
+func (r *mutationResolver) MoveTravelLeg(ctx context.Context, id string, input MoveTravelLegInput) (*TravelLegPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if r.travelLegHandler == nil {
+		return &TravelLegPayload{Errors: travelLegUnavailableErrors()}, nil
+	}
+	leg, err := r.travelLegHandler.Move(ctx, travelleg.MoveTravelLegCommand{ID: id, FromStageID: input.FromStageID, ToStageID: input.ToStageID})
+	if err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: []*UserError{}}, nil
+}
+
+// DeleteTravelLeg is the resolver for the deleteTravelLeg field.
+func (r *mutationResolver) DeleteTravelLeg(ctx context.Context, id string) (*DeleteTravelLegPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &DeleteTravelLegPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if r.travelLegHandler == nil {
+		return &DeleteTravelLegPayload{Success: false, Errors: travelLegUnavailableErrors()}, nil
+	}
+	if err := r.travelLegHandler.Delete(ctx, travelleg.DeleteTravelLegCommand{ID: id}); err != nil {
+		return &DeleteTravelLegPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &DeleteTravelLegPayload{Success: true, Errors: []*UserError{}}, nil
+}
+
+// CalculateTravelLegDistance is the resolver for the calculateTravelLegDistance field.
+func (r *mutationResolver) CalculateTravelLegDistance(ctx context.Context, fromStageID string, toStageID string, transport TravelLegTransport) (*CalculateTravelLegDistancePayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if r.travelLegHandler == nil {
+		return &CalculateTravelLegDistancePayload{Errors: travelLegUnavailableErrors()}, nil
+	}
+	from, err := r.stageHandler.GetByID(ctx, stage.GetStageQuery{ID: fromStageID})
+	if err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if err := r.travelLegHandler.ValidateModifiable(ctx, from.TripID); err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if err := r.travelLegHandler.ValidatePair(ctx, from.TripID, fromStageID, toStageID); err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	to, err := r.stageHandler.GetByID(ctx, stage.GetStageQuery{ID: toStageID})
+	if err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if !toDomainTravelLegTransport(transport).IsValid() {
+		return &CalculateTravelLegDistancePayload{Errors: domainErrorToUserErrors(travelleg.ErrInvalidTransport)}, nil
+	}
+	distanceKm, err := r.distanceCalculator.calculate(ctx, toDomainTravelLegTransport(transport), from.Lat, from.Lng, to.Lat, to.Lng)
+	if err != nil {
+		return &CalculateTravelLegDistancePayload{Errors: []*UserError{{Field: strPtr("distanceKm"), Message: "road distance calculation is unavailable"}}}, nil
+	}
+	return &CalculateTravelLegDistancePayload{DistanceKm: &distanceKm, Errors: []*UserError{}}, nil
+}
+
 // AttachVisitToStage is the resolver for the attachVisitToStage field.
 func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
@@ -435,6 +539,18 @@ func (r *mutationResolver) ReorderMedia(ctx context.Context, visitID string, med
 	return &ReorderMediaPayload{Media: toGraphQLMediaList(list), Errors: []*UserError{}}, nil
 }
 
+// ReorderTravelLegMedia is the resolver for the reorderTravelLegMedia field.
+func (r *mutationResolver) ReorderTravelLegMedia(ctx context.Context, travelLegID string, mediaIDs []string) (*ReorderTravelLegMediaPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &ReorderTravelLegMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	list, err := r.mediaHandler.ReorderTravelLeg(ctx, media.ReorderTravelLegCommand{TravelLegID: travelLegID, MediaIDs: mediaIDs})
+	if err != nil {
+		return &ReorderTravelLegMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &ReorderTravelLegMediaPayload{Media: toGraphQLMediaList(list), Errors: []*UserError{}}, nil
+}
+
 // DeleteMedia is the resolver for the deleteMedia field.
 func (r *mutationResolver) DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
@@ -564,6 +680,42 @@ func (r *queryResolver) VisitMedia(ctx context.Context, visitID string) ([]*Medi
 	return toGraphQLMediaList(list), nil
 }
 
+// TravelLeg is the resolver for the travelLeg field.
+func (r *queryResolver) TravelLeg(ctx context.Context, id string) (*TravelLeg, error) {
+	if r.travelLegHandler == nil {
+		return nil, nil
+	}
+	leg, err := r.travelLegHandler.GetByID(ctx, travelleg.GetTravelLegQuery{ID: id})
+	if errors.Is(err, travelleg.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLTravelLeg(leg), nil
+}
+
+// TravelLegs is the resolver for the travelLegs field.
+func (r *queryResolver) TravelLegs(ctx context.Context, tripID string) ([]*TravelLeg, error) {
+	if r.travelLegHandler == nil {
+		return []*TravelLeg{}, nil
+	}
+	legs, err := r.travelLegHandler.ListByTrip(ctx, travelleg.ListTravelLegsQuery{TripID: tripID})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLTravelLegList(legs), nil
+}
+
+// TravelLegMedia is the resolver for the travelLegMedia field.
+func (r *queryResolver) TravelLegMedia(ctx context.Context, travelLegID string) ([]*Media, error) {
+	items, err := r.mediaHandler.ListByTravelLeg(ctx, media.ListByTravelLegQuery{TravelLegID: travelLegID})
+	if err != nil {
+		return nil, err
+	}
+	return toGraphQLMediaList(items), nil
+}
+
 // TripMedia is the resolver for the tripMedia field.
 func (r *queryResolver) TripMedia(ctx context.Context, tripID string) ([]*Media, error) {
 	list, err := r.mediaHandler.ListByTrip(ctx, media.ListByTripQuery{TripID: tripID})
@@ -617,3 +769,7 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+
+func travelLegUnavailableErrors() []*UserError {
+	return []*UserError{{Message: "travel leg service is unavailable"}}
+}

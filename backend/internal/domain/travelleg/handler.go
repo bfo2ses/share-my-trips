@@ -117,6 +117,18 @@ func (h *Handler) ListByTrip(ctx context.Context, query ListTravelLegsQuery) ([]
 	return legs, nil
 }
 
+// ValidatePair verifies that endpoints form a currently consecutive pair. It
+// is used by non-persisting calculations as well as create and move commands.
+func (h *Handler) ValidatePair(ctx context.Context, tripID, fromStageID, toStageID string) error {
+	return h.validatePair(ctx, tripID, fromStageID, toStageID)
+}
+
+// ValidateModifiable verifies that the trip remains editable without changing
+// a leg. It is used by draft-only actions such as distance calculation.
+func (h *Handler) ValidateModifiable(ctx context.Context, tripID string) error {
+	return h.requireModifiable(ctx, tripID, "modify travel leg")
+}
+
 func (h *Handler) requireModifiable(ctx context.Context, tripID, operation string) error {
 	modifiable, err := h.tripChecker.IsModifiable(ctx, tripID)
 	if err != nil {

@@ -50,6 +50,11 @@ type AuthPayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
+type CalculateTravelLegDistancePayload struct {
+	DistanceKm *float64     `json:"distanceKm,omitempty"`
+	Errors     []*UserError `json:"errors"`
+}
+
 type ChangePasswordInput struct {
 	CurrentPassword    string `json:"currentPassword"`
 	NewPassword        string `json:"newPassword"`
@@ -69,6 +74,15 @@ type CreateAccountInput struct {
 	PasswordConfirm *string `json:"passwordConfirm,omitempty"`
 	// Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed.
 	Role *AccountRole `json:"role,omitempty"`
+}
+
+type CreateTravelLegInput struct {
+	TripID      string             `json:"tripID"`
+	FromStageID string             `json:"fromStageID"`
+	ToStageID   string             `json:"toStageID"`
+	Transport   TravelLegTransport `json:"transport"`
+	Description *string            `json:"description,omitempty"`
+	DistanceKm  *float64           `json:"distanceKm,omitempty"`
 }
 
 type CreateTripInput struct {
@@ -97,6 +111,11 @@ type DeleteStagePayload struct {
 	Errors  []*UserError `json:"errors"`
 }
 
+type DeleteTravelLegPayload struct {
+	Success bool         `json:"success"`
+	Errors  []*UserError `json:"errors"`
+}
+
 type DeleteTripPayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
@@ -108,11 +127,14 @@ type DeleteVisitPayload struct {
 }
 
 type Media struct {
-	ID          string `json:"id"`
-	VisitID     string `json:"visitID"`
-	TripID      string `json:"tripID"`
-	Filename    string `json:"filename"`
-	ContentType string `json:"contentType"`
+	ID string `json:"id"`
+	// The visit that owns this item, if any.
+	VisitID *string `json:"visitID,omitempty"`
+	// The travel leg that owns this item, if any.
+	TravelLegID *string `json:"travelLegID,omitempty"`
+	TripID      string  `json:"tripID"`
+	Filename    string  `json:"filename"`
+	ContentType string  `json:"contentType"`
 	// Null when not set.
 	Caption *string `json:"caption,omitempty"`
 	// URL to serve the original file.
@@ -129,7 +151,17 @@ type MediaPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
+type MoveTravelLegInput struct {
+	FromStageID string `json:"fromStageID"`
+	ToStageID   string `json:"toStageID"`
+}
+
 type ReorderMediaPayload struct {
+	Media  []*Media     `json:"media"`
+	Errors []*UserError `json:"errors"`
+}
+
+type ReorderTravelLegMediaPayload struct {
 	Media  []*Media     `json:"media"`
 	Errors []*UserError `json:"errors"`
 }
@@ -178,6 +210,27 @@ type StagePayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
+type TravelLeg struct {
+	ID          string             `json:"id"`
+	TripID      string             `json:"tripID"`
+	FromStageID string             `json:"fromStageID"`
+	ToStageID   string             `json:"toStageID"`
+	Transport   TravelLegTransport `json:"transport"`
+	// Null when not provided or when an automatic recalculation failed.
+	Description *string `json:"description,omitempty"`
+	// Distance in kilometres. Null when not provided.
+	DistanceKm *float64 `json:"distanceKm,omitempty"`
+	// RFC 3339 timestamp.
+	CreatedAt string `json:"createdAt"`
+	// RFC 3339 timestamp.
+	UpdatedAt string `json:"updatedAt"`
+}
+
+type TravelLegPayload struct {
+	TravelLeg *TravelLeg   `json:"travelLeg,omitempty"`
+	Errors    []*UserError `json:"errors"`
+}
+
 type Trip struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -210,6 +263,12 @@ type UpdateStageInput struct {
 	Lat         float64 `json:"lat"`
 	Lng         float64 `json:"lng"`
 	Description *string `json:"description,omitempty"`
+}
+
+type UpdateTravelLegInput struct {
+	Transport   TravelLegTransport `json:"transport"`
+	Description *string            `json:"description,omitempty"`
+	DistanceKm  *float64           `json:"distanceKm,omitempty"`
 }
 
 type UpdateTripInput struct {
@@ -315,6 +374,65 @@ func (e *AccountRole) UnmarshalJSON(b []byte) error {
 }
 
 func (e AccountRole) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TravelLegTransport string
+
+const (
+	TravelLegTransportCar   TravelLegTransport = "CAR"
+	TravelLegTransportTrain TravelLegTransport = "TRAIN"
+	TravelLegTransportPlane TravelLegTransport = "PLANE"
+	TravelLegTransportBoat  TravelLegTransport = "BOAT"
+)
+
+var AllTravelLegTransport = []TravelLegTransport{
+	TravelLegTransportCar,
+	TravelLegTransportTrain,
+	TravelLegTransportPlane,
+	TravelLegTransportBoat,
+}
+
+func (e TravelLegTransport) IsValid() bool {
+	switch e {
+	case TravelLegTransportCar, TravelLegTransportTrain, TravelLegTransportPlane, TravelLegTransportBoat:
+		return true
+	}
+	return false
+}
+
+func (e TravelLegTransport) String() string {
+	return string(e)
+}
+
+func (e *TravelLegTransport) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TravelLegTransport(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TravelLegTransport", str)
+	}
+	return nil
+}
+
+func (e TravelLegTransport) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TravelLegTransport) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TravelLegTransport) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil
