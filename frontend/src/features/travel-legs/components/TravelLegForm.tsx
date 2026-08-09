@@ -50,6 +50,7 @@ function TravelLegFormContent({
   const [calculating, setCalculating] = useState(false);
   const [calculationMessage, setCalculationMessage] = useState<string | null>(null);
   const distanceRef = useRef(distance);
+  const transportRef = useRef(transport);
 
   const [, createTravelLeg] = useCreateTravelLeg();
   const [, updateTravelLeg] = useUpdateTravelLeg();
@@ -63,13 +64,19 @@ function TravelLegFormContent({
     setDistance(value);
   }
 
+  function updateTransport(value: TravelLegTransport) {
+    transportRef.current = value;
+    setTransport(value);
+  }
+
   async function handleCalculate() {
     if (calculating || saving) return;
     setCalculating(true);
     setErrors([]);
     setCalculationMessage(null);
     const distanceAtStart = distanceRef.current;
-    const result = await calculateDistance({ fromStageID, toStageID, transport });
+    const transportAtStart = transportRef.current;
+    const result = await calculateDistance({ fromStageID, toStageID, transport: transportAtStart });
     setCalculating(false);
 
     if (result.error) {
@@ -81,7 +88,9 @@ function TravelLegFormContent({
       setErrors(payload?.errors.map((error) => error.message) ?? ['Impossible de calculer la distance. Vous pouvez la saisir manuellement.']);
       return;
     }
-    if (distanceRef.current === distanceAtStart) {
+    if (transportRef.current !== transportAtStart) {
+      setCalculationMessage('Le moyen de transport a changé. Lancez un nouveau calcul si nécessaire.');
+    } else if (distanceRef.current === distanceAtStart) {
       updateDistance(String(payload.distanceKm));
       setCalculationMessage('Distance calculée. Vous pouvez encore la modifier.');
     }
@@ -93,8 +102,8 @@ function TravelLegFormContent({
     setErrors([]);
 
     const distanceKm = distance.trim() === '' ? undefined : Number(distance);
-    if (distanceKm != null && (!Number.isFinite(distanceKm) || distanceKm <= 0)) {
-      setErrors(['La distance doit être un nombre positif.']);
+    if (distanceKm != null && (!Number.isFinite(distanceKm) || distanceKm < 0)) {
+      setErrors(['La distance doit être un nombre positif ou nul.']);
       return;
     }
 
@@ -142,7 +151,7 @@ function TravelLegFormContent({
     <>
       <div className={styles.header}>
         <span className={styles.headerTitle}>{isEdit ? 'Modifier le trajet' : 'Nouveau trajet'}</span>
-        {!panel && <button type="button" className={styles.close} onClick={onClose} aria-label="Fermer">✕</button>}
+        <button type="button" className={styles.close} onClick={onClose} aria-label={panel ? 'Annuler le trajet' : 'Fermer'}>✕</button>
       </div>
 
       <form className={styles.form} onSubmit={handleSubmit}>
@@ -154,7 +163,7 @@ function TravelLegFormContent({
 
         <label className={styles.label}>
           Moyen de transport
-          <select className={styles.input} value={transport} onChange={(event) => setTransport(event.target.value as TravelLegTransport)}>
+          <select className={styles.input} value={transport} onChange={(event) => updateTransport(event.target.value as TravelLegTransport)}>
             {transportOptions.map((option) => <option key={option.value} value={option.value}>{option.icon} {option.label}</option>)}
           </select>
         </label>

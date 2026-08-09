@@ -100,6 +100,49 @@ describe('TravelLegForm', () => {
     expect(createLeg).not.toHaveBeenCalled();
   });
 
+  it('lets an editor cancel an unsaved panel form', () => {
+    const onClose = vi.fn();
+    render(
+      <TravelLegForm
+        open
+        panel
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler le trajet' }));
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(createLeg).not.toHaveBeenCalled();
+  });
+
+  it('does not apply a calculation made for a transport that changed', async () => {
+    const pending = deferred<{ data: { calculateTravelLegDistance: { distanceKm: number; errors: [] } } }>();
+    calculate.mockReturnValue(pending.promise);
+    renderForm();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Calculer la distance' }));
+    fireEvent.change(screen.getByLabelText('Moyen de transport'), { target: { value: 'PLANE' } });
+    pending.resolve({ data: { calculateTravelLegDistance: { distanceKm: 42.4, errors: [] } } });
+
+    await screen.findByText('Le moyen de transport a changé. Lancez un nouveau calcul si nécessaire.');
+    expect(screen.getByLabelText('Distance (km)')).toHaveValue(null);
+  });
+
+  it('accepts a zero distance', async () => {
+    createLeg.mockResolvedValue({ data: { createTravelLeg: { travelLeg: { id: 'leg-1' }, errors: [] } } });
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '0' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le trajet' }));
+
+    await waitFor(() => expect(createLeg).toHaveBeenCalledWith({
+      input: expect.objectContaining({ distanceKm: 0 }),
+    }, expect.anything()));
+  });
+
   it('prevents duplicate calculations while one is pending', () => {
     const pending = deferred<{ data: { calculateTravelLegDistance: { distanceKm: number; errors: [] } } }>();
     calculate.mockReturnValue(pending.promise);
