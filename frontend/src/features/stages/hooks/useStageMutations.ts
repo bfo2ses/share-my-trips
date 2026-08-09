@@ -17,6 +17,10 @@ const ADD_STAGE = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
@@ -37,6 +41,10 @@ const UPDATE_STAGE = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
@@ -47,6 +55,10 @@ const DELETE_STAGE = gql(`
       success
       errors {
         field
+        message
+      }
+      recalculationWarnings {
+        travelLegID
         message
       }
     }

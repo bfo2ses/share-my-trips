@@ -87,11 +87,15 @@ type Stage {
 type StagePayload {
   stage: Stage
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type DeleteStagePayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddStageInput {
@@ -136,6 +140,8 @@ type Visit {
 type VisitPayload {
   visit: Visit
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type ReorderVisitsPayload {
@@ -146,6 +152,8 @@ type ReorderVisitsPayload {
 type DeleteVisitPayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddVisitInput {
@@ -284,9 +292,8 @@ type TravelLeg {
   fromStageID: ID!
   toStageID: ID!
   transport: TravelLegTransport!
-  "Null when not provided or when an automatic recalculation failed."
   description: String
-  "Distance in kilometres. Null when not provided."
+  "Distance in kilometres. Null when not provided or when an automatic recalculation failed."
   distanceKm: Float
   "RFC 3339 timestamp."
   createdAt: String!
@@ -297,6 +304,13 @@ type TravelLeg {
 type TravelLegPayload {
   travelLeg: TravelLeg
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
+}
+
+type TravelLegRecalculationWarning {
+  travelLegID: ID!
+  message: String!
 }
 
 type DeleteTravelLegPayload {

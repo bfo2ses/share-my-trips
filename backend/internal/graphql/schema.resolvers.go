@@ -170,6 +170,11 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input Upd
 	if err := r.requireEditor(ctx); err != nil {
 		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
+	existing, err := r.stageHandler.GetByID(ctx, stage.GetStageQuery{ID: id})
+	if err != nil {
+		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	coordinatesChanged := existing.Lat != input.Lat || existing.Lng != input.Lng
 	s, err := r.stageHandler.Update(ctx, stage.UpdateStageCommand{
 		ID:          id,
 		City:        input.City,
@@ -181,7 +186,18 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input Upd
 	if err != nil {
 		return &StagePayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &StagePayload{Stage: toGraphQLStage(s), Errors: []*UserError{}}, nil
+	if r.travelLegHandler == nil || !coordinatesChanged {
+		return &StagePayload{Stage: toGraphQLStage(s), Errors: []*UserError{}}, nil
+	}
+	legs, err := r.travelLegHandler.ListByTrip(ctx, travelleg.ListTravelLegsQuery{TripID: s.TripID})
+	if err != nil {
+		return &StagePayload{Stage: toGraphQLStage(s), Errors: domainErrorToUserErrors(err)}, nil
+	}
+	warnings, err := r.recalculateTravelLegDistances(ctx, travelleg.RecalculationRequestsForEndpoint(legs, s.ID))
+	if err != nil {
+		return &StagePayload{Stage: toGraphQLStage(s), Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &StagePayload{Stage: toGraphQLStage(s), Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // DeleteStage is the resolver for the deleteStage field.
@@ -197,12 +213,13 @@ func (r *mutationResolver) DeleteStage(ctx context.Context, id string, resolutio
 	if err != nil {
 		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	if err := r.resolveItineraryChange(ctx, item.TripID, proposedStagesWithout(stages, id), proposedVisitsWithoutStage(visits, id), resolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, item.TripID, proposedStagesWithout(stages, id), proposedVisitsWithoutStage(visits, id), resolutionPlan, func() error {
 		return r.stageHandler.Delete(ctx, stage.DeleteStageCommand{ID: id})
-	}); err != nil {
+	})
+	if err != nil {
 		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DeleteStagePayload{Success: true, Errors: []*UserError{}}, nil
+	return &DeleteStagePayload{Success: true, Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // AddVisit is the resolver for the addVisit field.
@@ -219,7 +236,7 @@ func (r *mutationResolver) AddVisit(ctx context.Context, input AddVisitInput) (*
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	var v *visit.Visit
-	err = r.resolveItineraryChange(ctx, input.TripID, stages, proposedVisitsWithAdded(visits, input.TripID, input.StageID, date), input.ResolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, input.TripID, stages, proposedVisitsWithAdded(visits, input.TripID, input.StageID, date), input.ResolutionPlan, func() error {
 		var applyErr error
 		v, applyErr = r.visitHandler.Add(ctx, visit.AddVisitCommand{
 			TripID:      input.TripID,
@@ -235,7 +252,7 @@ func (r *mutationResolver) AddVisit(ctx context.Context, input AddVisitInput) (*
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // UpdateVisit is the resolver for the updateVisit field.
@@ -268,7 +285,7 @@ func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input Upd
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	var v *visit.Visit
-	err = r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDate(visits, id, dateVal), input.ResolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDate(visits, id, dateVal), input.ResolutionPlan, func() error {
 		var applyErr error
 		v, applyErr = r.visitHandler.Update(ctx, visit.UpdateVisitCommand{
 			ID:          id,
@@ -283,7 +300,7 @@ func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input Upd
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // DeleteVisit is the resolver for the deleteVisit field.
@@ -299,12 +316,13 @@ func (r *mutationResolver) DeleteVisit(ctx context.Context, id string, resolutio
 	if err != nil {
 		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	if err := r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithout(visits, id), resolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithout(visits, id), resolutionPlan, func() error {
 		return r.visitHandler.Delete(ctx, visit.DeleteVisitCommand{ID: id})
-	}); err != nil {
+	})
+	if err != nil {
 		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &DeleteVisitPayload{Success: true, Errors: []*UserError{}}, nil
+	return &DeleteVisitPayload{Success: true, Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // CreateTravelLeg is the resolver for the createTravelLeg field.
@@ -361,7 +379,15 @@ func (r *mutationResolver) MoveTravelLeg(ctx context.Context, id string, input M
 	if err != nil {
 		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: []*UserError{}}, nil
+	warning, err := r.recalculateTravelLegDistance(ctx, leg.ID)
+	if err != nil {
+		return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: domainErrorToUserErrors(err)}, nil
+	}
+	leg, err = r.travelLegHandler.GetByID(ctx, travelleg.GetTravelLegQuery{ID: leg.ID})
+	if err != nil {
+		return &TravelLegPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &TravelLegPayload{TravelLeg: toGraphQLTravelLeg(leg), Errors: []*UserError{}, RecalculationWarnings: compactRecalculationWarning(warning)}, nil
 }
 
 // DeleteTravelLeg is the resolver for the deleteTravelLeg field.
@@ -424,7 +450,7 @@ func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID strin
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	var v *visit.Visit
-	err = r.resolveItineraryChange(ctx, existing.TripID, stages, visits, resolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, existing.TripID, stages, visits, resolutionPlan, func() error {
 		var applyErr error
 		v, applyErr = r.visitHandler.AttachToStage(ctx, visit.AttachToStageCommand{VisitID: visitID, StageID: stageID})
 		return applyErr
@@ -432,7 +458,7 @@ func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID strin
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // DetachVisitFromStage is the resolver for the detachVisitFromStage field.
@@ -449,7 +475,7 @@ func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID str
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 	var v *visit.Visit
-	err = r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDetachedStage(visits, visitID, stageID), resolutionPlan, func() error {
+	warnings, err := r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDetachedStage(visits, visitID, stageID), resolutionPlan, func() error {
 		var applyErr error
 		v, applyErr = r.visitHandler.DetachFromStage(ctx, visit.DetachFromStageCommand{VisitID: visitID, StageID: stageID})
 		return applyErr
@@ -457,7 +483,7 @@ func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID str
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}}, nil
+	return &VisitPayload{Visit: toGraphQLVisit(v), Errors: []*UserError{}, RecalculationWarnings: warnings}, nil
 }
 
 // ReorderVisits is the resolver for the reorderVisits field.

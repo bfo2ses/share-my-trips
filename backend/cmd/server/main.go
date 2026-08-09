@@ -8,6 +8,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bfosses/sharemytrips/internal/adapter/crypto"
@@ -42,6 +43,14 @@ func corsMiddleware(origin string, next http.Handler) http.Handler {
 }
 
 func main() {
+	// Local secrets can live beside the backend or at repository root. Production
+	// and Docker inject their environment directly, so never read local files there.
+	if os.Getenv("ENV") == "dev" {
+		if err := godotenv.Load(".env", "../.env"); err != nil && !os.IsNotExist(err) {
+			log.Printf("could not load local .env: %v", err)
+		}
+	}
+
 	ctx := context.Background()
 
 	// Shared adapters.
@@ -119,8 +128,8 @@ func main() {
 		mediaRepo := pg.NewMediaRepository(pool)
 		visitChecker := pg.NewVisitChecker(pool)
 		travelLegRepo = pg.NewTravelLegRepository(pool)
-		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler))
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, pg.NewTravelLegChecker(pool))
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler), mediaHandler)
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
@@ -146,8 +155,8 @@ func main() {
 		mediaRepo := memory.NewMediaRepository()
 		visitChecker := memory.NewVisitChecker(visitRepo)
 		travelLegRepo = memory.NewTravelLegRepository()
-		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler))
 		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, memory.NewTravelLegChecker(travelLegRepo))
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler), mediaHandler)
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)

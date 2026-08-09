@@ -53,6 +53,10 @@ const DELETE_VISIT = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);

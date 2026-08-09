@@ -13,11 +13,16 @@ type Handler struct {
 	repo          Repository
 	tripChecker   TripChecker
 	stageSequence StageSequence
+	mediaCleaner  MediaCleaner
 }
 
 // NewHandler creates a travel-leg handler.
-func NewHandler(repo Repository, tripChecker TripChecker, stageSequence StageSequence) *Handler {
-	return &Handler{repo: repo, tripChecker: tripChecker, stageSequence: stageSequence}
+func NewHandler(repo Repository, tripChecker TripChecker, stageSequence StageSequence, mediaCleaners ...MediaCleaner) *Handler {
+	handler := &Handler{repo: repo, tripChecker: tripChecker, stageSequence: stageSequence}
+	if len(mediaCleaners) > 0 {
+		handler.mediaCleaner = mediaCleaners[0]
+	}
+	return handler
 }
 
 // Add creates a leg for a currently free adjacent stage pair.
@@ -83,8 +88,27 @@ func (h *Handler) Move(ctx context.Context, cmd MoveTravelLegCommand) (*TravelLe
 	return leg, nil
 }
 
-// Delete removes a saved travel leg. Media cleanup belongs to the owner-aware
-// media lifecycle introduced with persistence.
+// SetDistance persists the output of a manual or automatic distance
+// calculation. Passing nil deliberately clears a value that is no longer
+// trustworthy after its route changed.
+func (h *Handler) SetDistance(ctx context.Context, id string, distanceKm *float64) (*TravelLeg, error) {
+	leg, err := h.repo.FindByID(ctx, id)
+	if err != nil {
+		return nil, fmt.Errorf("set travel leg distance: %w", err)
+	}
+	if err := h.requireModifiable(ctx, leg.TripID, "set travel leg distance"); err != nil {
+		return nil, err
+	}
+	if err := leg.SetDistance(distanceKm); err != nil {
+		return nil, fmt.Errorf("set travel leg distance: %w", err)
+	}
+	if err := h.repo.Save(ctx, leg); err != nil {
+		return nil, fmt.Errorf("set travel leg distance: %w", err)
+	}
+	return leg, nil
+}
+
+// Delete removes a saved travel leg and all its owned media.
 func (h *Handler) Delete(ctx context.Context, cmd DeleteTravelLegCommand) error {
 	leg, err := h.repo.FindByID(ctx, cmd.ID)
 	if err != nil {
@@ -92,6 +116,11 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteTravelLegCommand) error 
 	}
 	if err := h.requireModifiable(ctx, leg.TripID, "delete travel leg"); err != nil {
 		return err
+	}
+	if h.mediaCleaner != nil {
+		if err := h.mediaCleaner.DeleteTravelLegMedia(ctx, leg.ID); err != nil {
+			return fmt.Errorf("delete travel leg media: %w", err)
+		}
 	}
 	if err := h.repo.Delete(ctx, cmd.ID); err != nil {
 		return fmt.Errorf("delete travel leg: %w", err)
@@ -121,7 +150,7 @@ func (h *Handler) ApplyValidatedResolutions(ctx context.Context, resolutions []I
 				return fmt.Errorf("apply travel leg resolution: %w", err)
 			}
 		case ResolutionDelete:
-			if err := h.repo.Delete(ctx, leg.ID); err != nil {
+			if err := h.Delete(ctx, DeleteTravelLegCommand{ID: leg.ID}); err != nil {
 				return fmt.Errorf("apply travel leg resolution: %w", err)
 			}
 		default:

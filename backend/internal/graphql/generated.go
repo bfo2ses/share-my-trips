@@ -69,8 +69,9 @@ type ComplexityRoot struct {
 	}
 
 	DeleteStagePayload struct {
-		Errors  func(childComplexity int) int
-		Success func(childComplexity int) int
+		Errors                func(childComplexity int) int
+		RecalculationWarnings func(childComplexity int) int
+		Success               func(childComplexity int) int
 	}
 
 	DeleteTravelLegPayload struct {
@@ -84,8 +85,9 @@ type ComplexityRoot struct {
 	}
 
 	DeleteVisitPayload struct {
-		Errors  func(childComplexity int) int
-		Success func(childComplexity int) int
+		Errors                func(childComplexity int) int
+		RecalculationWarnings func(childComplexity int) int
+		Success               func(childComplexity int) int
 	}
 
 	Media struct {
@@ -194,8 +196,9 @@ type ComplexityRoot struct {
 	}
 
 	StagePayload struct {
-		Errors func(childComplexity int) int
-		Stage  func(childComplexity int) int
+		Errors                func(childComplexity int) int
+		RecalculationWarnings func(childComplexity int) int
+		Stage                 func(childComplexity int) int
 	}
 
 	TravelLeg struct {
@@ -211,8 +214,14 @@ type ComplexityRoot struct {
 	}
 
 	TravelLegPayload struct {
-		Errors    func(childComplexity int) int
-		TravelLeg func(childComplexity int) int
+		Errors                func(childComplexity int) int
+		RecalculationWarnings func(childComplexity int) int
+		TravelLeg             func(childComplexity int) int
+	}
+
+	TravelLegRecalculationWarning struct {
+		Message     func(childComplexity int) int
+		TravelLegID func(childComplexity int) int
 	}
 
 	Trip struct {
@@ -255,8 +264,9 @@ type ComplexityRoot struct {
 	}
 
 	VisitPayload struct {
-		Errors func(childComplexity int) int
-		Visit  func(childComplexity int) int
+		Errors                func(childComplexity int) int
+		RecalculationWarnings func(childComplexity int) int
+		Visit                 func(childComplexity int) int
 	}
 }
 
@@ -435,6 +445,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeleteStagePayload.Errors(childComplexity), true
+	case "DeleteStagePayload.recalculationWarnings":
+		if e.ComplexityRoot.DeleteStagePayload.RecalculationWarnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteStagePayload.RecalculationWarnings(childComplexity), true
 	case "DeleteStagePayload.success":
 		if e.ComplexityRoot.DeleteStagePayload.Success == nil {
 			break
@@ -474,6 +490,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.DeleteVisitPayload.Errors(childComplexity), true
+	case "DeleteVisitPayload.recalculationWarnings":
+		if e.ComplexityRoot.DeleteVisitPayload.RecalculationWarnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.DeleteVisitPayload.RecalculationWarnings(childComplexity), true
 	case "DeleteVisitPayload.success":
 		if e.ComplexityRoot.DeleteVisitPayload.Success == nil {
 			break
@@ -1185,6 +1207,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.StagePayload.Errors(childComplexity), true
+	case "StagePayload.recalculationWarnings":
+		if e.ComplexityRoot.StagePayload.RecalculationWarnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.StagePayload.RecalculationWarnings(childComplexity), true
 	case "StagePayload.stage":
 		if e.ComplexityRoot.StagePayload.Stage == nil {
 			break
@@ -1253,12 +1281,31 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.TravelLegPayload.Errors(childComplexity), true
+	case "TravelLegPayload.recalculationWarnings":
+		if e.ComplexityRoot.TravelLegPayload.RecalculationWarnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLegPayload.RecalculationWarnings(childComplexity), true
 	case "TravelLegPayload.travelLeg":
 		if e.ComplexityRoot.TravelLegPayload.TravelLeg == nil {
 			break
 		}
 
 		return e.ComplexityRoot.TravelLegPayload.TravelLeg(childComplexity), true
+
+	case "TravelLegRecalculationWarning.message":
+		if e.ComplexityRoot.TravelLegRecalculationWarning.Message == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLegRecalculationWarning.Message(childComplexity), true
+	case "TravelLegRecalculationWarning.travelLegID":
+		if e.ComplexityRoot.TravelLegRecalculationWarning.TravelLegID == nil {
+			break
+		}
+
+		return e.ComplexityRoot.TravelLegRecalculationWarning.TravelLegID(childComplexity), true
 
 	case "Trip.country":
 		if e.ComplexityRoot.Trip.Country == nil {
@@ -1432,6 +1479,12 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.VisitPayload.Errors(childComplexity), true
+	case "VisitPayload.recalculationWarnings":
+		if e.ComplexityRoot.VisitPayload.RecalculationWarnings == nil {
+			break
+		}
+
+		return e.ComplexityRoot.VisitPayload.RecalculationWarnings(childComplexity), true
 	case "VisitPayload.visit":
 		if e.ComplexityRoot.VisitPayload.Visit == nil {
 			break
@@ -1626,11 +1679,15 @@ type Stage {
 type StagePayload {
   stage: Stage
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type DeleteStagePayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddStageInput {
@@ -1675,6 +1732,8 @@ type Visit {
 type VisitPayload {
   visit: Visit
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type ReorderVisitsPayload {
@@ -1685,6 +1744,8 @@ type ReorderVisitsPayload {
 type DeleteVisitPayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddVisitInput {
@@ -1823,9 +1884,8 @@ type TravelLeg {
   fromStageID: ID!
   toStageID: ID!
   transport: TravelLegTransport!
-  "Null when not provided or when an automatic recalculation failed."
   description: String
-  "Distance in kilometres. Null when not provided."
+  "Distance in kilometres. Null when not provided or when an automatic recalculation failed."
   distanceKm: Float
   "RFC 3339 timestamp."
   createdAt: String!
@@ -1836,6 +1896,13 @@ type TravelLeg {
 type TravelLegPayload {
   travelLeg: TravelLeg
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
+}
+
+type TravelLegRecalculationWarning {
+  travelLegID: ID!
+  message: String!
 }
 
 type DeleteTravelLegPayload {
@@ -3201,6 +3268,41 @@ func (ec *executionContext) fieldContext_DeleteStagePayload_errors(_ context.Con
 	return fc, nil
 }
 
+func (ec *executionContext) _DeleteStagePayload_recalculationWarnings(ctx context.Context, field graphql.CollectedField, obj *DeleteStagePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteStagePayload_recalculationWarnings,
+		func(ctx context.Context) (any, error) {
+			return obj.RecalculationWarnings, nil
+		},
+		nil,
+		ec.marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteStagePayload_recalculationWarnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteStagePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLegID":
+				return ec.fieldContext_TravelLegRecalculationWarning_travelLegID(ctx, field)
+			case "message":
+				return ec.fieldContext_TravelLegRecalculationWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegRecalculationWarning", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _DeleteTravelLegPayload_success(ctx context.Context, field graphql.CollectedField, obj *DeleteTravelLegPayload) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -3388,6 +3490,41 @@ func (ec *executionContext) fieldContext_DeleteVisitPayload_errors(_ context.Con
 				return ec.fieldContext_UserError_message(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _DeleteVisitPayload_recalculationWarnings(ctx context.Context, field graphql.CollectedField, obj *DeleteVisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_DeleteVisitPayload_recalculationWarnings,
+		func(ctx context.Context) (any, error) {
+			return obj.RecalculationWarnings, nil
+		},
+		nil,
+		ec.marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_DeleteVisitPayload_recalculationWarnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "DeleteVisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLegID":
+				return ec.fieldContext_TravelLegRecalculationWarning_travelLegID(ctx, field)
+			case "message":
+				return ec.fieldContext_TravelLegRecalculationWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegRecalculationWarning", field.Name)
 		},
 	}
 	return fc, nil
@@ -4158,6 +4295,8 @@ func (ec *executionContext) fieldContext_Mutation_addStage(ctx context.Context, 
 				return ec.fieldContext_StagePayload_stage(ctx, field)
 			case "errors":
 				return ec.fieldContext_StagePayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_StagePayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StagePayload", field.Name)
 		},
@@ -4205,6 +4344,8 @@ func (ec *executionContext) fieldContext_Mutation_updateStage(ctx context.Contex
 				return ec.fieldContext_StagePayload_stage(ctx, field)
 			case "errors":
 				return ec.fieldContext_StagePayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_StagePayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type StagePayload", field.Name)
 		},
@@ -4252,6 +4393,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteStage(ctx context.Contex
 				return ec.fieldContext_DeleteStagePayload_success(ctx, field)
 			case "errors":
 				return ec.fieldContext_DeleteStagePayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_DeleteStagePayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DeleteStagePayload", field.Name)
 		},
@@ -4299,6 +4442,8 @@ func (ec *executionContext) fieldContext_Mutation_addVisit(ctx context.Context, 
 				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
 				return ec.fieldContext_VisitPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_VisitPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
@@ -4346,6 +4491,8 @@ func (ec *executionContext) fieldContext_Mutation_updateVisit(ctx context.Contex
 				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
 				return ec.fieldContext_VisitPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_VisitPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
@@ -4393,6 +4540,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteVisit(ctx context.Contex
 				return ec.fieldContext_DeleteVisitPayload_success(ctx, field)
 			case "errors":
 				return ec.fieldContext_DeleteVisitPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_DeleteVisitPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type DeleteVisitPayload", field.Name)
 		},
@@ -4440,6 +4589,8 @@ func (ec *executionContext) fieldContext_Mutation_createTravelLeg(ctx context.Co
 				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
 			case "errors":
 				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_TravelLegPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
 		},
@@ -4487,6 +4638,8 @@ func (ec *executionContext) fieldContext_Mutation_updateTravelLeg(ctx context.Co
 				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
 			case "errors":
 				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_TravelLegPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
 		},
@@ -4534,6 +4687,8 @@ func (ec *executionContext) fieldContext_Mutation_moveTravelLeg(ctx context.Cont
 				return ec.fieldContext_TravelLegPayload_travelLeg(ctx, field)
 			case "errors":
 				return ec.fieldContext_TravelLegPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_TravelLegPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type TravelLegPayload", field.Name)
 		},
@@ -4675,6 +4830,8 @@ func (ec *executionContext) fieldContext_Mutation_attachVisitToStage(ctx context
 				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
 				return ec.fieldContext_VisitPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_VisitPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
@@ -4722,6 +4879,8 @@ func (ec *executionContext) fieldContext_Mutation_detachVisitFromStage(ctx conte
 				return ec.fieldContext_VisitPayload_visit(ctx, field)
 			case "errors":
 				return ec.fieldContext_VisitPayload_errors(ctx, field)
+			case "recalculationWarnings":
+				return ec.fieldContext_VisitPayload_recalculationWarnings(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type VisitPayload", field.Name)
 		},
@@ -6995,6 +7154,41 @@ func (ec *executionContext) fieldContext_StagePayload_errors(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _StagePayload_recalculationWarnings(ctx context.Context, field graphql.CollectedField, obj *StagePayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_StagePayload_recalculationWarnings,
+		func(ctx context.Context) (any, error) {
+			return obj.RecalculationWarnings, nil
+		},
+		nil,
+		ec.marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_StagePayload_recalculationWarnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "StagePayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLegID":
+				return ec.fieldContext_TravelLegRecalculationWarning_travelLegID(ctx, field)
+			case "message":
+				return ec.fieldContext_TravelLegRecalculationWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegRecalculationWarning", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _TravelLeg_id(ctx context.Context, field graphql.CollectedField, obj *TravelLeg) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -7335,6 +7529,99 @@ func (ec *executionContext) fieldContext_TravelLegPayload_errors(_ context.Conte
 				return ec.fieldContext_UserError_message(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLegPayload_recalculationWarnings(ctx context.Context, field graphql.CollectedField, obj *TravelLegPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLegPayload_recalculationWarnings,
+		func(ctx context.Context) (any, error) {
+			return obj.RecalculationWarnings, nil
+		},
+		nil,
+		ec.marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLegPayload_recalculationWarnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLegPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLegID":
+				return ec.fieldContext_TravelLegRecalculationWarning_travelLegID(ctx, field)
+			case "message":
+				return ec.fieldContext_TravelLegRecalculationWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegRecalculationWarning", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLegRecalculationWarning_travelLegID(ctx context.Context, field graphql.CollectedField, obj *TravelLegRecalculationWarning) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLegRecalculationWarning_travelLegID,
+		func(ctx context.Context) (any, error) {
+			return obj.TravelLegID, nil
+		},
+		nil,
+		ec.marshalNID2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLegRecalculationWarning_travelLegID(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLegRecalculationWarning",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _TravelLegRecalculationWarning_message(ctx context.Context, field graphql.CollectedField, obj *TravelLegRecalculationWarning) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_TravelLegRecalculationWarning_message,
+		func(ctx context.Context) (any, error) {
+			return obj.Message, nil
+		},
+		nil,
+		ec.marshalNString2string,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_TravelLegRecalculationWarning_message(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "TravelLegRecalculationWarning",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -8238,6 +8525,41 @@ func (ec *executionContext) fieldContext_VisitPayload_errors(_ context.Context, 
 				return ec.fieldContext_UserError_message(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VisitPayload_recalculationWarnings(ctx context.Context, field graphql.CollectedField, obj *VisitPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_VisitPayload_recalculationWarnings,
+		func(ctx context.Context) (any, error) {
+			return obj.RecalculationWarnings, nil
+		},
+		nil,
+		ec.marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ,
+		true,
+		false,
+	)
+}
+
+func (ec *executionContext) fieldContext_VisitPayload_recalculationWarnings(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VisitPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "travelLegID":
+				return ec.fieldContext_TravelLegRecalculationWarning_travelLegID(ctx, field)
+			case "message":
+				return ec.fieldContext_TravelLegRecalculationWarning_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type TravelLegRecalculationWarning", field.Name)
 		},
 	}
 	return fc, nil
@@ -10846,6 +11168,8 @@ func (ec *executionContext) _DeleteStagePayload(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recalculationWarnings":
+			out.Values[i] = ec._DeleteStagePayload_recalculationWarnings(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -10978,6 +11302,8 @@ func (ec *executionContext) _DeleteVisitPayload(ctx context.Context, sel ast.Sel
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recalculationWarnings":
+			out.Values[i] = ec._DeleteVisitPayload_recalculationWarnings(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12030,6 +12356,8 @@ func (ec *executionContext) _StagePayload(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recalculationWarnings":
+			out.Values[i] = ec._StagePayload_recalculationWarnings(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -12141,6 +12469,52 @@ func (ec *executionContext) _TravelLegPayload(ctx context.Context, sel ast.Selec
 			out.Values[i] = ec._TravelLegPayload_travelLeg(ctx, field, obj)
 		case "errors":
 			out.Values[i] = ec._TravelLegPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "recalculationWarnings":
+			out.Values[i] = ec._TravelLegPayload_recalculationWarnings(ctx, field, obj)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var travelLegRecalculationWarningImplementors = []string{"TravelLegRecalculationWarning"}
+
+func (ec *executionContext) _TravelLegRecalculationWarning(ctx context.Context, sel ast.SelectionSet, obj *TravelLegRecalculationWarning) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, travelLegRecalculationWarningImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("TravelLegRecalculationWarning")
+		case "travelLegID":
+			out.Values[i] = ec._TravelLegRecalculationWarning_travelLegID(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "message":
+			out.Values[i] = ec._TravelLegRecalculationWarning_message(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -12438,6 +12812,8 @@ func (ec *executionContext) _VisitPayload(ctx context.Context, sel ast.Selection
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "recalculationWarnings":
+			out.Values[i] = ec._VisitPayload_recalculationWarnings(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -13294,6 +13670,16 @@ func (ec *executionContext) marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfosses�
 	return ec._TravelLegPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) marshalNTravelLegRecalculationWarning2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarning(ctx context.Context, sel ast.SelectionSet, v *TravelLegRecalculationWarning) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._TravelLegRecalculationWarning(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNTravelLegResolutionAction2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionAction(ctx context.Context, v any) (TravelLegResolutionAction, error) {
 	var res TravelLegResolutionAction
 	err := res.UnmarshalGQL(v)
@@ -13721,6 +14107,25 @@ func (ec *executionContext) marshalOTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharem
 		return graphql.Null
 	}
 	return ec._TravelLeg(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOTravelLegRecalculationWarning2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarningᚄ(ctx context.Context, sel ast.SelectionSet, v []*TravelLegRecalculationWarning) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := graphql.MarshalSliceConcurrently(ctx, len(v), 0, false, func(ctx context.Context, i int) graphql.Marshaler {
+		fc := graphql.GetFieldContext(ctx)
+		fc.Result = &v[i]
+		return ec.marshalNTravelLegRecalculationWarning2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegRecalculationWarning(ctx, sel, v[i])
+	})
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
 }
 
 func (ec *executionContext) unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ(ctx context.Context, v any) ([]*TravelLegResolutionInput, error) {

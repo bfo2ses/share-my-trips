@@ -106,12 +106,23 @@ func (l *TravelLeg) Move(fromStageID, toStageID string) {
 	l.UpdatedAt = time.Now()
 }
 
+// SetDistance replaces the persisted distance after a calculation. A nil
+// distance is valid and represents an unavailable or intentionally omitted
+// value.
+func (l *TravelLeg) SetDistance(distanceKm *float64) error {
+	if err := validateDistance(distanceKm); err != nil {
+		return err
+	}
+	l.DistanceKm = cloneDistance(distanceKm)
+	l.UpdatedAt = time.Now()
+	return nil
+}
+
 // ClearDistance removes a stale value when a subsequent automatic
 // recalculation fails. The calculator itself is intentionally outside this
 // pure domain package.
 func (l *TravelLeg) ClearDistance() {
-	l.DistanceKm = nil
-	l.UpdatedAt = time.Now()
+	_ = l.SetDistance(nil)
 }
 
 func validateDistance(distanceKm *float64) error {

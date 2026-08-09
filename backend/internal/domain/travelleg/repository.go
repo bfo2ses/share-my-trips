@@ -28,3 +28,10 @@ type StageRef struct {
 type StageSequence interface {
 	OrderedStages(ctx context.Context, tripID string) ([]StageRef, error)
 }
+
+// MediaCleaner removes the media owned by a travel leg before its persistence
+// record is removed. The travel-leg context owns the deletion lifecycle while
+// the media context owns the storage details.
+type MediaCleaner interface {
+	DeleteTravelLegMedia(ctx context.Context, travelLegID string) error
+}

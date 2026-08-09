@@ -136,6 +136,188 @@ func TestGraphQLHTTP_UnconfiguredCarDistanceReturnsPayloadError(t *testing.T) {
 	assert.Equal(t, "road distance calculation is unavailable", data.CalculateTravelLegDistance.Errors[0].Message)
 }
 
+func TestGraphQLHTTP_StageCoordinateChangeRecalculatesTravelLegDistance(t *testing.T) {
+	harness := newGraphQLHarness(t)
+	token, tripID, stageIDs := createTravelLegFixture(t, harness)
+
+	createdEnvelope := harness.post(t, `mutation CreateTravelLeg($input: CreateTravelLegInput!) {
+		createTravelLeg(input: $input) { travelLeg { id distanceKm } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "fromStageID": stageIDs[0], "toStageID": stageIDs[1], "transport": "TRAIN", "distanceKm": 1.0,
+	}}, token)
+	created := decodeData[struct {
+		CreateTravelLeg struct {
+			TravelLeg *struct {
+				ID         string   `json:"id"`
+				DistanceKm *float64 `json:"distanceKm"`
+			} `json:"travelLeg"`
+			Errors []userError `json:"errors"`
+		} `json:"createTravelLeg"`
+	}](t, createdEnvelope)
+	require.Empty(t, created.CreateTravelLeg.Errors)
+	require.NotNil(t, created.CreateTravelLeg.TravelLeg)
+
+	updatedEnvelope := harness.post(t, `mutation UpdateStage($id: ID!, $input: UpdateStageInput!) {
+		updateStage(id: $id, input: $input) {
+			stage { id lat lng }
+			recalculationWarnings { travelLegID message }
+			errors { message }
+		}
+	}`, map[string]any{"id": stageIDs[0], "input": map[string]any{
+		"city": "Las Vegas", "lat": 34.0522, "lng": -118.2437,
+	}}, token)
+	updated := decodeData[struct {
+		UpdateStage struct {
+			Stage *struct {
+				ID  string  `json:"id"`
+				Lat float64 `json:"lat"`
+				Lng float64 `json:"lng"`
+			} `json:"stage"`
+			RecalculationWarnings []struct {
+				TravelLegID string `json:"travelLegID"`
+				Message     string `json:"message"`
+			} `json:"recalculationWarnings"`
+			Errors []userError `json:"errors"`
+		} `json:"updateStage"`
+	}](t, updatedEnvelope)
+	require.NotNil(t, updated.UpdateStage.Stage)
+	assert.Equal(t, 34.0522, updated.UpdateStage.Stage.Lat)
+	assert.Equal(t, -118.2437, updated.UpdateStage.Stage.Lng)
+	require.Empty(t, updated.UpdateStage.Errors)
+	assert.Empty(t, updated.UpdateStage.RecalculationWarnings)
+
+	legsEnvelope := harness.post(t, `query TravelLegs($tripID: ID!) {
+		travelLegs(tripID: $tripID) { id distanceKm }
+	}`, map[string]any{"tripID": tripID}, token)
+	legs := decodeData[struct {
+		TravelLegs []struct {
+			ID         string   `json:"id"`
+			DistanceKm *float64 `json:"distanceKm"`
+		} `json:"travelLegs"`
+	}](t, legsEnvelope)
+	require.Len(t, legs.TravelLegs, 1)
+	assert.Equal(t, created.CreateTravelLeg.TravelLeg.ID, legs.TravelLegs[0].ID)
+	require.NotNil(t, legs.TravelLegs[0].DistanceKm)
+	assert.NotEqual(t, 1.0, *legs.TravelLegs[0].DistanceKm)
+}
+
+func TestGraphQLHTTP_AutomaticCarRecalculationClearsStaleDistanceAndWarns(t *testing.T) {
+	harness := newGraphQLHarness(t)
+	token, tripID, stageIDs := createTravelLegFixture(t, harness)
+
+	createdEnvelope := harness.post(t, `mutation CreateTravelLeg($input: CreateTravelLegInput!) {
+		createTravelLeg(input: $input) { travelLeg { id } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "fromStageID": stageIDs[0], "toStageID": stageIDs[1], "transport": "CAR", "distanceKm": 812.5,
+	}}, token)
+	created := decodeData[struct {
+		CreateTravelLeg struct {
+			TravelLeg *struct{ ID string } `json:"travelLeg"`
+			Errors    []userError          `json:"errors"`
+		} `json:"createTravelLeg"`
+	}](t, createdEnvelope)
+	require.Empty(t, created.CreateTravelLeg.Errors)
+	require.NotNil(t, created.CreateTravelLeg.TravelLeg)
+
+	updatedEnvelope := harness.post(t, `mutation UpdateStage($id: ID!, $input: UpdateStageInput!) {
+		updateStage(id: $id, input: $input) {
+			stage { id }
+			recalculationWarnings { travelLegID message }
+			errors { message }
+		}
+	}`, map[string]any{"id": stageIDs[0], "input": map[string]any{
+		"city": "Las Vegas", "lat": 34.0522, "lng": -118.2437,
+	}}, token)
+	updated := decodeData[struct {
+		UpdateStage struct {
+			Stage                 *struct{ ID string } `json:"stage"`
+			RecalculationWarnings []struct {
+				TravelLegID string `json:"travelLegID"`
+				Message     string `json:"message"`
+			} `json:"recalculationWarnings"`
+			Errors []userError `json:"errors"`
+		} `json:"updateStage"`
+	}](t, updatedEnvelope)
+	require.NotNil(t, updated.UpdateStage.Stage)
+	require.Empty(t, updated.UpdateStage.Errors)
+	require.Len(t, updated.UpdateStage.RecalculationWarnings, 1)
+	assert.Equal(t, created.CreateTravelLeg.TravelLeg.ID, updated.UpdateStage.RecalculationWarnings[0].TravelLegID)
+	assert.Equal(t, "La distance n’a pas pu être recalculée. Vous pouvez la recalculer ou la saisir manuellement.", updated.UpdateStage.RecalculationWarnings[0].Message)
+
+	legEnvelope := harness.post(t, `query TravelLeg($id: ID!) { travelLeg(id: $id) { distanceKm } }`, map[string]any{"id": created.CreateTravelLeg.TravelLeg.ID}, token)
+	leg := decodeData[struct {
+		TravelLeg struct {
+			DistanceKm *float64 `json:"distanceKm"`
+		} `json:"travelLeg"`
+	}](t, legEnvelope)
+	assert.Nil(t, leg.TravelLeg.DistanceKm)
+}
+
+func TestGraphQLHTTP_MoveTravelLegAutomaticallyRecalculatesDistance(t *testing.T) {
+	provider := &routeDistanceStub{distanceKm: 321.5}
+	harness := newGraphQLHarnessWithRouteProvider(t, provider)
+	token, tripID, stageIDs := createTravelLegFixture(t, harness)
+
+	thirdStageEnvelope := harness.post(t, `mutation AddStage($input: AddStageInput!) {
+		addStage(input: $input) { stage { id } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "city": "San Diego", "lat": 32.7157, "lng": -117.1611,
+	}}, token)
+	thirdStage := decodeData[struct {
+		AddStage struct {
+			Stage  *struct{ ID string } `json:"stage"`
+			Errors []userError          `json:"errors"`
+		} `json:"addStage"`
+	}](t, thirdStageEnvelope)
+	require.Empty(t, thirdStage.AddStage.Errors)
+	require.NotNil(t, thirdStage.AddStage.Stage)
+
+	createdEnvelope := harness.post(t, `mutation CreateTravelLeg($input: CreateTravelLegInput!) {
+		createTravelLeg(input: $input) { travelLeg { id } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "fromStageID": stageIDs[0], "toStageID": stageIDs[1], "transport": "CAR", "distanceKm": 812.5,
+	}}, token)
+	created := decodeData[struct {
+		CreateTravelLeg struct {
+			TravelLeg *struct{ ID string } `json:"travelLeg"`
+			Errors    []userError          `json:"errors"`
+		} `json:"createTravelLeg"`
+	}](t, createdEnvelope)
+	require.Empty(t, created.CreateTravelLeg.Errors)
+	require.NotNil(t, created.CreateTravelLeg.TravelLeg)
+
+	movedEnvelope := harness.post(t, `mutation MoveTravelLeg($id: ID!, $input: MoveTravelLegInput!) {
+		moveTravelLeg(id: $id, input: $input) {
+			travelLeg { fromStageID toStageID distanceKm }
+			recalculationWarnings { travelLegID message }
+			errors { message }
+		}
+	}`, map[string]any{"id": created.CreateTravelLeg.TravelLeg.ID, "input": map[string]any{
+		"fromStageID": stageIDs[1], "toStageID": thirdStage.AddStage.Stage.ID,
+	}}, token)
+	moved := decodeData[struct {
+		MoveTravelLeg struct {
+			TravelLeg *struct {
+				FromStageID string   `json:"fromStageID"`
+				ToStageID   string   `json:"toStageID"`
+				DistanceKm  *float64 `json:"distanceKm"`
+			} `json:"travelLeg"`
+			RecalculationWarnings []struct {
+				TravelLegID string `json:"travelLegID"`
+			} `json:"recalculationWarnings"`
+			Errors []userError `json:"errors"`
+		} `json:"moveTravelLeg"`
+	}](t, movedEnvelope)
+	require.Empty(t, moved.MoveTravelLeg.Errors)
+	require.NotNil(t, moved.MoveTravelLeg.TravelLeg)
+	assert.Equal(t, stageIDs[1], moved.MoveTravelLeg.TravelLeg.FromStageID)
+	assert.Equal(t, thirdStage.AddStage.Stage.ID, moved.MoveTravelLeg.TravelLeg.ToStageID)
+	require.NotNil(t, moved.MoveTravelLeg.TravelLeg.DistanceKm)
+	assert.Equal(t, 321.5, *moved.MoveTravelLeg.TravelLeg.DistanceKm)
+	assert.Empty(t, moved.MoveTravelLeg.RecalculationWarnings)
+	assert.Equal(t, 1, provider.calls)
+}
+
 func TestGraphQLHTTP_StageDeletionRequiresAndAppliesTravelLegResolution(t *testing.T) {
 	harness := newGraphQLHarness(t)
 	token, tripID, stageIDs := createTravelLegFixture(t, harness)
@@ -162,7 +344,7 @@ func TestGraphQLHTTP_StageDeletionRequiresAndAppliesTravelLegResolution(t *testi
 	leg := decodeData[struct {
 		CreateTravelLeg struct {
 			TravelLeg *struct{ ID string } `json:"travelLeg"`
-			Errors     []userError         `json:"errors"`
+			Errors    []userError          `json:"errors"`
 		} `json:"createTravelLeg"`
 	}](t, legEnvelope)
 	require.Empty(t, leg.CreateTravelLeg.Errors)
@@ -188,9 +370,9 @@ func TestGraphQLHTTP_StageDeletionRequiresAndAppliesTravelLegResolution(t *testi
 		"id": stageIDs[1],
 		"plan": []map[string]any{{
 			"travelLegID": leg.CreateTravelLeg.TravelLeg.ID,
-			"action": "MOVE",
+			"action":      "MOVE",
 			"fromStageID": stageIDs[0],
-			"toStageID": third.AddStage.Stage.ID,
+			"toStageID":   third.AddStage.Stage.ID,
 		}},
 	}, token)
 	resolvedData := decodeData[struct {

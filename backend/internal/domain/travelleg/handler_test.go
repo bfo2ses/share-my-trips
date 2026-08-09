@@ -141,6 +141,20 @@ func TestHandlerUpdateMoveAndDelete_SucceedForAModifiableTrip(t *testing.T) {
 	assert.ErrorIs(t, err, ErrNotFound)
 }
 
+func TestHandlerDelete_CleansOwnedMediaBeforeRemovingTheLeg(t *testing.T) {
+	t.Parallel()
+
+	repo := newRepository()
+	repo.legs["leg-1"] = &TravelLeg{ID: "leg-1", TripID: "trip-1", FromStageID: "stage-a", ToStageID: "stage-b", Transport: TransportCar}
+	cleaner := &stubMediaCleaner{}
+	handler := NewHandler(repo, modifiableTrips{}, &stubStageSequence{}, cleaner)
+
+	require.NoError(t, handler.Delete(context.Background(), DeleteTravelLegCommand{ID: "leg-1"}))
+	assert.Equal(t, []string{"leg-1"}, cleaner.deleted)
+	_, err := repo.FindByID(context.Background(), "leg-1")
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
 func TestHandlerMutations_RejectAClosedTrip(t *testing.T) {
 	t.Parallel()
 
@@ -247,6 +261,19 @@ func (t modifiableTrips) IsModifiable(_ context.Context, tripID string) (bool, e
 		return true, nil
 	}
 	return modifiable, nil
+}
+
+type stubMediaCleaner struct {
+	deleted []string
+	err     error
+}
+
+func (c *stubMediaCleaner) DeleteTravelLegMedia(_ context.Context, travelLegID string) error {
+	if c.err != nil {
+		return c.err
+	}
+	c.deleted = append(c.deleted, travelLegID)
+	return nil
 }
 
 type stubStageSequence struct {

@@ -217,6 +217,22 @@ func (h *Handler) ListByTravelLeg(ctx context.Context, query ListByTravelLegQuer
 	return items, nil
 }
 
+// DeleteTravelLegMedia deletes every media item owned by a travel leg. It is
+// consumed through the travel-leg context's narrow MediaCleaner port so that
+// filesystem files are removed before a foreign-key cascade can hide them.
+func (h *Handler) DeleteTravelLegMedia(ctx context.Context, travelLegID string) error {
+	items, err := h.ListByTravelLeg(ctx, ListByTravelLegQuery{TravelLegID: travelLegID})
+	if err != nil {
+		return fmt.Errorf("list travel leg media: %w", err)
+	}
+	for _, item := range items {
+		if err := h.Delete(ctx, DeleteMediaCommand{ID: item.ID}); err != nil {
+			return fmt.Errorf("delete travel leg media: %w", err)
+		}
+	}
+	return nil
+}
+
 // ListByTrip handles the ListByTripQuery. Returns media across all the trip's
 // visits, grouped by visit (stable but arbitrary visit order — visit IDs are
 // UUIDs, not chronological), sorted by position within each visit.

@@ -67,7 +67,7 @@ func (c *OpenRouteServiceClient) CalculateDrivingDistance(ctx context.Context, f
 		return 0, ErrRequestFailed
 	}
 	req.Header.Set("Authorization", c.apiKey)
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", "application/geo+json")
 
 	resp, err := c.client.Do(req)
 	if err != nil {
@@ -81,17 +81,30 @@ func (c *OpenRouteServiceClient) CalculateDrivingDistance(ctx context.Context, f
 	var payload struct {
 		Routes []struct {
 			Summary struct {
-				Distance float64 `json:"distance"`
+				Distance *float64 `json:"distance"`
 			} `json:"summary"`
 		} `json:"routes"`
+		Features []struct {
+			Properties struct {
+				Summary struct {
+					Distance *float64 `json:"distance"`
+				} `json:"summary"`
+			} `json:"properties"`
+		} `json:"features"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
 		return 0, ErrRequestFailed
 	}
-	if len(payload.Routes) == 0 || payload.Routes[0].Summary.Distance < 0 {
+	var distanceMeters *float64
+	if len(payload.Routes) > 0 {
+		distanceMeters = payload.Routes[0].Summary.Distance
+	} else if len(payload.Features) > 0 {
+		distanceMeters = payload.Features[0].Properties.Summary.Distance
+	}
+	if distanceMeters == nil || *distanceMeters < 0 {
 		return 0, ErrRequestFailed
 	}
-	return payload.Routes[0].Summary.Distance / 1000, nil
+	return *distanceMeters / 1000, nil
 }
 
 func coordinate(lng, lat float64) string {

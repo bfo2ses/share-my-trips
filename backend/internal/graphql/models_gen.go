@@ -111,6 +111,8 @@ type DeleteMediaPayload struct {
 type DeleteStagePayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
+	// Non-blocking warnings emitted after automatic travel-leg distance recalculation.
+	RecalculationWarnings []*TravelLegRecalculationWarning `json:"recalculationWarnings,omitempty"`
 }
 
 type DeleteTravelLegPayload struct {
@@ -126,6 +128,8 @@ type DeleteTripPayload struct {
 type DeleteVisitPayload struct {
 	Success bool         `json:"success"`
 	Errors  []*UserError `json:"errors"`
+	// Non-blocking warnings emitted after automatic travel-leg distance recalculation.
+	RecalculationWarnings []*TravelLegRecalculationWarning `json:"recalculationWarnings,omitempty"`
 }
 
 type Media struct {
@@ -210,6 +214,8 @@ type Stage struct {
 type StagePayload struct {
 	Stage  *Stage       `json:"stage,omitempty"`
 	Errors []*UserError `json:"errors"`
+	// Non-blocking warnings emitted after automatic travel-leg distance recalculation.
+	RecalculationWarnings []*TravelLegRecalculationWarning `json:"recalculationWarnings,omitempty"`
 }
 
 type TravelLeg struct {
@@ -218,9 +224,8 @@ type TravelLeg struct {
 	FromStageID string             `json:"fromStageID"`
 	ToStageID   string             `json:"toStageID"`
 	Transport   TravelLegTransport `json:"transport"`
-	// Null when not provided or when an automatic recalculation failed.
-	Description *string `json:"description,omitempty"`
-	// Distance in kilometres. Null when not provided.
+	Description *string            `json:"description,omitempty"`
+	// Distance in kilometres. Null when not provided or when an automatic recalculation failed.
 	DistanceKm *float64 `json:"distanceKm,omitempty"`
 	// RFC 3339 timestamp.
 	CreatedAt string `json:"createdAt"`
@@ -231,6 +236,13 @@ type TravelLeg struct {
 type TravelLegPayload struct {
 	TravelLeg *TravelLeg   `json:"travelLeg,omitempty"`
 	Errors    []*UserError `json:"errors"`
+	// Non-blocking warnings emitted after automatic distance recalculation.
+	RecalculationWarnings []*TravelLegRecalculationWarning `json:"recalculationWarnings,omitempty"`
+}
+
+type TravelLegRecalculationWarning struct {
+	TravelLegID string `json:"travelLegID"`
+	Message     string `json:"message"`
 }
 
 // One explicit decision for a journey invalidated by a stage-sequence change.
@@ -332,6 +344,8 @@ type Visit struct {
 type VisitPayload struct {
 	Visit  *Visit       `json:"visit,omitempty"`
 	Errors []*UserError `json:"errors"`
+	// Non-blocking warnings emitted after automatic travel-leg distance recalculation.
+	RecalculationWarnings []*TravelLegRecalculationWarning `json:"recalculationWarnings,omitempty"`
 }
 
 type AccountRole string

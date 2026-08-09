@@ -28,9 +28,9 @@ func (r *mutationResolver) resolveItineraryChange(
 	proposedVisits []*visit.Visit,
 	inputs []*TravelLegResolutionInput,
 	apply func() error,
-) error {
+) ([]*TravelLegRecalculationWarning, error) {
 	if r.travelLegHandler == nil {
-		return apply()
+		return nil, apply()
 	}
 
 	r.itinerary.mu.Lock()
@@ -38,12 +38,13 @@ func (r *mutationResolver) resolveItineraryChange(
 
 	legs, err := r.travelLegHandler.ListByTrip(ctx, travelleg.ListTravelLegsQuery{TripID: tripID})
 	if err != nil {
-		return fmt.Errorf("preflight itinerary change: %w", err)
+		return nil, fmt.Errorf("preflight itinerary change: %w", err)
 	}
 	proposed := orderedStageRefs(proposedStages, proposedVisits)
 	resolutions := toDomainResolutionPlan(inputs)
-	if _, err := travelleg.ValidateResolutionPlan(legs, proposed, resolutions); err != nil {
-		return fmt.Errorf("preflight itinerary change: %w", err)
+	recalculations, err := travelleg.ValidateResolutionPlan(legs, proposed, resolutions)
+	if err != nil {
+		return nil, fmt.Errorf("preflight itinerary change: %w", err)
 	}
 
 	// Endpoint deletion is protected by the database foreign keys, therefore
@@ -54,18 +55,22 @@ func (r *mutationResolver) resolveItineraryChange(
 	if len(resolutions) > 0 {
 		if err := r.travelLegHandler.ApplyValidatedResolutions(ctx, resolutions); err != nil {
 			_ = r.travelLegHandler.RestoreResolvedLegs(ctx, legs)
-			return fmt.Errorf("apply itinerary resolutions: %w", err)
+			return nil, fmt.Errorf("apply itinerary resolutions: %w", err)
 		}
 	}
 	if err := apply(); err != nil {
 		if len(resolutions) > 0 {
 			if rollbackErr := r.travelLegHandler.RestoreResolvedLegs(ctx, legs); rollbackErr != nil {
-				return fmt.Errorf("apply itinerary change: %w (rollback itinerary resolutions: %v)", err, rollbackErr)
+				return nil, fmt.Errorf("apply itinerary change: %w (rollback itinerary resolutions: %v)", err, rollbackErr)
 			}
 		}
-		return fmt.Errorf("apply itinerary change: %w", err)
+		return nil, fmt.Errorf("apply itinerary change: %w", err)
 	}
-	return nil
+	warnings, err := r.recalculateTravelLegDistances(ctx, recalculations)
+	if err != nil {
+		return nil, fmt.Errorf("recalculate moved travel legs: %w", err)
+	}
+	return warnings, nil
 }
 
 func (r *mutationResolver) currentItinerary(ctx context.Context, tripID string) ([]*stage.Stage, []*visit.Visit, error) {
