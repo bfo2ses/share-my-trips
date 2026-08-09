@@ -1,0 +1,170 @@
+package travelleg
+
+import (
+	"context"
+	"errors"
+	"fmt"
+
+	"github.com/google/uuid"
+)
+
+// Handler handles travel-leg commands and queries.
+type Handler struct {
+	repo          Repository
+	tripChecker   TripChecker
+	stageSequence StageSequence
+}
+
+// NewHandler creates a travel-leg handler.
+func NewHandler(repo Repository, tripChecker TripChecker, stageSequence StageSequence) *Handler {
+	return &Handler{repo: repo, tripChecker: tripChecker, stageSequence: stageSequence}
+}
+
+// Add creates a leg for a currently free adjacent stage pair.
+func (h *Handler) Add(ctx context.Context, cmd CreateTravelLegCommand) (*TravelLeg, error) {
+	if err := h.requireModifiable(ctx, cmd.TripID, "add travel leg"); err != nil {
+		return nil, err
+	}
+	if err := h.validatePair(ctx, cmd.TripID, cmd.FromStageID, cmd.ToStageID); err != nil {
+		return nil, fmt.Errorf("add travel leg: %w", err)
+	}
+	if err := h.ensurePairAvailable(ctx, cmd.TripID, cmd.FromStageID, cmd.ToStageID, ""); err != nil {
+		return nil, fmt.Errorf("add travel leg: %w", err)
+	}
+
+	leg, err := NewTravelLeg(uuid.New().String(), cmd.TripID, cmd.FromStageID, cmd.ToStageID, cmd.Transport, cmd.Description, cmd.DistanceKm)
+	if err != nil {
+		return nil, fmt.Errorf("add travel leg: %w", err)
+	}
+	if err := h.repo.Save(ctx, leg); err != nil {
+		return nil, fmt.Errorf("add travel leg: %w", err)
+	}
+	return leg, nil
+}
+
+// Update modifies a saved travel leg without changing its endpoints.
+func (h *Handler) Update(ctx context.Context, cmd UpdateTravelLegCommand) (*TravelLeg, error) {
+	leg, err := h.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return nil, fmt.Errorf("update travel leg: %w", err)
+	}
+	if err := h.requireModifiable(ctx, leg.TripID, "update travel leg"); err != nil {
+		return nil, err
+	}
+	if err := leg.Update(cmd.Transport, cmd.Description, cmd.DistanceKm); err != nil {
+		return nil, fmt.Errorf("update travel leg: %w", err)
+	}
+	if err := h.repo.Save(ctx, leg); err != nil {
+		return nil, fmt.Errorf("update travel leg: %w", err)
+	}
+	return leg, nil
+}
+
+// Move changes the endpoints of a travel leg to a free adjacent pair.
+func (h *Handler) Move(ctx context.Context, cmd MoveTravelLegCommand) (*TravelLeg, error) {
+	leg, err := h.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return nil, fmt.Errorf("move travel leg: %w", err)
+	}
+	if err := h.requireModifiable(ctx, leg.TripID, "move travel leg"); err != nil {
+		return nil, err
+	}
+	if err := h.validatePair(ctx, leg.TripID, cmd.FromStageID, cmd.ToStageID); err != nil {
+		return nil, fmt.Errorf("move travel leg: %w", err)
+	}
+	if err := h.ensurePairAvailable(ctx, leg.TripID, cmd.FromStageID, cmd.ToStageID, leg.ID); err != nil {
+		return nil, fmt.Errorf("move travel leg: %w", err)
+	}
+
+	leg.Move(cmd.FromStageID, cmd.ToStageID)
+	if err := h.repo.Save(ctx, leg); err != nil {
+		return nil, fmt.Errorf("move travel leg: %w", err)
+	}
+	return leg, nil
+}
+
+// Delete removes a saved travel leg. Media cleanup belongs to the owner-aware
+// media lifecycle introduced with persistence.
+func (h *Handler) Delete(ctx context.Context, cmd DeleteTravelLegCommand) error {
+	leg, err := h.repo.FindByID(ctx, cmd.ID)
+	if err != nil {
+		return fmt.Errorf("delete travel leg: %w", err)
+	}
+	if err := h.requireModifiable(ctx, leg.TripID, "delete travel leg"); err != nil {
+		return err
+	}
+	if err := h.repo.Delete(ctx, cmd.ID); err != nil {
+		return fmt.Errorf("delete travel leg: %w", err)
+	}
+	return nil
+}
+
+// GetByID retrieves one travel leg.
+func (h *Handler) GetByID(ctx context.Context, query GetTravelLegQuery) (*TravelLeg, error) {
+	leg, err := h.repo.FindByID(ctx, query.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get travel leg: %w", err)
+	}
+	return leg, nil
+}
+
+// ListByTrip retrieves all travel legs for a trip.
+func (h *Handler) ListByTrip(ctx context.Context, query ListTravelLegsQuery) ([]*TravelLeg, error) {
+	legs, err := h.repo.ListByTrip(ctx, query.TripID)
+	if err != nil {
+		return nil, fmt.Errorf("list travel legs: %w", err)
+	}
+	return legs, nil
+}
+
+func (h *Handler) requireModifiable(ctx context.Context, tripID, operation string) error {
+	modifiable, err := h.tripChecker.IsModifiable(ctx, tripID)
+	if err != nil {
+		return fmt.Errorf("%s: %w", operation, err)
+	}
+	if !modifiable {
+		return fmt.Errorf("%s: %w", operation, ErrTripClosed)
+	}
+	return nil
+}
+
+func (h *Handler) validatePair(ctx context.Context, tripID, fromStageID, toStageID string) error {
+	stages, err := h.stageSequence.OrderedStages(ctx, tripID)
+	if err != nil {
+		return err
+	}
+
+	fromIndex, toIndex := -1, -1
+	for index, stage := range stages {
+		if stage.TripID != tripID {
+			continue
+		}
+		if stage.ID == fromStageID {
+			fromIndex = index
+		}
+		if stage.ID == toStageID {
+			toIndex = index
+		}
+	}
+	if fromIndex == -1 || toIndex == -1 {
+		return ErrStageNotInTrip
+	}
+	if toIndex != fromIndex+1 {
+		return ErrStagesNotConsecutive
+	}
+	return nil
+}
+
+func (h *Handler) ensurePairAvailable(ctx context.Context, tripID, fromStageID, toStageID, ignoredLegID string) error {
+	existing, err := h.repo.FindByStagePair(ctx, tripID, fromStageID, toStageID)
+	if errors.Is(err, ErrNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if existing.ID != ignoredLegID {
+		return ErrPairAlreadyExists
+	}
+	return nil
+}

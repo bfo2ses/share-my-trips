@@ -5,7 +5,6 @@ package graph
 import (
 	"context"
 	"errors"
-	"sort"
 	"strings"
 	"time"
 
@@ -498,35 +497,18 @@ func (r *queryResolver) Stages(ctx context.Context, tripID string) ([]*Stage, er
 		return nil, err
 	}
 
-	// Sort stages chronologically by their earliest primary visit date.
 	visits, err := r.visitHandler.ListByTrip(ctx, visit.ListByTripQuery{TripID: tripID})
 	if err != nil {
 		return nil, err
 	}
-	earliestDate := make(map[string]time.Time, len(stages))
+	primaryVisits := make([]stage.PrimaryVisit, 0, len(visits))
 	for _, v := range visits {
 		if len(v.StageIDs) == 0 {
 			continue
 		}
-		primary := v.StageIDs[0]
-		if existing, ok := earliestDate[primary]; !ok || v.Date.Before(existing) {
-			earliestDate[primary] = v.Date
-		}
+		primaryVisits = append(primaryVisits, stage.PrimaryVisit{StageID: v.StageIDs[0], Date: v.Date})
 	}
-	sort.Slice(stages, func(i, j int) bool {
-		di, oki := earliestDate[stages[i].ID]
-		dj, okj := earliestDate[stages[j].ID]
-		if !oki && !okj {
-			return stages[i].CreatedAt.Before(stages[j].CreatedAt)
-		}
-		if !oki {
-			return false
-		}
-		if !okj {
-			return true
-		}
-		return di.Before(dj)
-	})
+	stages = stage.ChronologicalSequence(stages, primaryVisits)
 
 	result := make([]*Stage, 0, len(stages))
 	for _, s := range stages {
