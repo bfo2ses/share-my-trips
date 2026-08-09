@@ -1,13 +1,16 @@
 import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import type { StagesQuery, VisitsQuery } from '../../../graphql/generated/graphql';
+import type { StagesQuery, TravelLeg, VisitsQuery } from '../../../graphql/generated/graphql';
 import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
+import { travelLegBoundaries } from '../../travel-legs/pairs';
+import { transportIcon, transportLabel } from '../../travel-legs/transport';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
 type Stage = StagesQuery['stages'][number];
 type Visit = VisitsQuery['visits'][number];
+type TravelLegData = Pick<TravelLeg, 'id' | 'fromStageID' | 'toStageID' | 'transport'>;
 
 // Fix default marker icons (Leaflet + Vite issue)
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -78,6 +81,20 @@ function makeVisitIcon(n: number) {
       box-shadow:0 2px 6px rgba(0,0,0,0.4);
       cursor:pointer;
     ">${n}</div>`, 24, -14);
+}
+
+function makeTravelLegIcon(symbol: string, candidate: boolean) {
+  const size = candidate ? 28 : 34;
+  const background = candidate ? 'rgba(29,29,29,0.92)' : '#c6a35d';
+  const color = candidate ? '#f2e2bb' : '#1a1a1a';
+  const border = candidate ? '2px dashed #c6a35d' : '2px solid rgba(255,255,255,0.95)';
+  return makeMarkerIcon(`<div style="
+      width:${size}px;height:${size}px;border-radius:50%;
+      background:${background};border:${border};
+      display:flex;align-items:center;justify-content:center;
+      font-family:'DM Sans',sans-serif;font-size:${candidate ? 18 : 17}px;color:${color};
+      box-shadow:0 2px 10px rgba(0,0,0,0.55);cursor:pointer;
+    ">${symbol}</div>`, size, -size / 2 - 4);
 }
 
 const pendingIcon = L.divIcon({
@@ -210,16 +227,20 @@ export type PlacementMode = 'stage' | 'visit' | null;
 
 interface TripMapProps {
   stages: Stage[];
+  travelLegs?: TravelLegData[];
   activeStageId?: string | null;
   activeStageVisits?: Visit[];
   stageDateRanges?: Record<string, { start: string; end: string }>;
   onStageClick?: (stageId: string) => void;
   onVisitClick?: (stageId: string, visit: Visit) => void;
+  onTravelLegClick?: (travelLegID: string) => void;
+  onTravelLegCreate?: (fromStageID: string, toStageID: string) => void;
   // Placement (click-to-create) and drag-and-drop editing.
   placementMode?: PlacementMode;
   pendingCoords?: { lat: number; lng: number } | null;
   onMapClick?: (coords: { lat: number; lng: number }) => void;
   canEditMarkers?: boolean;
+  canEditTravelLegs?: boolean;
   onStageDragEnd?: (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => void;
   onVisitDragEnd?: (visit: Visit, coords: { lat: number; lng: number }, revert: () => void) => void;
   /** Imperative pan target, e.g. after a successful drag to keep the marker in view. */
@@ -230,15 +251,19 @@ interface TripMapProps {
 
 export function TripMap({
   stages,
+  travelLegs = [],
   activeStageId,
   activeStageVisits = [],
   stageDateRanges = {},
   onStageClick,
   onVisitClick,
+  onTravelLegClick,
+  onTravelLegCreate,
   placementMode = null,
   pendingCoords = null,
   onMapClick,
   canEditMarkers = false,
+  canEditTravelLegs = false,
   onStageDragEnd,
   onVisitDragEnd,
   panTarget = null,
@@ -267,6 +292,7 @@ export function TripMap({
   }
 
   const polylinePositions = stages.map((s) => [s.lat, s.lng] as [number, number]);
+  const legBoundaries = travelLegBoundaries(stages, travelLegs);
 
   const boundsPositions: [number, number][] = isZoomed
     ? [
@@ -322,6 +348,37 @@ export function TripMap({
             dashArray="6 4"
           />
         )}
+
+        {/* Journey controls only belong to the overview: a selected stage is
+            deliberately visit-focused and does not duplicate these markers. */}
+        {!isZoomed && legBoundaries.map((boundary) => {
+          const travelLeg = boundary.legID ? travelLegs.find((leg) => leg.id === boundary.legID) : undefined;
+          const fromStage = stages.find((stage) => stage.id === boundary.fromStageID)!;
+          const toStage = stages.find((stage) => stage.id === boundary.toStageID)!;
+          if (!travelLeg && !canEditTravelLegs) return null;
+
+          const label = travelLeg
+            ? `${transportLabel(travelLeg.transport)} de ${fromStage.displayName} à ${toStage.displayName}`
+            : `Ajouter un trajet de ${fromStage.displayName} à ${toStage.displayName}`;
+
+          return (
+            <Marker
+              key={`travel-leg-${boundary.fromStageID}-${boundary.toStageID}`}
+              position={[boundary.midpoint.lat, boundary.midpoint.lng]}
+              icon={makeTravelLegIcon(travelLeg ? transportIcon(travelLeg.transport) : '+', !travelLeg)}
+              title={label}
+              keyboard
+              eventHandlers={{
+                click: () => {
+                  if (travelLeg) onTravelLegClick?.(travelLeg.id);
+                  else onTravelLegCreate?.(boundary.fromStageID, boundary.toStageID);
+                },
+              }}
+            >
+              <Tooltip direction="top" offset={[0, -18]} opacity={1} className="smt-tooltip">{label}</Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* Overview mode: numbered stage markers */}
         {!isZoomed &&
