@@ -157,6 +157,8 @@ input AddVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this creation changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 input UpdateVisitInput {
@@ -165,6 +167,8 @@ input UpdateVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this update changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 enum AccountRole {
@@ -330,6 +334,19 @@ input MoveTravelLegInput {
   toStageID: ID!
 }
 
+enum TravelLegResolutionAction {
+  MOVE
+  DELETE
+}
+
+"One explicit decision for a journey invalidated by a stage-sequence change."
+input TravelLegResolutionInput {
+  travelLegID: ID!
+  action: TravelLegResolutionAction!
+  fromStageID: ID
+  toStageID: ID
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -373,18 +390,18 @@ type Mutation {
   deleteTrip(id: ID!): DeleteTripPayload!
   addStage(input: AddStageInput!): StagePayload!
   updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
-  deleteStage(id: ID!): DeleteStagePayload!
+  deleteStage(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteStagePayload!
   addVisit(input: AddVisitInput!): VisitPayload!
   updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
-  deleteVisit(id: ID!): DeleteVisitPayload!
+  deleteVisit(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteVisitPayload!
   createTravelLeg(input: CreateTravelLegInput!): TravelLegPayload!
   updateTravelLeg(id: ID!, input: UpdateTravelLegInput!): TravelLegPayload!
   moveTravelLeg(id: ID!, input: MoveTravelLegInput!): TravelLegPayload!
   deleteTravelLeg(id: ID!): DeleteTravelLegPayload!
   "Calculates a candidate distance without creating or updating a travel leg. Requires editor role."
   calculateTravelLegDistance(fromStageID: ID!, toStageID: ID!, transport: TravelLegTransport!): CalculateTravelLegDistancePayload!
-  attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
-  detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
+  attachVisitToStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
+  detachVisitFromStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
   "Reorders visits sharing a primary stage and date. Requires editor role."
   reorderVisits(stageID: ID!, date: String!, visitIDs: [ID!]!): ReorderVisitsPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."

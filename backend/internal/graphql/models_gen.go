@@ -41,6 +41,8 @@ type AddVisitInput struct {
 	Description *string `json:"description,omitempty"`
 	Lat         float64 `json:"lat"`
 	Lng         float64 `json:"lng"`
+	// Required when this creation changes the stage sequence of existing travel legs.
+	ResolutionPlan []*TravelLegResolutionInput `json:"resolutionPlan,omitempty"`
 }
 
 type AuthPayload struct {
@@ -231,6 +233,14 @@ type TravelLegPayload struct {
 	Errors    []*UserError `json:"errors"`
 }
 
+// One explicit decision for a journey invalidated by a stage-sequence change.
+type TravelLegResolutionInput struct {
+	TravelLegID string                    `json:"travelLegID"`
+	Action      TravelLegResolutionAction `json:"action"`
+	FromStageID *string                   `json:"fromStageID,omitempty"`
+	ToStageID   *string                   `json:"toStageID,omitempty"`
+}
+
 type Trip struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
@@ -288,6 +298,8 @@ type UpdateVisitInput struct {
 	Description *string `json:"description,omitempty"`
 	Lat         float64 `json:"lat"`
 	Lng         float64 `json:"lng"`
+	// Required when this update changes the stage sequence of existing travel legs.
+	ResolutionPlan []*TravelLegResolutionInput `json:"resolutionPlan,omitempty"`
 }
 
 type UserError struct {
@@ -374,6 +386,61 @@ func (e *AccountRole) UnmarshalJSON(b []byte) error {
 }
 
 func (e AccountRole) MarshalJSON() ([]byte, error) {
+	var buf bytes.Buffer
+	e.MarshalGQL(&buf)
+	return buf.Bytes(), nil
+}
+
+type TravelLegResolutionAction string
+
+const (
+	TravelLegResolutionActionMove   TravelLegResolutionAction = "MOVE"
+	TravelLegResolutionActionDelete TravelLegResolutionAction = "DELETE"
+)
+
+var AllTravelLegResolutionAction = []TravelLegResolutionAction{
+	TravelLegResolutionActionMove,
+	TravelLegResolutionActionDelete,
+}
+
+func (e TravelLegResolutionAction) IsValid() bool {
+	switch e {
+	case TravelLegResolutionActionMove, TravelLegResolutionActionDelete:
+		return true
+	}
+	return false
+}
+
+func (e TravelLegResolutionAction) String() string {
+	return string(e)
+}
+
+func (e *TravelLegResolutionAction) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TravelLegResolutionAction(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TravelLegResolutionAction", str)
+	}
+	return nil
+}
+
+func (e TravelLegResolutionAction) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
+}
+
+func (e *TravelLegResolutionAction) UnmarshalJSON(b []byte) error {
+	s, err := strconv.Unquote(string(b))
+	if err != nil {
+		return err
+	}
+	return e.UnmarshalGQL(s)
+}
+
+func (e TravelLegResolutionAction) MarshalJSON() ([]byte, error) {
 	var buf bytes.Buffer
 	e.MarshalGQL(&buf)
 	return buf.Bytes(), nil

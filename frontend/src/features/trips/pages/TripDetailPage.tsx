@@ -19,6 +19,7 @@ import { StageForm } from '../../stages/components/StageForm';
 import { VisitForm } from '../../stages/components/VisitForm';
 import { TravelLegDetail } from '../../travel-legs/components/TravelLegDetail';
 import { TravelLegForm, type TravelLegData } from '../../travel-legs/components/TravelLegForm';
+import { TravelLegResolutionDialog, type ResolutionLeg, type ResolutionPair, type TravelLegResolution } from '../../travel-legs/components/TravelLegResolutionDialog';
 import { transportIcon, transportLabel } from '../../travel-legs/transport';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
@@ -35,6 +36,11 @@ type TravelLegFormState = {
   fromStageID: string;
   toStageID: string;
   travelLeg?: TravelLegData;
+};
+type ResolutionRequest = {
+  legs: ResolutionLeg[];
+  pairs: ResolutionPair[];
+  execute: (plan: TravelLegResolution[]) => Promise<void>;
 };
 
 function formatDate(d: string) {
@@ -70,6 +76,9 @@ export function TripDetailPage() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [resolutionRequest, setResolutionRequest] = useState<ResolutionRequest | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
   const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingVisitCoords, setPendingVisitCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
@@ -124,6 +133,23 @@ export function TripDetailPage() {
     () => (selectedTravelLegId ? travelLegs.find((leg) => leg.id === selectedTravelLegId) ?? null : null),
     [selectedTravelLegId, travelLegs],
   );
+
+  const stageNames = useMemo(() => new Map(stages.map((stage) => [stage.id, stage.displayName])), [stages]);
+
+  const buildResolutionRequest = useCallback((projectedStages: Stage[]) => {
+    const projectedIDs = projectedStages.map((stage) => stage.id);
+    const pairKeys = new Set(projectedIDs.slice(0, -1).map((fromStageID, index) => `${fromStageID}\u0000${projectedIDs[index + 1]}`));
+    const affected = travelLegs.filter((leg) => !pairKeys.has(`${leg.fromStageID}\u0000${leg.toStageID}`));
+    const occupied = new Set(travelLegs
+      .filter((leg) => !affected.some((candidate) => candidate.id === leg.id))
+      .map((leg) => `${leg.fromStageID}\u0000${leg.toStageID}`));
+    return {
+      legs: affected.map((leg) => ({ id: leg.id, fromStageID: leg.fromStageID, toStageID: leg.toStageID })),
+      pairs: projectedIDs.slice(0, -1)
+        .map((fromStageID, index) => ({ fromStageID, toStageID: projectedIDs[index + 1] }))
+        .filter((pair) => !occupied.has(`${pair.fromStageID}\u0000${pair.toStageID}`)),
+    };
+  }, [travelLegs]);
 
   // Contenu rémanent : la pane détail garde son dernier contenu pendant la
   // translation de retour (adjust-during-render, pattern wasOpen).
@@ -236,6 +262,80 @@ export function TripDetailPage() {
   const handleBackToTimeline = useCallback(() => {
     setSearchParams({}, { replace: true });
   }, [setSearchParams]);
+
+  const requestStageDelete = useCallback((stageID: string) => {
+    const resolution = buildResolutionRequest(stages.filter((stage) => stage.id !== stageID));
+    if (resolution.legs.length === 0) {
+      void deleteStage({ id: stageID, resolutionPlan: [] }, { additionalTypenames: ['Stage', 'Visit', 'TravelLeg'] }).then((result) => {
+        if (!result.error && result.data?.deleteStage.success) handleDetailClose();
+      });
+      return;
+    }
+    setResolutionError(null);
+    setResolutionRequest({
+      ...resolution,
+      execute: async (resolutionPlan) => {
+        const result = await deleteStage({ id: stageID, resolutionPlan }, { additionalTypenames: ['Stage', 'Visit', 'TravelLeg'] });
+        const errors = result.data?.deleteStage.errors ?? [];
+        if (result.error || !result.data?.deleteStage.success || errors.length > 0) {
+          setResolutionError(errors.map((error) => error.message).join(' ') || 'Le voyage a changé, actualisez puis recommencez.');
+          return;
+        }
+        setResolutionRequest(null);
+        handleDetailClose();
+        refetchAll();
+      },
+    });
+  }, [buildResolutionRequest, stages, deleteStage, handleDetailClose, refetchAll]);
+
+  const requestVisitDelete = useCallback((visit: Visit) => {
+    const remainingVisits = allVisits.filter((item) => item.id !== visit.id);
+    const earliest = new Map<string, string>();
+    for (const item of remainingVisits) {
+      const stageID = item.stageIDs[0];
+      if (stageID && (!earliest.has(stageID) || item.date < earliest.get(stageID)!)) earliest.set(stageID, item.date);
+    }
+    const sourceOrder = new Map(stages.map((stage, index) => [stage.id, index]));
+    const projected = [...stages].sort((left, right) => {
+      const leftDate = earliest.get(left.id);
+      const rightDate = earliest.get(right.id);
+      if (leftDate && rightDate && leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+      if (leftDate !== rightDate) return leftDate ? -1 : 1;
+      return (sourceOrder.get(left.id) ?? 0) - (sourceOrder.get(right.id) ?? 0);
+    });
+    const resolution = buildResolutionRequest(projected);
+    if (resolution.legs.length === 0) {
+      void deleteVisit({ id: visit.id, resolutionPlan: [] }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] }).then((result) => {
+        if (!result.error && result.data?.deleteVisit.success) handleBackToStage();
+      });
+      return;
+    }
+    setResolutionError(null);
+    setResolutionRequest({
+      ...resolution,
+      execute: async (resolutionPlan) => {
+        const result = await deleteVisit({ id: visit.id, resolutionPlan }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] });
+        const errors = result.data?.deleteVisit.errors ?? [];
+        if (result.error || !result.data?.deleteVisit.success || errors.length > 0) {
+          setResolutionError(errors.map((error) => error.message).join(' ') || 'Le voyage a changé, actualisez puis recommencez.');
+          return;
+        }
+        setResolutionRequest(null);
+        handleBackToStage();
+        refetchAll();
+      },
+    });
+  }, [allVisits, stages, buildResolutionRequest, deleteVisit, handleBackToStage, refetchAll]);
+
+  const confirmResolution = useCallback(async (plan: TravelLegResolution[]) => {
+    if (!resolutionRequest || resolving) return;
+    setResolving(true);
+    try {
+      await resolutionRequest.execute(plan);
+    } finally {
+      setResolving(false);
+    }
+  }, [resolutionRequest, resolving]);
 
   async function handlePublish() {
     await publishTrip({ id: id! }, refetchContext);
@@ -440,10 +540,7 @@ export function TripDetailPage() {
     {
       label: 'Supprimer l\'étape',
       danger: true,
-      onClick: async () => {
-        const result = await deleteStage({ id: selectedStage.id }, { additionalTypenames: ['Stage', 'Visit'] });
-        if (!result.error && result.data?.deleteStage.success) handleDetailClose();
-      },
+      onClick: () => requestStageDelete(selectedStage.id),
     },
   ] : [];
 
@@ -451,10 +548,7 @@ export function TripDetailPage() {
     {
       label: 'Supprimer la visite',
       danger: true,
-      onClick: async () => {
-        const result = await deleteVisit({ id: selectedVisit.id }, { additionalTypenames: ['Visit'] });
-        if (!result.error && result.data?.deleteVisit.success) handleBackToStage();
-      },
+      onClick: () => requestVisitDelete(selectedVisit),
     },
   ] : [];
 
@@ -542,6 +636,7 @@ export function TripDetailPage() {
             canEdit={canEditDetail}
             onClose={handleDetailClose}
             onBack={handleBackToStage}
+            onRequestDelete={requestVisitDelete}
           />
         )}
       />
@@ -661,6 +756,16 @@ export function TripDetailPage() {
           busy={deleting}
           onConfirm={handleDelete}
           onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
+        />
+        <TravelLegResolutionDialog
+          open={!!resolutionRequest}
+          legs={resolutionRequest?.legs ?? []}
+          pairs={resolutionRequest?.pairs ?? []}
+          stageNames={stageNames}
+          busy={resolving}
+          error={resolutionError}
+          onConfirm={confirmResolution}
+          onCancel={() => { if (!resolving) { setResolutionRequest(null); setResolutionError(null); } }}
         />
       </>
     )}

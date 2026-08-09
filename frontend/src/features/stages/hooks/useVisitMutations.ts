@@ -46,8 +46,8 @@ const UPDATE_VISIT = gql(`
 `);
 
 const DELETE_VISIT = gql(`
-  mutation DeleteVisit($id: ID!) {
-    deleteVisit(id: $id) {
+  mutation DeleteVisit($id: ID!, $resolutionPlan: [TravelLegResolutionInput!]) {
+    deleteVisit(id: $id, resolutionPlan: $resolutionPlan) {
       success
       errors {
         field

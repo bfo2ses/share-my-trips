@@ -83,6 +83,15 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("toStageID"), Message: travelleg.ErrStagesNotConsecutive.Error()}}
 	case errors.Is(err, travelleg.ErrPairAlreadyExists):
 		return []*UserError{{Message: travelleg.ErrPairAlreadyExists.Error()}}
+	case errors.Is(err, travelleg.ErrIncompleteResolutionPlan):
+		return []*UserError{{Field: strPtr("resolutionPlan"), Message: "resolve every affected journey by moving or deleting it before changing the itinerary"}}
+	case errors.Is(err, travelleg.ErrDuplicateResolution),
+		errors.Is(err, travelleg.ErrResolutionForValidLeg),
+		errors.Is(err, travelleg.ErrInvalidResolution),
+		errors.Is(err, travelleg.ErrResolutionTargetNotConsecutive),
+		errors.Is(err, travelleg.ErrDuplicateResolutionTarget),
+		errors.Is(err, travelleg.ErrResolutionTargetOccupied):
+		return []*UserError{{Field: strPtr("resolutionPlan"), Message: err.Error()}}
 	// auth errors
 	case errors.Is(err, auth.ErrNameRequired):
 		return []*UserError{{Field: strPtr("name"), Message: auth.ErrNameRequired.Error()}}

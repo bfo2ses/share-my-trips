@@ -110,7 +110,7 @@ type ComplexityRoot struct {
 	Mutation struct {
 		AddStage                   func(childComplexity int, input AddStageInput) int
 		AddVisit                   func(childComplexity int, input AddVisitInput) int
-		AttachVisitToStage         func(childComplexity int, visitID string, stageID string) int
+		AttachVisitToStage         func(childComplexity int, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) int
 		CalculateTravelLegDistance func(childComplexity int, fromStageID string, toStageID string, transport TravelLegTransport) int
 		ChangePassword             func(childComplexity int, input ChangePasswordInput) int
 		CloseTrip                  func(childComplexity int, id string, input CloseTripInput) int
@@ -119,11 +119,11 @@ type ComplexityRoot struct {
 		CreateTrip                 func(childComplexity int, input CreateTripInput) int
 		DeleteAccount              func(childComplexity int, id string) int
 		DeleteMedia                func(childComplexity int, id string) int
-		DeleteStage                func(childComplexity int, id string) int
+		DeleteStage                func(childComplexity int, id string, resolutionPlan []*TravelLegResolutionInput) int
 		DeleteTravelLeg            func(childComplexity int, id string) int
 		DeleteTrip                 func(childComplexity int, id string) int
-		DeleteVisit                func(childComplexity int, id string) int
-		DetachVisitFromStage       func(childComplexity int, visitID string, stageID string) int
+		DeleteVisit                func(childComplexity int, id string, resolutionPlan []*TravelLegResolutionInput) int
+		DetachVisitFromStage       func(childComplexity int, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) int
 		Login                      func(childComplexity int, email string, password string) int
 		Logout                     func(childComplexity int) int
 		MoveTravelLeg              func(childComplexity int, id string, input MoveTravelLegInput) int
@@ -270,17 +270,17 @@ type MutationResolver interface {
 	DeleteTrip(ctx context.Context, id string) (*DeleteTripPayload, error)
 	AddStage(ctx context.Context, input AddStageInput) (*StagePayload, error)
 	UpdateStage(ctx context.Context, id string, input UpdateStageInput) (*StagePayload, error)
-	DeleteStage(ctx context.Context, id string) (*DeleteStagePayload, error)
+	DeleteStage(ctx context.Context, id string, resolutionPlan []*TravelLegResolutionInput) (*DeleteStagePayload, error)
 	AddVisit(ctx context.Context, input AddVisitInput) (*VisitPayload, error)
 	UpdateVisit(ctx context.Context, id string, input UpdateVisitInput) (*VisitPayload, error)
-	DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error)
+	DeleteVisit(ctx context.Context, id string, resolutionPlan []*TravelLegResolutionInput) (*DeleteVisitPayload, error)
 	CreateTravelLeg(ctx context.Context, input CreateTravelLegInput) (*TravelLegPayload, error)
 	UpdateTravelLeg(ctx context.Context, id string, input UpdateTravelLegInput) (*TravelLegPayload, error)
 	MoveTravelLeg(ctx context.Context, id string, input MoveTravelLegInput) (*TravelLegPayload, error)
 	DeleteTravelLeg(ctx context.Context, id string) (*DeleteTravelLegPayload, error)
 	CalculateTravelLegDistance(ctx context.Context, fromStageID string, toStageID string, transport TravelLegTransport) (*CalculateTravelLegDistancePayload, error)
-	AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
-	DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error)
+	AttachVisitToStage(ctx context.Context, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) (*VisitPayload, error)
+	DetachVisitFromStage(ctx context.Context, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) (*VisitPayload, error)
 	ReorderVisits(ctx context.Context, stageID string, date string, visitIDs []string) (*ReorderVisitsPayload, error)
 	SetupAdmin(ctx context.Context, input SetupAdminInput) (*AuthPayload, error)
 	Login(ctx context.Context, email string, password string) (*AuthPayload, error)
@@ -593,7 +593,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.AttachVisitToStage(childComplexity, args["visitID"].(string), args["stageID"].(string)), true
+		return e.ComplexityRoot.Mutation.AttachVisitToStage(childComplexity, args["visitID"].(string), args["stageID"].(string), args["resolutionPlan"].([]*TravelLegResolutionInput)), true
 	case "Mutation.calculateTravelLegDistance":
 		if e.ComplexityRoot.Mutation.CalculateTravelLegDistance == nil {
 			break
@@ -692,7 +692,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DeleteStage(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeleteStage(childComplexity, args["id"].(string), args["resolutionPlan"].([]*TravelLegResolutionInput)), true
 	case "Mutation.deleteTravelLeg":
 		if e.ComplexityRoot.Mutation.DeleteTravelLeg == nil {
 			break
@@ -725,7 +725,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DeleteVisit(childComplexity, args["id"].(string)), true
+		return e.ComplexityRoot.Mutation.DeleteVisit(childComplexity, args["id"].(string), args["resolutionPlan"].([]*TravelLegResolutionInput)), true
 	case "Mutation.detachVisitFromStage":
 		if e.ComplexityRoot.Mutation.DetachVisitFromStage == nil {
 			break
@@ -736,7 +736,7 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 			return 0, false
 		}
 
-		return e.ComplexityRoot.Mutation.DetachVisitFromStage(childComplexity, args["visitID"].(string), args["stageID"].(string)), true
+		return e.ComplexityRoot.Mutation.DetachVisitFromStage(childComplexity, args["visitID"].(string), args["stageID"].(string), args["resolutionPlan"].([]*TravelLegResolutionInput)), true
 	case "Mutation.login":
 		if e.ComplexityRoot.Mutation.Login == nil {
 			break
@@ -1457,6 +1457,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputMoveTravelLegInput,
 		ec.unmarshalInputResetPasswordInput,
 		ec.unmarshalInputSetupAdminInput,
+		ec.unmarshalInputTravelLegResolutionInput,
 		ec.unmarshalInputUpdateStageInput,
 		ec.unmarshalInputUpdateTravelLegInput,
 		ec.unmarshalInputUpdateTripInput,
@@ -1695,6 +1696,8 @@ input AddVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this creation changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 input UpdateVisitInput {
@@ -1703,6 +1706,8 @@ input UpdateVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this update changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 enum AccountRole {
@@ -1868,6 +1873,19 @@ input MoveTravelLegInput {
   toStageID: ID!
 }
 
+enum TravelLegResolutionAction {
+  MOVE
+  DELETE
+}
+
+"One explicit decision for a journey invalidated by a stage-sequence change."
+input TravelLegResolutionInput {
+  travelLegID: ID!
+  action: TravelLegResolutionAction!
+  fromStageID: ID
+  toStageID: ID
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -1911,18 +1929,18 @@ type Mutation {
   deleteTrip(id: ID!): DeleteTripPayload!
   addStage(input: AddStageInput!): StagePayload!
   updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
-  deleteStage(id: ID!): DeleteStagePayload!
+  deleteStage(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteStagePayload!
   addVisit(input: AddVisitInput!): VisitPayload!
   updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
-  deleteVisit(id: ID!): DeleteVisitPayload!
+  deleteVisit(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteVisitPayload!
   createTravelLeg(input: CreateTravelLegInput!): TravelLegPayload!
   updateTravelLeg(id: ID!, input: UpdateTravelLegInput!): TravelLegPayload!
   moveTravelLeg(id: ID!, input: MoveTravelLegInput!): TravelLegPayload!
   deleteTravelLeg(id: ID!): DeleteTravelLegPayload!
   "Calculates a candidate distance without creating or updating a travel leg. Requires editor role."
   calculateTravelLegDistance(fromStageID: ID!, toStageID: ID!, transport: TravelLegTransport!): CalculateTravelLegDistancePayload!
-  attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
-  detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
+  attachVisitToStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
+  detachVisitFromStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
   "Reorders visits sharing a primary stage and date. Requires editor role."
   reorderVisits(stageID: ID!, date: String!, visitIDs: [ID!]!): ReorderVisitsPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
@@ -1989,6 +2007,11 @@ func (ec *executionContext) field_Mutation_attachVisitToStage_args(ctx context.C
 		return nil, err
 	}
 	args["stageID"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "resolutionPlan", ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["resolutionPlan"] = arg2
 	return args, nil
 }
 
@@ -2103,6 +2126,11 @@ func (ec *executionContext) field_Mutation_deleteStage_args(ctx context.Context,
 		return nil, err
 	}
 	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "resolutionPlan", ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["resolutionPlan"] = arg1
 	return args, nil
 }
 
@@ -2136,6 +2164,11 @@ func (ec *executionContext) field_Mutation_deleteVisit_args(ctx context.Context,
 		return nil, err
 	}
 	args["id"] = arg0
+	arg1, err := graphql.ProcessArgField(ctx, rawArgs, "resolutionPlan", ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["resolutionPlan"] = arg1
 	return args, nil
 }
 
@@ -2152,6 +2185,11 @@ func (ec *executionContext) field_Mutation_detachVisitFromStage_args(ctx context
 		return nil, err
 	}
 	args["stageID"] = arg1
+	arg2, err := graphql.ProcessArgField(ctx, rawArgs, "resolutionPlan", ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ)
+	if err != nil {
+		return nil, err
+	}
+	args["resolutionPlan"] = arg2
 	return args, nil
 }
 
@@ -4193,7 +4231,7 @@ func (ec *executionContext) _Mutation_deleteStage(ctx context.Context, field gra
 		ec.fieldContext_Mutation_deleteStage,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DeleteStage(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeleteStage(ctx, fc.Args["id"].(string), fc.Args["resolutionPlan"].([]*TravelLegResolutionInput))
 		},
 		nil,
 		ec.marshalNDeleteStagePayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteStagePayload,
@@ -4334,7 +4372,7 @@ func (ec *executionContext) _Mutation_deleteVisit(ctx context.Context, field gra
 		ec.fieldContext_Mutation_deleteVisit,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DeleteVisit(ctx, fc.Args["id"].(string))
+			return ec.Resolvers.Mutation().DeleteVisit(ctx, fc.Args["id"].(string), fc.Args["resolutionPlan"].([]*TravelLegResolutionInput))
 		},
 		nil,
 		ec.marshalNDeleteVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐDeleteVisitPayload,
@@ -4616,7 +4654,7 @@ func (ec *executionContext) _Mutation_attachVisitToStage(ctx context.Context, fi
 		ec.fieldContext_Mutation_attachVisitToStage,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().AttachVisitToStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string))
+			return ec.Resolvers.Mutation().AttachVisitToStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string), fc.Args["resolutionPlan"].([]*TravelLegResolutionInput))
 		},
 		nil,
 		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
@@ -4663,7 +4701,7 @@ func (ec *executionContext) _Mutation_detachVisitFromStage(ctx context.Context, 
 		ec.fieldContext_Mutation_detachVisitFromStage,
 		func(ctx context.Context) (any, error) {
 			fc := graphql.GetFieldContext(ctx)
-			return ec.Resolvers.Mutation().DetachVisitFromStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string))
+			return ec.Resolvers.Mutation().DetachVisitFromStage(ctx, fc.Args["visitID"].(string), fc.Args["stageID"].(string), fc.Args["resolutionPlan"].([]*TravelLegResolutionInput))
 		},
 		nil,
 		ec.marshalNVisitPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐVisitPayload,
@@ -9727,7 +9765,7 @@ func (ec *executionContext) unmarshalInputAddVisitInput(ctx context.Context, obj
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"tripID", "stageID", "date", "title", "description", "lat", "lng"}
+	fieldsInOrder := [...]string{"tripID", "stageID", "date", "title", "description", "lat", "lng", "resolutionPlan"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -9783,6 +9821,13 @@ func (ec *executionContext) unmarshalInputAddVisitInput(ctx context.Context, obj
 				return it, err
 			}
 			it.Lng = data
+		case "resolutionPlan":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolutionPlan"))
+			data, err := ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolutionPlan = data
 		}
 	}
 	return it, nil
@@ -10203,6 +10248,57 @@ func (ec *executionContext) unmarshalInputSetupAdminInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputTravelLegResolutionInput(ctx context.Context, obj any) (TravelLegResolutionInput, error) {
+	var it TravelLegResolutionInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"travelLegID", "action", "fromStageID", "toStageID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "travelLegID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("travelLegID"))
+			data, err := ec.unmarshalNID2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TravelLegID = data
+		case "action":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("action"))
+			data, err := ec.unmarshalNTravelLegResolutionAction2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionAction(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Action = data
+		case "fromStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("fromStageID"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.FromStageID = data
+		case "toStageID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("toStageID"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ToStageID = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputUpdateStageInput(ctx context.Context, obj any) (UpdateStageInput, error) {
 	var it UpdateStageInput
 	if obj == nil {
@@ -10395,7 +10491,7 @@ func (ec *executionContext) unmarshalInputUpdateVisitInput(ctx context.Context, 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"date", "title", "description", "lat", "lng"}
+	fieldsInOrder := [...]string{"date", "title", "description", "lat", "lng", "resolutionPlan"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -10437,6 +10533,13 @@ func (ec *executionContext) unmarshalInputUpdateVisitInput(ctx context.Context, 
 				return it, err
 			}
 			it.Lng = data
+		case "resolutionPlan":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("resolutionPlan"))
+			data, err := ec.unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.ResolutionPlan = data
 		}
 	}
 	return it, nil
@@ -13191,6 +13294,21 @@ func (ec *executionContext) marshalNTravelLegPayload2ᚖgithubᚗcomᚋbfosses�
 	return ec._TravelLegPayload(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNTravelLegResolutionAction2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionAction(ctx context.Context, v any) (TravelLegResolutionAction, error) {
+	var res TravelLegResolutionAction
+	err := res.UnmarshalGQL(v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNTravelLegResolutionAction2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionAction(ctx context.Context, sel ast.SelectionSet, v TravelLegResolutionAction) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNTravelLegResolutionInput2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInput(ctx context.Context, v any) (*TravelLegResolutionInput, error) {
+	res, err := ec.unmarshalInputTravelLegResolutionInput(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNTravelLegTransport2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegTransport(ctx context.Context, v any) (TravelLegTransport, error) {
 	var res TravelLegTransport
 	err := res.UnmarshalGQL(v)
@@ -13603,6 +13721,24 @@ func (ec *executionContext) marshalOTravelLeg2ᚖgithubᚗcomᚋbfossesᚋsharem
 		return graphql.Null
 	}
 	return ec._TravelLeg(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOTravelLegResolutionInput2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInputᚄ(ctx context.Context, v any) ([]*TravelLegResolutionInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []any
+	vSlice = graphql.CoerceList(v)
+	var err error
+	res := make([]*TravelLegResolutionInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNTravelLegResolutionInput2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTravelLegResolutionInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) marshalOTrip2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐTrip(ctx context.Context, sel ast.SelectionSet, v *Trip) graphql.Marshaler {

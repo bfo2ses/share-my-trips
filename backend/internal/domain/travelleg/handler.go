@@ -99,6 +99,55 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteTravelLegCommand) error 
 	return nil
 }
 
+// ApplyValidatedResolutions applies a resolution plan that has already been
+// checked against a proposed itinerary by ValidateResolutionPlan. Keeping this
+// narrow operation on the handler prevents API callers from reaching the
+// repository directly while allowing the itinerary coordinator to apply a
+// source change and its repairs as one guarded operation.
+func (h *Handler) ApplyValidatedResolutions(ctx context.Context, resolutions []ItineraryResolution) error {
+	for _, resolution := range resolutions {
+		leg, err := h.repo.FindByID(ctx, resolution.TravelLegID)
+		if err != nil {
+			return fmt.Errorf("apply travel leg resolution: %w", err)
+		}
+		if err := h.requireModifiable(ctx, leg.TripID, "resolve travel leg"); err != nil {
+			return err
+		}
+
+		switch resolution.Action {
+		case ResolutionMove:
+			leg.Move(resolution.FromStageID, resolution.ToStageID)
+			if err := h.repo.Save(ctx, leg); err != nil {
+				return fmt.Errorf("apply travel leg resolution: %w", err)
+			}
+		case ResolutionDelete:
+			if err := h.repo.Delete(ctx, leg.ID); err != nil {
+				return fmt.Errorf("apply travel leg resolution: %w", err)
+			}
+		default:
+			return ErrInvalidResolution
+		}
+	}
+	return nil
+}
+
+// RestoreResolvedLegs restores snapshots after a source itinerary write
+// failed. It is intentionally only for the itinerary coordinator's rollback
+// path; callers must have captured the legs before applying a validated plan.
+func (h *Handler) RestoreResolvedLegs(ctx context.Context, legs []*TravelLeg) error {
+	for _, leg := range legs {
+		if leg == nil {
+			return ErrInvalidTravelLeg
+		}
+		copy := *leg
+		copy.DistanceKm = cloneDistance(leg.DistanceKm)
+		if err := h.repo.Save(ctx, &copy); err != nil {
+			return fmt.Errorf("restore travel leg resolution: %w", err)
+		}
+	}
+	return nil
+}
+
 // GetByID retrieves one travel leg.
 func (h *Handler) GetByID(ctx context.Context, query GetTravelLegQuery) (*TravelLeg, error) {
 	leg, err := h.repo.FindByID(ctx, query.ID)

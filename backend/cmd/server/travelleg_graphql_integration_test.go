@@ -136,6 +136,88 @@ func TestGraphQLHTTP_UnconfiguredCarDistanceReturnsPayloadError(t *testing.T) {
 	assert.Equal(t, "road distance calculation is unavailable", data.CalculateTravelLegDistance.Errors[0].Message)
 }
 
+func TestGraphQLHTTP_StageDeletionRequiresAndAppliesTravelLegResolution(t *testing.T) {
+	harness := newGraphQLHarness(t)
+	token, tripID, stageIDs := createTravelLegFixture(t, harness)
+
+	thirdStage := harness.post(t, `mutation AddStage($input: AddStageInput!) {
+		addStage(input: $input) { stage { id } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "city": "San Diego", "lat": 32.7157, "lng": -117.1611,
+	}}, token)
+	third := decodeData[struct {
+		AddStage struct {
+			Stage  *struct{ ID string } `json:"stage"`
+			Errors []userError          `json:"errors"`
+		} `json:"addStage"`
+	}](t, thirdStage)
+	require.Empty(t, third.AddStage.Errors)
+	require.NotNil(t, third.AddStage.Stage)
+
+	legEnvelope := harness.post(t, `mutation CreateTravelLeg($input: CreateTravelLegInput!) {
+		createTravelLeg(input: $input) { travelLeg { id } errors { message } }
+	}`, map[string]any{"input": map[string]any{
+		"tripID": tripID, "fromStageID": stageIDs[0], "toStageID": stageIDs[1], "transport": "CAR",
+	}}, token)
+	leg := decodeData[struct {
+		CreateTravelLeg struct {
+			TravelLeg *struct{ ID string } `json:"travelLeg"`
+			Errors     []userError         `json:"errors"`
+		} `json:"createTravelLeg"`
+	}](t, legEnvelope)
+	require.Empty(t, leg.CreateTravelLeg.Errors)
+	require.NotNil(t, leg.CreateTravelLeg.TravelLeg)
+
+	missingPlan := harness.post(t, `mutation DeleteStage($id: ID!) {
+		deleteStage(id: $id) { success errors { field message } }
+	}`, map[string]any{"id": stageIDs[1]}, token)
+	missing := decodeData[struct {
+		DeleteStage struct {
+			Success bool        `json:"success"`
+			Errors  []userError `json:"errors"`
+		} `json:"deleteStage"`
+	}](t, missingPlan)
+	assert.False(t, missing.DeleteStage.Success)
+	require.Len(t, missing.DeleteStage.Errors, 1)
+	require.NotNil(t, missing.DeleteStage.Errors[0].Field)
+	assert.Equal(t, "resolutionPlan", *missing.DeleteStage.Errors[0].Field)
+
+	resolved := harness.post(t, `mutation DeleteStage($id: ID!, $plan: [TravelLegResolutionInput!]) {
+		deleteStage(id: $id, resolutionPlan: $plan) { success errors { message } }
+	}`, map[string]any{
+		"id": stageIDs[1],
+		"plan": []map[string]any{{
+			"travelLegID": leg.CreateTravelLeg.TravelLeg.ID,
+			"action": "MOVE",
+			"fromStageID": stageIDs[0],
+			"toStageID": third.AddStage.Stage.ID,
+		}},
+	}, token)
+	resolvedData := decodeData[struct {
+		DeleteStage struct {
+			Success bool        `json:"success"`
+			Errors  []userError `json:"errors"`
+		} `json:"deleteStage"`
+	}](t, resolved)
+	require.Empty(t, resolvedData.DeleteStage.Errors)
+	assert.True(t, resolvedData.DeleteStage.Success)
+
+	legsEnvelope := harness.post(t, `query TravelLegs($tripID: ID!) {
+		travelLegs(tripID: $tripID) { id fromStageID toStageID }
+	}`, map[string]any{"tripID": tripID}, "")
+	legs := decodeData[struct {
+		TravelLegs []struct {
+			ID          string `json:"id"`
+			FromStageID string `json:"fromStageID"`
+			ToStageID   string `json:"toStageID"`
+		} `json:"travelLegs"`
+	}](t, legsEnvelope)
+	require.Len(t, legs.TravelLegs, 1)
+	assert.Equal(t, leg.CreateTravelLeg.TravelLeg.ID, legs.TravelLegs[0].ID)
+	assert.Equal(t, stageIDs[0], legs.TravelLegs[0].FromStageID)
+	assert.Equal(t, third.AddStage.Stage.ID, legs.TravelLegs[0].ToStageID)
+}
+
 func createTravelLegFixture(t *testing.T, harness *graphqlHarness) (token, tripID string, stageIDs []string) {
 	t.Helper()
 	setupEnvelope := harness.post(t, `mutation SetupAdmin($input: SetupAdminInput!) {

@@ -185,11 +185,21 @@ func (r *mutationResolver) UpdateStage(ctx context.Context, id string, input Upd
 }
 
 // DeleteStage is the resolver for the deleteStage field.
-func (r *mutationResolver) DeleteStage(ctx context.Context, id string) (*DeleteStagePayload, error) {
+func (r *mutationResolver) DeleteStage(ctx context.Context, id string, resolutionPlan []*TravelLegResolutionInput) (*DeleteStagePayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	if err := r.stageHandler.Delete(ctx, stage.DeleteStageCommand{ID: id}); err != nil {
+	item, err := r.stageHandler.GetByID(ctx, stage.GetStageQuery{ID: id})
+	if err != nil {
+		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	stages, visits, err := r.currentItinerary(ctx, item.TripID)
+	if err != nil {
+		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if err := r.resolveItineraryChange(ctx, item.TripID, proposedStagesWithout(stages, id), proposedVisitsWithoutStage(visits, id), resolutionPlan, func() error {
+		return r.stageHandler.Delete(ctx, stage.DeleteStageCommand{ID: id})
+	}); err != nil {
 		return &DeleteStagePayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	return &DeleteStagePayload{Success: true, Errors: []*UserError{}}, nil
@@ -204,14 +214,23 @@ func (r *mutationResolver) AddVisit(ctx context.Context, input AddVisitInput) (*
 	if err != nil {
 		return &VisitPayload{Errors: []*UserError{{Field: strPtr("date"), Message: "invalid date format, expected YYYY-MM-DD"}}}, nil
 	}
-	v, err := r.visitHandler.Add(ctx, visit.AddVisitCommand{
-		TripID:      input.TripID,
-		StageID:     input.StageID,
-		Date:        date,
-		Title:       derefString(input.Title),
-		Description: derefString(input.Description),
-		Lat:         input.Lat,
-		Lng:         input.Lng,
+	stages, visits, err := r.currentItinerary(ctx, input.TripID)
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	var v *visit.Visit
+	err = r.resolveItineraryChange(ctx, input.TripID, stages, proposedVisitsWithAdded(visits, input.TripID, input.StageID, date), input.ResolutionPlan, func() error {
+		var applyErr error
+		v, applyErr = r.visitHandler.Add(ctx, visit.AddVisitCommand{
+			TripID:      input.TripID,
+			StageID:     input.StageID,
+			Date:        date,
+			Title:       derefString(input.Title),
+			Description: derefString(input.Description),
+			Lat:         input.Lat,
+			Lng:         input.Lng,
+		})
+		return applyErr
 	})
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
@@ -225,7 +244,14 @@ func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input Upd
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
 
-	// If date is provided, parse it; otherwise fetch the existing visit's date.
+	// Load the existing visit even when date is omitted: its trip determines the
+	// authoritative itinerary that must be preflighted.
+	existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: id})
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+
+	// If date is provided, parse it; otherwise keep the existing visit's date.
 	var dateVal time.Time
 	if input.Date != nil {
 		parsed, err := time.Parse(dateFormat, *input.Date)
@@ -234,20 +260,25 @@ func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input Upd
 		}
 		dateVal = parsed
 	} else {
-		existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: id})
-		if err != nil {
-			return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
-		}
 		dateVal = existing.Date
 	}
 
-	v, err := r.visitHandler.Update(ctx, visit.UpdateVisitCommand{
-		ID:          id,
-		Date:        dateVal,
-		Title:       derefString(input.Title),
-		Description: derefString(input.Description),
-		Lat:         input.Lat,
-		Lng:         input.Lng,
+	stages, visits, err := r.currentItinerary(ctx, existing.TripID)
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	var v *visit.Visit
+	err = r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDate(visits, id, dateVal), input.ResolutionPlan, func() error {
+		var applyErr error
+		v, applyErr = r.visitHandler.Update(ctx, visit.UpdateVisitCommand{
+			ID:          id,
+			Date:        dateVal,
+			Title:       derefString(input.Title),
+			Description: derefString(input.Description),
+			Lat:         input.Lat,
+			Lng:         input.Lng,
+		})
+		return applyErr
 	})
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
@@ -256,11 +287,21 @@ func (r *mutationResolver) UpdateVisit(ctx context.Context, id string, input Upd
 }
 
 // DeleteVisit is the resolver for the deleteVisit field.
-func (r *mutationResolver) DeleteVisit(ctx context.Context, id string) (*DeleteVisitPayload, error) {
+func (r *mutationResolver) DeleteVisit(ctx context.Context, id string, resolutionPlan []*TravelLegResolutionInput) (*DeleteVisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
 		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
-	if err := r.visitHandler.Delete(ctx, visit.DeleteVisitCommand{ID: id}); err != nil {
+	existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: id})
+	if err != nil {
+		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	stages, visits, err := r.currentItinerary(ctx, existing.TripID)
+	if err != nil {
+		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	if err := r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithout(visits, id), resolutionPlan, func() error {
+		return r.visitHandler.Delete(ctx, visit.DeleteVisitCommand{ID: id})
+	}); err != nil {
 		return &DeleteVisitPayload{Success: false, Errors: domainErrorToUserErrors(err)}, nil
 	}
 	return &DeleteVisitPayload{Success: true, Errors: []*UserError{}}, nil
@@ -370,11 +411,24 @@ func (r *mutationResolver) CalculateTravelLegDistance(ctx context.Context, fromS
 }
 
 // AttachVisitToStage is the resolver for the attachVisitToStage field.
-func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error) {
+func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	v, err := r.visitHandler.AttachToStage(ctx, visit.AttachToStageCommand{VisitID: visitID, StageID: stageID})
+	existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: visitID})
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	stages, visits, err := r.currentItinerary(ctx, existing.TripID)
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	var v *visit.Visit
+	err = r.resolveItineraryChange(ctx, existing.TripID, stages, visits, resolutionPlan, func() error {
+		var applyErr error
+		v, applyErr = r.visitHandler.AttachToStage(ctx, visit.AttachToStageCommand{VisitID: visitID, StageID: stageID})
+		return applyErr
+	})
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
@@ -382,11 +436,24 @@ func (r *mutationResolver) AttachVisitToStage(ctx context.Context, visitID strin
 }
 
 // DetachVisitFromStage is the resolver for the detachVisitFromStage field.
-func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID string, stageID string) (*VisitPayload, error) {
+func (r *mutationResolver) DetachVisitFromStage(ctx context.Context, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) (*VisitPayload, error) {
 	if err := r.requireEditor(ctx); err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}
-	v, err := r.visitHandler.DetachFromStage(ctx, visit.DetachFromStageCommand{VisitID: visitID, StageID: stageID})
+	existing, err := r.visitHandler.GetByID(ctx, visit.GetVisitQuery{ID: visitID})
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	stages, visits, err := r.currentItinerary(ctx, existing.TripID)
+	if err != nil {
+		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
+	}
+	var v *visit.Visit
+	err = r.resolveItineraryChange(ctx, existing.TripID, stages, proposedVisitsWithDetachedStage(visits, visitID, stageID), resolutionPlan, func() error {
+		var applyErr error
+		v, applyErr = r.visitHandler.DetachFromStage(ctx, visit.DetachFromStageCommand{VisitID: visitID, StageID: stageID})
+		return applyErr
+	})
 	if err != nil {
 		return &VisitPayload{Errors: domainErrorToUserErrors(err)}, nil
 	}

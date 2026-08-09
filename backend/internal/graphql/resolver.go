@@ -36,6 +36,7 @@ type Resolver struct {
 	mediaHandler       *media.Handler
 	travelLegHandler   *travelleg.Handler
 	distanceCalculator distanceCalculator
+	itinerary          itineraryCoordinator
 }
 
 // NewResolver creates a new root Resolver.
