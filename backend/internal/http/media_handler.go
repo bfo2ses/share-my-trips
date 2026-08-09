@@ -61,7 +61,7 @@ func (h *MediaHandler) serveOriginal(w http.ResponseWriter, r *http.Request, id 
 		return
 	}
 
-	filePath := h.storage.FilePath(m.ID, m.TripID, m.VisitID, m.Ext())
+	filePath := h.storage.FilePath(m.ID, m.TripID, m.Owner(), m.Ext())
 	w.Header().Set("Content-Type", m.ContentType)
 	http.ServeFile(w, r, filePath)
 }
@@ -73,11 +73,11 @@ func (h *MediaHandler) serveThumb(w http.ResponseWriter, r *http.Request, id str
 		return
 	}
 
-	thumbPath := h.storage.ThumbPath(m.ID, m.TripID, m.VisitID)
+	thumbPath := h.storage.ThumbPath(m.ID, m.TripID, m.Owner())
 
 	// Generate thumb if it doesn't exist.
 	if _, err := os.Stat(thumbPath); os.IsNotExist(err) {
-		originalPath := h.storage.FilePath(m.ID, m.TripID, m.VisitID, m.Ext())
+		originalPath := h.storage.FilePath(m.ID, m.TripID, m.Owner(), m.Ext())
 		if err := h.thumbnailer.GenerateThumb(originalPath, thumbPath, m.IsVideo()); err != nil {
 			http.Error(w, "failed to generate thumbnail", http.StatusInternalServerError)
 			return
@@ -90,7 +90,8 @@ func (h *MediaHandler) serveThumb(w http.ResponseWriter, r *http.Request, id str
 }
 
 // UploadHandler handles multipart file uploads.
-// POST /api/upload with multipart form: file, visitID, tripID.
+// POST /api/upload with multipart form: file, tripID, and exactly one of
+// visitID or travelLegID.
 type UploadHandler struct {
 	mediaHandler *media.Handler
 	storage      media.Storage
@@ -117,9 +118,10 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	visitID := r.FormValue("visitID")
+	travelLegID := r.FormValue("travelLegID")
 	tripID := r.FormValue("tripID")
-	if visitID == "" || tripID == "" {
-		http.Error(w, "visitID and tripID are required", http.StatusBadRequest)
+	if tripID == "" || (visitID == "") == (travelLegID == "") {
+		http.Error(w, "tripID and exactly one of visitID or travelLegID are required", http.StatusBadRequest)
 		return
 	}
 
@@ -138,6 +140,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Create media entity.
 	m, err := h.mediaHandler.Add(r.Context(), media.AddMediaCommand{
 		VisitID:     visitID,
+		TravelLegID: travelLegID,
 		TripID:      tripID,
 		Filename:    header.Filename,
 		ContentType: contentType,
@@ -148,7 +151,11 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store file.
-	if err := h.storage.Store(m.ID, m.TripID, m.VisitID, m.Ext(), file); err != nil {
+	if err := h.storage.Store(m.ID, m.TripID, m.Owner(), m.Ext(), file); err != nil {
+		if deleteErr := h.mediaHandler.Delete(r.Context(), media.DeleteMediaCommand{ID: m.ID}); deleteErr != nil {
+			http.Error(w, "failed to store file and roll back media", http.StatusInternalServerError)
+			return
+		}
 		http.Error(w, "failed to store file", http.StatusInternalServerError)
 		return
 	}
@@ -230,18 +237,20 @@ func (h *StreamingUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	visitID := r.URL.Query().Get("visitID")
+	travelLegID := r.URL.Query().Get("travelLegID")
 	tripID := r.URL.Query().Get("tripID")
 	filename := r.URL.Query().Get("filename")
 	contentType := r.URL.Query().Get("contentType")
 
-	if visitID == "" || tripID == "" || filename == "" || contentType == "" {
-		http.Error(w, "visitID, tripID, filename, and contentType query params are required", http.StatusBadRequest)
+	if tripID == "" || filename == "" || contentType == "" || (visitID == "") == (travelLegID == "") {
+		http.Error(w, "tripID, filename, contentType, and exactly one of visitID or travelLegID query params are required", http.StatusBadRequest)
 		return
 	}
 
 	// Create media entity.
 	m, err := h.mediaHandler.Add(r.Context(), media.AddMediaCommand{
 		VisitID:     visitID,
+		TravelLegID: travelLegID,
 		TripID:      tripID,
 		Filename:    filename,
 		ContentType: contentType,
@@ -252,7 +261,11 @@ func (h *StreamingUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Stream body directly to storage.
-	if err := h.storage.Store(m.ID, m.TripID, m.VisitID, m.Ext(), io.LimitReader(r.Body, 2<<30)); err != nil {
+	if err := h.storage.Store(m.ID, m.TripID, m.Owner(), m.Ext(), io.LimitReader(r.Body, 2<<30)); err != nil {
+		if deleteErr := h.mediaHandler.Delete(r.Context(), media.DeleteMediaCommand{ID: m.ID}); deleteErr != nil {
+			http.Error(w, "failed to store file and roll back media", http.StatusInternalServerError)
+			return
+		}
 		http.Error(w, "failed to store file", http.StatusInternalServerError)
 		return
 	}

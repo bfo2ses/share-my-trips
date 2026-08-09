@@ -14,31 +14,38 @@ type Handler struct {
 	storage      Storage
 	tripChecker  TripChecker
 	visitChecker VisitChecker
+	legChecker   TravelLegChecker
 }
 
 // NewHandler creates a new media Handler.
-func NewHandler(repo Repository, storage Storage, tripChecker TripChecker, visitChecker VisitChecker) *Handler {
-	return &Handler{
+// The optional travel-leg checker keeps visit-only server wiring compatible
+// while allowing a fully owner-aware handler once travel legs are wired.
+func NewHandler(repo Repository, storage Storage, tripChecker TripChecker, visitChecker VisitChecker, legChecker ...TravelLegChecker) *Handler {
+	handler := &Handler{
 		repo:         repo,
 		storage:      storage,
 		tripChecker:  tripChecker,
 		visitChecker: visitChecker,
 	}
+	if len(legChecker) > 0 {
+		handler.legChecker = legChecker[0]
+	}
+	return handler
 }
 
 // --- Commands ---
 
 // Add handles the AddMediaCommand.
 func (h *Handler) Add(ctx context.Context, cmd AddMediaCommand) (*Media, error) {
-	exists, err := h.visitChecker.Exists(ctx, cmd.VisitID)
+	owner, tripID, err := h.resolveOwner(ctx, Owner{VisitID: cmd.VisitID, TravelLegID: cmd.TravelLegID})
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
-	if !exists {
-		return nil, fmt.Errorf("add media: %w", ErrVisitNotFound)
+	if cmd.TripID != "" && cmd.TripID != tripID {
+		return nil, fmt.Errorf("add media: %w", ErrTripMismatch)
 	}
 
-	modifiable, err := h.tripChecker.IsModifiable(ctx, cmd.TripID)
+	modifiable, err := h.tripChecker.IsModifiable(ctx, tripID)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
@@ -46,13 +53,13 @@ func (h *Handler) Add(ctx context.Context, cmd AddMediaCommand) (*Media, error) 
 		return nil, fmt.Errorf("add media: %w", ErrTripClosed)
 	}
 
-	pos, err := h.repo.NextPosition(ctx, cmd.VisitID)
+	pos, err := h.repo.NextPositionForOwner(ctx, owner)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
 
 	id := uuid.New().String()
-	m, err := NewMedia(id, cmd.VisitID, cmd.TripID, cmd.Filename, cmd.ContentType, pos)
+	m, err := newMedia(id, tripID, owner, cmd.Filename, cmd.ContentType, pos)
 	if err != nil {
 		return nil, fmt.Errorf("add media: %w", err)
 	}
@@ -90,12 +97,21 @@ func (h *Handler) UpdateCaption(ctx context.Context, cmd UpdateCaptionCommand) (
 
 // Reorder handles the ReorderCommand.
 func (h *Handler) Reorder(ctx context.Context, cmd ReorderCommand) ([]*Media, error) {
-	existing, err := h.repo.ListByVisit(ctx, cmd.VisitID)
+	return h.reorder(ctx, VisitOwner(cmd.VisitID), cmd.MediaIDs)
+}
+
+// ReorderTravelLeg changes the ordering of a saved travel leg's media.
+func (h *Handler) ReorderTravelLeg(ctx context.Context, cmd ReorderTravelLegCommand) ([]*Media, error) {
+	return h.reorder(ctx, TravelLegOwner(cmd.TravelLegID), cmd.MediaIDs)
+}
+
+func (h *Handler) reorder(ctx context.Context, owner Owner, mediaIDs []string) ([]*Media, error) {
+	existing, err := h.repo.ListByOwner(ctx, owner)
 	if err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
 
-	if len(existing) == 0 && len(cmd.MediaIDs) == 0 {
+	if len(existing) == 0 && len(mediaIDs) == 0 {
 		return nil, nil
 	}
 
@@ -104,10 +120,10 @@ func (h *Handler) Reorder(ctx context.Context, cmd ReorderCommand) ([]*Media, er
 	for _, m := range existing {
 		existingIDs[m.ID] = true
 	}
-	if len(cmd.MediaIDs) != len(existingIDs) {
+	if len(mediaIDs) != len(existingIDs) {
 		return nil, fmt.Errorf("reorder media: %w", ErrIDMismatch)
 	}
-	for _, id := range cmd.MediaIDs {
+	for _, id := range mediaIDs {
 		if !existingIDs[id] {
 			return nil, fmt.Errorf("reorder media: %w", ErrIDMismatch)
 		}
@@ -124,11 +140,11 @@ func (h *Handler) Reorder(ctx context.Context, cmd ReorderCommand) ([]*Media, er
 		}
 	}
 
-	if err := h.repo.Reorder(ctx, cmd.VisitID, cmd.MediaIDs); err != nil {
+	if err := h.repo.ReorderForOwner(ctx, owner, mediaIDs); err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
 
-	result, err := h.repo.ListByVisit(ctx, cmd.VisitID)
+	result, err := h.repo.ListByOwner(ctx, owner)
 	if err != nil {
 		return nil, fmt.Errorf("reorder media: %w", err)
 	}
@@ -155,7 +171,7 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteMediaCommand) error {
 		return fmt.Errorf("delete media: %w", ErrTripClosed)
 	}
 
-	if err := h.storage.Delete(m.ID, m.TripID, m.VisitID, m.Ext()); err != nil {
+	if err := h.storage.Delete(m.ID, m.TripID, m.Owner(), m.Ext()); err != nil {
 		return fmt.Errorf("delete media: %w", err)
 	}
 
@@ -191,6 +207,16 @@ func (h *Handler) ListByVisit(ctx context.Context, query ListByVisitQuery) ([]*M
 	return media, nil
 }
 
+// ListByTravelLeg handles the owner-aware travel-leg media query.
+func (h *Handler) ListByTravelLeg(ctx context.Context, query ListByTravelLegQuery) ([]*Media, error) {
+	items, err := h.repo.ListByTravelLeg(ctx, query.TravelLegID)
+	if err != nil {
+		return nil, fmt.Errorf("list media by travel leg: %w", err)
+	}
+	sort.Slice(items, func(i, j int) bool { return items[i].Position < items[j].Position })
+	return items, nil
+}
+
 // ListByTrip handles the ListByTripQuery. Returns media across all the trip's
 // visits, grouped by visit (stable but arbitrary visit order — visit IDs are
 // UUIDs, not chronological), sorted by position within each visit.
@@ -201,11 +227,50 @@ func (h *Handler) ListByTrip(ctx context.Context, query ListByTripQuery) ([]*Med
 	}
 
 	sort.Slice(media, func(i, j int) bool {
-		if media[i].VisitID != media[j].VisitID {
-			return media[i].VisitID < media[j].VisitID
+		ownerI, ownerJ := media[i].Owner(), media[j].Owner()
+		if ownerI.ID() != ownerJ.ID() || ownerI.IsVisit() != ownerJ.IsVisit() {
+			if ownerI.IsVisit() != ownerJ.IsVisit() {
+				return ownerI.IsVisit()
+			}
+			return ownerI.ID() < ownerJ.ID()
 		}
 		return media[i].Position < media[j].Position
 	})
 
 	return media, nil
+}
+
+func (h *Handler) resolveOwner(ctx context.Context, owner Owner) (Owner, string, error) {
+	if err := owner.Validate(); err != nil {
+		return Owner{}, "", err
+	}
+	if owner.IsVisit() {
+		exists, err := h.visitChecker.Exists(ctx, owner.VisitID)
+		if err != nil {
+			return Owner{}, "", err
+		}
+		if !exists {
+			return Owner{}, "", ErrVisitNotFound
+		}
+		tripID, err := h.visitChecker.TripID(ctx, owner.VisitID)
+		if err != nil {
+			return Owner{}, "", err
+		}
+		return owner, tripID, nil
+	}
+	if h.legChecker == nil {
+		return Owner{}, "", ErrTravelLegNotFound
+	}
+	exists, err := h.legChecker.Exists(ctx, owner.TravelLegID)
+	if err != nil {
+		return Owner{}, "", err
+	}
+	if !exists {
+		return Owner{}, "", ErrTravelLegNotFound
+	}
+	tripID, err := h.legChecker.TripID(ctx, owner.TravelLegID)
+	if err != nil {
+		return Owner{}, "", err
+	}
+	return owner, tripID, nil
 }

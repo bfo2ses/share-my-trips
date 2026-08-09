@@ -160,7 +160,7 @@ func TestMediaHTTP_UploadStoresAndServesOriginal(t *testing.T) {
 	assert.Equal(t, "tokyo.jpg", stored.Filename)
 	assert.Equal(t, "image/jpeg", stored.ContentType)
 
-	storedBytes, err := os.ReadFile(harness.storage.FilePath(stored.ID, stored.TripID, stored.VisitID, stored.Ext()))
+	storedBytes, err := os.ReadFile(harness.storage.FilePath(stored.ID, stored.TripID, stored.Owner(), stored.Ext()))
 	require.NoError(t, err)
 	assert.Equal(t, contents, storedBytes)
 
@@ -187,7 +187,7 @@ func TestMediaHTTP_UploadStoresAndServesOriginal(t *testing.T) {
 	require.NoError(t, harness.media.Delete(t.Context(), media.DeleteMediaCommand{ID: uploaded.ID}))
 	_, err = harness.media.GetByID(t.Context(), media.GetMediaQuery{ID: uploaded.ID})
 	require.ErrorIs(t, err, media.ErrNotFound)
-	_, err = os.Stat(harness.storage.FilePath(stored.ID, stored.TripID, stored.VisitID, stored.Ext()))
+	_, err = os.Stat(harness.storage.FilePath(stored.ID, stored.TripID, stored.Owner(), stored.Ext()))
 	assert.ErrorIs(t, err, os.ErrNotExist)
 }
 

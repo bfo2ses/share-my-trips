@@ -19,6 +19,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
@@ -83,6 +84,7 @@ func main() {
 	var visitHandler *visit.Handler
 	var authHandler *auth.Handler
 	var mediaHandler *media.Handler
+	var travelLegRepo travelleg.Repository
 
 	dsn := os.Getenv("DATABASE_URL")
 
@@ -114,7 +116,8 @@ func main() {
 
 		mediaRepo := pg.NewMediaRepository(pool)
 		visitChecker := pg.NewVisitChecker(pool)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
+		travelLegRepo = pg.NewTravelLegRepository(pool)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, pg.NewTravelLegChecker(pool))
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
@@ -139,7 +142,8 @@ func main() {
 
 		mediaRepo := memory.NewMediaRepository()
 		visitChecker := memory.NewVisitChecker(visitRepo)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
+		travelLegRepo = memory.NewTravelLegRepository()
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, memory.NewTravelLegChecker(travelLegRepo))
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)

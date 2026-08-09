@@ -3,6 +3,7 @@ package media
 // AddMediaCommand contains the data needed to add a media to a visit.
 type AddMediaCommand struct {
 	VisitID     string
+	TravelLegID string
 	TripID      string
 	Filename    string
 	ContentType string
@@ -18,6 +19,12 @@ type UpdateCaptionCommand struct {
 type ReorderCommand struct {
 	VisitID  string
 	MediaIDs []string
+}
+
+// ReorderTravelLegCommand contains the new ordering for a travel leg's media.
+type ReorderTravelLegCommand struct {
+	TravelLegID string
+	MediaIDs    []string
 }
 
 // DeleteMediaCommand identifies the media to delete.
