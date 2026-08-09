@@ -69,10 +69,10 @@ export function VisitDetail({ visit, canEdit, onClose, onBack }: VisitDetailProp
           <p className={styles.description}>{visit.description}</p>
         )}
 
-        <MediaGallery media={media} isAdmin={canEdit} onDeleted={refetchMedia} />
+        <MediaGallery media={media} owner={{ type: 'visit', id: visit.id }} isAdmin={canEdit} onDeleted={refetchMedia} />
 
         {canEdit && (
-          <MediaUploader visitID={visit.id} tripID={visit.tripID} onUploadComplete={refetchMedia} />
+          <MediaUploader owner={{ type: 'visit', id: visit.id }} tripID={visit.tripID} onUploadComplete={refetchMedia} />
         )}
       </div>
 

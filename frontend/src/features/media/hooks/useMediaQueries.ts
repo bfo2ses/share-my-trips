@@ -22,6 +22,28 @@ export function useVisitMedia(visitID: string) {
   return useQuery({ query: VISIT_MEDIA_QUERY, variables: { visitID } });
 }
 
+const TRAVEL_LEG_MEDIA_QUERY = gql(`
+  query TravelLegMedia($travelLegID: ID!) {
+    travelLegMedia(travelLegID: $travelLegID) {
+      id
+      visitID
+      travelLegID
+      tripID
+      filename
+      contentType
+      caption
+      url
+      thumbUrl
+      position
+      createdAt
+    }
+  }
+`);
+
+export function useTravelLegMedia(travelLegID: string) {
+  return useQuery({ query: TRAVEL_LEG_MEDIA_QUERY, variables: { travelLegID } });
+}
+
 const TRIP_MEDIA_QUERY = gql(`
   query TripMedia($tripID: ID!) {
     tripMedia(tripID: $tripID) {

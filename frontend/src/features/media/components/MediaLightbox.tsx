@@ -2,9 +2,7 @@ import Lightbox, { type Slide } from 'yet-another-react-lightbox';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/captions.css';
-import type { VisitMediaQuery } from '../../../graphql/generated/graphql';
-
-type Media = VisitMediaQuery['visitMedia'][number];
+import type { Media } from '../../../graphql/generated/graphql';
 
 interface MediaLightboxProps {
   media: Media[];

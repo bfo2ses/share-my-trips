@@ -200,8 +200,8 @@ function VisitFormContent({
 
         {isEdit && (
           <div className={styles.mediaSection}>
-            <MediaGallery media={media} isAdmin onDeleted={refetchMedia} />
-            <MediaUploader visitID={visit!.id} tripID={tripID} onUploadComplete={refetchMedia} />
+            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} isAdmin onDeleted={refetchMedia} />
+            <MediaUploader owner={{ type: 'visit', id: visit!.id }} tripID={tripID} onUploadComplete={refetchMedia} />
           </div>
         )}
 

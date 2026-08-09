@@ -51,6 +51,25 @@ export function useReorderMedia() {
   return useMutation(REORDER_MEDIA);
 }
 
+const REORDER_TRAVEL_LEG_MEDIA = gql(`
+  mutation ReorderTravelLegMedia($travelLegID: ID!, $mediaIDs: [ID!]!) {
+    reorderTravelLegMedia(travelLegID: $travelLegID, mediaIDs: $mediaIDs) {
+      media {
+        id
+        position
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`);
+
+export function useReorderTravelLegMedia() {
+  return useMutation(REORDER_TRAVEL_LEG_MEDIA);
+}
+
 export function useDeleteMedia() {
   return useMutation(DELETE_MEDIA);
 }

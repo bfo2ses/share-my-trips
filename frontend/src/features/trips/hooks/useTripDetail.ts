@@ -35,6 +35,17 @@ const TRIP_DETAIL_QUERY = gql(`
       lng
       position
     }
+    travelLegs(tripID: $id) {
+      id
+      tripID
+      fromStageID
+      toStageID
+      transport
+      description
+      distanceKm
+      createdAt
+      updatedAt
+    }
   }
 `);
 

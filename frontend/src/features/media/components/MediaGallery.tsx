@@ -3,27 +3,29 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type D
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
-import { useDeleteMedia, useReorderMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
+import { useDeleteMedia, useReorderMedia, useReorderTravelLegMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
 import { MediaLightbox } from './MediaLightbox';
-import type { VisitMediaQuery } from '../../../graphql/generated/graphql';
+import type { Media } from '../../../graphql/generated/graphql';
+import type { MediaOwner } from '../mediaOwner';
 import styles from './MediaGallery.module.css';
-
-type Media = VisitMediaQuery['visitMedia'][number];
 
 interface MediaGalleryProps {
   media: Media[];
+  owner: MediaOwner;
   isAdmin: boolean;
   onDeleted: () => void;
 }
 
-export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
+export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [localMedia, setLocalMedia] = useState<Media[] | null>(null);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
   const [captionValue, setCaptionValue] = useState('');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const [, deleteMedia] = useDeleteMedia();
   const [, reorderMedia] = useReorderMedia();
+  const [, reorderTravelLegMedia] = useReorderTravelLegMedia();
   const [, updateCaption] = useUpdateMediaCaption();
 
   const items = localMedia ?? media;
@@ -39,7 +41,13 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
 
   async function handleDelete(e: React.MouseEvent, id: string) {
     e.stopPropagation();
-    await deleteMedia({ id }, { additionalTypenames: ['Media'] });
+    setActionError(null);
+    const result = await deleteMedia({ id }, { additionalTypenames: ['Media'] });
+    const errors = result.data?.deleteMedia.errors ?? [];
+    if (result.error || !result.data?.deleteMedia.success || errors.length > 0) {
+      setActionError(errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce média.');
+      return;
+    }
     onDeleted();
   }
 
@@ -60,15 +68,27 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
     // Optimistic update.
     setLocalMedia(reordered);
 
-    const visitID = items[0]?.visitID;
-    if (visitID) {
+    if (owner.type === 'visit') {
       const result = await reorderMedia(
-        { visitID, mediaIDs: reordered.map((m) => m.id) },
+        { visitID: owner.id, mediaIDs: reordered.map((m) => m.id) },
         { additionalTypenames: ['Media'] },
       );
-      if (result.error) {
+      const errors = result.data?.reorderMedia.errors ?? [];
+      if (result.error || errors.length > 0) {
         setLocalMedia(null); // Revert on error.
+        setActionError(errors.map((error) => error.message).join(' ') || 'Impossible de réorganiser les médias.');
       }
+      return;
+    }
+
+    const result = await reorderTravelLegMedia(
+      { travelLegID: owner.id, mediaIDs: reordered.map((m) => m.id) },
+      { additionalTypenames: ['Media'] },
+    );
+    const errors = result.data?.reorderTravelLegMedia.errors ?? [];
+    if (result.error || errors.length > 0) {
+      setLocalMedia(null); // Revert on error.
+      setActionError(errors.map((error) => error.message).join(' ') || 'Impossible de réorganiser les médias.');
     }
   }
 
@@ -81,7 +101,12 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
 
   async function handleCaptionSave(id: string) {
     setEditingCaption(null);
-    await updateCaption({ id, caption: captionValue || null }, { additionalTypenames: ['Media'] });
+    const result = await updateCaption({ id, caption: captionValue || null }, { additionalTypenames: ['Media'] });
+    const errors = result.data?.updateMediaCaption.errors ?? [];
+    if (result.error || errors.length > 0) {
+      setActionError(errors.map((error) => error.message).join(' ') || 'Impossible de modifier la légende.');
+      return;
+    }
     onDeleted(); // Refetch to sync.
   }
 
@@ -131,6 +156,7 @@ export function MediaGallery({ media, isAdmin, onDeleted }: MediaGalleryProps) {
 
   return (
     <>
+      {actionError && <p role="alert" className={styles.errorMessage}>{actionError}</p>}
       <div className={styles.gallery}>
         {canDrag ? (
           <DndContext
