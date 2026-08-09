@@ -20,7 +20,8 @@ import { VisitForm } from '../../stages/components/VisitForm';
 import { TravelLegDetail } from '../../travel-legs/components/TravelLegDetail';
 import { TravelLegForm, type TravelLegData } from '../../travel-legs/components/TravelLegForm';
 import { TravelLegResolutionDialog, type ResolutionLeg, type ResolutionPair, type TravelLegResolution } from '../../travel-legs/components/TravelLegResolutionDialog';
-import { transportIcon, transportLabel } from '../../travel-legs/transport';
+import { transportLabel } from '../../travel-legs/transport';
+import { TransportIcon } from '../../travel-legs/components/TransportIcon';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
@@ -79,6 +80,7 @@ export function TripDetailPage() {
   const [resolutionRequest, setResolutionRequest] = useState<ResolutionRequest | null>(null);
   const [resolving, setResolving] = useState(false);
   const [resolutionError, setResolutionError] = useState<string | null>(null);
+  const [recalculationNotice, setRecalculationNotice] = useState<string | null>(null);
   const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingVisitCoords, setPendingVisitCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
@@ -86,6 +88,9 @@ export function TripDetailPage() {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   const refetchAll = useCallback(() => reexecuteDetail({ requestPolicy: 'network-only' }), [reexecuteDetail]);
+  const showRecalculationWarnings = useCallback((warnings: Array<{ message: string }> | null | undefined) => {
+    if (warnings && warnings.length > 0) setRecalculationNotice(warnings.map((warning) => warning.message).join(' '));
+  }, []);
   // Per-entity in-flight drag mutation guard. Ref-based so updates don't
   // re-render the map and lose Leaflet's drag state.
   const savingStagesRef = useRef<Set<string>>(new Set());
@@ -231,9 +236,21 @@ export function TripDetailPage() {
   }, [setSearchParams]);
 
   const handleTravelLegClick = useCallback((travelLegID: string) => {
+    const travelLeg = travelLegs.find((leg) => leg.id === travelLegID);
+    if (isAdmin && isModifiable && travelLeg) {
+      closeStageForm();
+      closeVisitForm();
+      setSearchParams({}, { replace: true });
+      setTravelLegForm({
+        fromStageID: travelLeg.fromStageID,
+        toStageID: travelLeg.toStageID,
+        travelLeg,
+      });
+      return;
+    }
     setSearchParams({ leg: travelLegID }, { replace: true });
     setSheetSnap((snap) => (snap === 'peek' ? 'half' : snap));
-  }, [setSearchParams]);
+  }, [closeStageForm, closeVisitForm, isAdmin, isModifiable, setSearchParams, travelLegs]);
 
   const handleTravelLegCreate = useCallback((fromStageID: string, toStageID: string) => {
     closeStageForm();
@@ -407,12 +424,13 @@ export function TripDetailPage() {
           refetchAll();
           return;
         }
+        showRecalculationWarnings(result.data?.updateStage.recalculationWarnings);
         setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
       } finally {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [isAdmin, isModifiable, selectedStageId, selectedVisitId, updateStage, refetchAll],
+    [isAdmin, isModifiable, selectedStageId, selectedVisitId, updateStage, refetchAll, showRecalculationWarnings],
   );
 
   const handleVisitDragEnd = useCallback(
@@ -564,6 +582,11 @@ export function TripDetailPage() {
 
   return (
     <>
+    {recalculationNotice && (
+      <div role="status" style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 2000, maxWidth: 360, padding: 12, borderRadius: 8, background: 'var(--color-surface)', boxShadow: '0 4px 16px rgb(0 0 0 / 20%)' }}>
+        {recalculationNotice}
+      </div>
+    )}
     <div className={`${styles.page} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
       {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de visite ── */}
       <TripPanel
@@ -665,6 +688,7 @@ export function TripDetailPage() {
               stage={selectedStage}
               pendingCoords={pendingStageCoords}
               actions={stageFormActions}
+              onRecalculationWarning={setRecalculationNotice}
             />
           )}
           {autoVisitForm && selectedVisit && effectiveVisitStageId && (
@@ -839,32 +863,37 @@ function StageSection({
               : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
-      {dateGroups.map((group) => (
-        <SameDateVisitGroup
-          key={group.date}
-          stageId={stage.id}
-          date={group.date}
-          visits={group.visits}
-          canReorder={canReorder}
-          onVisitClick={(visit) => onVisitClick(stage.id, visit)}
-        />
-      ))}
-      {nextStage && (travelLeg || canEditTravelLegs) && (
-        <button
-          type="button"
-          className={`${styles.travelLegBoundary} ${travelLeg ? '' : styles.travelLegBoundaryCreate}`}
-          aria-label={travelLeg
-            ? `${transportLabel(travelLeg.transport)} de ${stage.displayName} à ${nextStage.displayName}`
-            : `Ajouter un trajet de ${stage.displayName} à ${nextStage.displayName}`}
-          onClick={() => {
-            if (travelLeg) onTravelLegClick(travelLeg.id);
-            else onTravelLegCreate(stage.id, nextStage.id);
-          }}
-        >
-          <span aria-hidden="true">{travelLeg ? transportIcon(travelLeg.transport) : '+'}</span>
-          <span>{travelLeg ? transportLabel(travelLeg.transport) : 'Ajouter un trajet'}</span>
-        </button>
-      )}
+      <div className={styles.stageContentRow}>
+        <div className={styles.stageVisits}>
+          {dateGroups.map((group) => (
+            <SameDateVisitGroup
+              key={group.date}
+              stageId={stage.id}
+              date={group.date}
+              visits={group.visits}
+              canReorder={canReorder}
+              onVisitClick={(visit) => onVisitClick(stage.id, visit)}
+            />
+          ))}
+        </div>
+        {nextStage && (travelLeg || canEditTravelLegs) && (
+          <button
+            type="button"
+            className={`${styles.travelLegBoundary} ${travelLeg ? '' : styles.travelLegBoundaryCreate}`}
+            aria-label={travelLeg
+              ? `${transportLabel(travelLeg.transport)} de ${stage.displayName} à ${nextStage.displayName}`
+              : `Ajouter un trajet de ${stage.displayName} à ${nextStage.displayName}`}
+            onClick={() => {
+              if (travelLeg) onTravelLegClick(travelLeg.id);
+              else onTravelLegCreate(stage.id, nextStage.id);
+            }}
+          >
+            <span className={styles.travelLegIcon} aria-hidden="true">
+              {travelLeg ? <TransportIcon transport={travelLeg.transport} /> : '+'}
+            </span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

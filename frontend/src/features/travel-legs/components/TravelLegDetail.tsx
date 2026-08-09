@@ -5,7 +5,8 @@ import { MediaGallery } from '../../media/components/MediaGallery';
 import { MediaUploader } from '../../media/components/MediaUploader';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { useDeleteTravelLeg } from '../hooks/useTravelLegMutations';
-import { formatDistanceKm, transportIcon, transportLabel } from '../transport';
+import { formatDistanceKm, transportLabel } from '../transport';
+import { TransportIcon } from './TransportIcon';
 import type { TravelLegData } from './TravelLegForm';
 import styles from '../../trips/components/DetailView.module.css';
 
@@ -52,7 +53,7 @@ export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit }:
       <div className={styles.header}>
         <div className={styles.headerText}>
           <button type="button" className={styles.back} onClick={onBack}>← Retour à la timeline</button>
-          <p className={styles.label}>{transportIcon(travelLeg.transport)} {transportLabel(travelLeg.transport)}</p>
+          <p className={styles.label}><TransportIcon transport={travelLeg.transport} /> {transportLabel(travelLeg.transport)}</p>
           <h3 className={styles.title}>Trajet</h3>
         </div>
         {menuItems.length > 0 && <ActionMenu items={menuItems} ariaLabel="Actions sur le trajet" />}

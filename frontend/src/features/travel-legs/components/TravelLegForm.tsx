@@ -3,8 +3,9 @@ import type { TravelLeg, TravelLegTransport } from '../../../graphql/generated/g
 import { MediaGallery } from '../../media/components/MediaGallery';
 import { MediaUploader } from '../../media/components/MediaUploader';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { transportOptions } from '../transport';
-import { useCalculateTravelLegDistance, useCreateTravelLeg, useUpdateTravelLeg } from '../hooks/useTravelLegMutations';
+import { useCalculateTravelLegDistance, useCreateTravelLeg, useDeleteTravelLeg, useUpdateTravelLeg } from '../hooks/useTravelLegMutations';
 import styles from '../../stages/components/VisitForm.module.css';
 
 export type TravelLegData = Pick<TravelLeg, 'id' | 'tripID' | 'fromStageID' | 'toStageID' | 'transport' | 'description' | 'distanceKm'>;
@@ -49,11 +50,15 @@ function TravelLegFormContent({
   const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
   const [calculationMessage, setCalculationMessage] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const distanceRef = useRef(distance);
   const transportRef = useRef(transport);
 
   const [, createTravelLeg] = useCreateTravelLeg();
   const [, updateTravelLeg] = useUpdateTravelLeg();
+  const [, deleteTravelLeg] = useDeleteTravelLeg();
   const [, calculateDistance] = useCalculateTravelLegDistance();
   const [{ data: mediaData }, reexecuteMedia] = useTravelLegMedia(travelLeg?.id ?? '');
   const media = isEdit ? mediaData?.travelLegMedia ?? [] : [];
@@ -147,6 +152,20 @@ function TravelLegFormContent({
     onClose();
   }
 
+  async function handleDelete() {
+    if (!travelLeg || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    const result = await deleteTravelLeg({ id: travelLeg.id }, { additionalTypenames: ['TravelLeg'] });
+    const payload = result.data?.deleteTravelLeg;
+    if (result.error || !payload?.success || payload.errors.length > 0) {
+      setDeleting(false);
+      setDeleteError(payload?.errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce trajet. Réessayez.');
+      return;
+    }
+    onClose();
+  }
+
   return (
     <>
       <div className={styles.header}>
@@ -164,7 +183,7 @@ function TravelLegFormContent({
         <label className={styles.label}>
           Moyen de transport
           <select className={styles.input} value={transport} onChange={(event) => updateTransport(event.target.value as TravelLegTransport)}>
-            {transportOptions.map((option) => <option key={option.value} value={option.value}>{option.icon} {option.label}</option>)}
+            {transportOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
           </select>
         </label>
 
@@ -194,12 +213,29 @@ function TravelLegFormContent({
         </button>
 
         {isEdit && (
-          <div className={styles.mediaSection}>
-            <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin onDeleted={refetchMedia} />
-            <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} onUploadComplete={refetchMedia} />
-          </div>
+          <>
+            <div className={styles.mediaSection}>
+              <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin onDeleted={refetchMedia} />
+              <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} onUploadComplete={refetchMedia} />
+            </div>
+            <div className={styles.actions}>
+              <button type="button" className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={() => setConfirmDelete(true)}>
+                Supprimer le trajet
+              </button>
+            </div>
+          </>
         )}
       </form>
+      <ConfirmModal
+        open={confirmDelete}
+        title="Supprimer ce trajet ?"
+        message={deleteError ?? undefined}
+        confirmLabel="Supprimer"
+        danger
+        busy={deleting}
+        onConfirm={handleDelete}
+        onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
+      />
     </>
   );
 }

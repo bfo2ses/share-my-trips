@@ -4,7 +4,7 @@ import L from 'leaflet';
 import type { StagesQuery, TravelLeg, VisitsQuery } from '../../../graphql/generated/graphql';
 import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
 import { travelLegBoundaries } from '../../travel-legs/pairs';
-import { transportIcon, transportLabel } from '../../travel-legs/transport';
+import { transportIconSVG, transportLabel } from '../../travel-legs/transport';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -85,9 +85,9 @@ function makeVisitIcon(n: number) {
 
 function makeTravelLegIcon(symbol: string, candidate: boolean) {
   const size = candidate ? 28 : 34;
-  const background = candidate ? 'rgba(29,29,29,0.92)' : '#c6a35d';
-  const color = candidate ? '#f2e2bb' : '#1a1a1a';
-  const border = candidate ? '2px dashed #c6a35d' : '2px solid rgba(255,255,255,0.95)';
+  const background = 'rgba(29,29,29,0.92)';
+  const color = '#c6a35d';
+  const border = candidate ? '2px dashed #c6a35d' : '2px solid #c6a35d';
   return makeMarkerIcon(`<div style="
       width:${size}px;height:${size}px;border-radius:50%;
       background:${background};border:${border};
@@ -365,7 +365,7 @@ export function TripMap({
             <Marker
               key={`travel-leg-${boundary.fromStageID}-${boundary.toStageID}`}
               position={[boundary.midpoint.lat, boundary.midpoint.lng]}
-              icon={makeTravelLegIcon(travelLeg ? transportIcon(travelLeg.transport) : '+', !travelLeg)}
+              icon={makeTravelLegIcon(travelLeg ? transportIconSVG(travelLeg.transport) : '+', !travelLeg)}
               title={label}
               keyboard
               eventHandlers={{
@@ -375,7 +375,10 @@ export function TripMap({
                 },
               }}
             >
-              <Tooltip direction="top" offset={[0, -18]} opacity={1} className="smt-tooltip">{label}</Tooltip>
+              <Tooltip direction="top" offset={[0, -18]} opacity={1} className="smt-tooltip">
+                <strong>{travelLeg ? transportLabel(travelLeg.transport) : 'Ajouter un trajet'}</strong>
+                <span>{fromStage.displayName} → {toStage.displayName}</span>
+              </Tooltip>
             </Marker>
           );
         })}

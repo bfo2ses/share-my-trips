@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { TravelLegForm } from './TravelLegForm';
-import { useCalculateTravelLegDistance, useCreateTravelLeg, useUpdateTravelLeg } from '../hooks/useTravelLegMutations';
+import { useCalculateTravelLegDistance, useCreateTravelLeg, useDeleteTravelLeg, useUpdateTravelLeg } from '../hooks/useTravelLegMutations';
 
 vi.mock('../hooks/useTravelLegMutations', () => ({
   useCalculateTravelLegDistance: vi.fn(),
   useCreateTravelLeg: vi.fn(),
+  useDeleteTravelLeg: vi.fn(),
   useUpdateTravelLeg: vi.fn(),
 }));
 
@@ -22,6 +23,7 @@ vi.mock('../../media/components/MediaUploader', () => ({
 }));
 
 const createLeg = vi.fn();
+const deleteLeg = vi.fn();
 const updateLeg = vi.fn();
 const calculate = vi.fn();
 
@@ -46,10 +48,12 @@ function renderForm() {
 describe('TravelLegForm', () => {
   beforeEach(() => {
     createLeg.mockReset();
+    deleteLeg.mockReset();
     updateLeg.mockReset();
     calculate.mockReset();
     vi.mocked(useCreateTravelLeg).mockReturnValue([{ fetching: false }, createLeg] as unknown as ReturnType<typeof useCreateTravelLeg>);
     vi.mocked(useUpdateTravelLeg).mockReturnValue([{ fetching: false }, updateLeg] as unknown as ReturnType<typeof useUpdateTravelLeg>);
+    vi.mocked(useDeleteTravelLeg).mockReturnValue([{ fetching: false }, deleteLeg] as unknown as ReturnType<typeof useDeleteTravelLeg>);
     vi.mocked(useCalculateTravelLegDistance).mockReturnValue([{ fetching: false }, calculate] as unknown as ReturnType<typeof useCalculateTravelLegDistance>);
   });
 
@@ -153,5 +157,27 @@ describe('TravelLegForm', () => {
     fireEvent.click(calculateButton);
 
     expect(calculate).toHaveBeenCalledOnce();
+  });
+
+  it('confirms deletion from an existing journey form', async () => {
+    const onClose = vi.fn();
+    deleteLeg.mockResolvedValue({ data: { deleteTravelLeg: { success: true, errors: [] } } });
+    render(
+      <TravelLegForm
+        open
+        panel
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null }}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer le trajet' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+
+    await waitFor(() => expect(deleteLeg).toHaveBeenCalledWith({ id: 'leg-1' }, expect.anything()));
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });
