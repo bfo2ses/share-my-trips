@@ -4,7 +4,7 @@ import { MediaGallery } from '../../media/components/MediaGallery';
 import type { MediaTarget } from '../../media/mediaOwner';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
-import { transportOptions } from '../transport';
+import { formatDistanceKmInput, transportOptions } from '../transport';
 import { useCalculateTravelLegDistance, useCreateTravelLeg, useDeleteTravelLeg, useUpdateTravelLeg } from '../hooks/useTravelLegMutations';
 import styles from '../../stages/components/VisitForm.module.css';
 
@@ -47,7 +47,7 @@ function TravelLegFormContent({
   const isEdit = !!travelLeg;
   const [transport, setTransport] = useState<TravelLegTransport>(travelLeg?.transport ?? 'CAR');
   const [description, setDescription] = useState(travelLeg?.description ?? '');
-  const [distance, setDistance] = useState(travelLeg?.distanceKm?.toString() ?? '');
+  const [distance, setDistance] = useState(formatDistanceKmInput(travelLeg?.distanceKm));
   const [errors, setErrors] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [calculating, setCalculating] = useState(false);
@@ -98,7 +98,7 @@ function TravelLegFormContent({
     if (transportRef.current !== transportAtStart) {
       setCalculationMessage('Le moyen de transport a changé. Lancez un nouveau calcul si nécessaire.');
     } else if (distanceRef.current === distanceAtStart) {
-      updateDistance(String(payload.distanceKm));
+      updateDistance(formatDistanceKmInput(payload.distanceKm));
       setCalculationMessage('Distance calculée. Vous pouvez encore la modifier.');
     }
   }
@@ -200,7 +200,7 @@ function TravelLegFormContent({
             className={styles.input}
             type="number"
             min="0"
-            step="0.1"
+            step="0.01"
             value={distance}
             onChange={(event) => updateDistance(event.target.value)}
           />

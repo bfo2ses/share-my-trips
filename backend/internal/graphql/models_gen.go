@@ -479,6 +479,7 @@ const (
 	TravelLegTransportTrain TravelLegTransport = "TRAIN"
 	TravelLegTransportPlane TravelLegTransport = "PLANE"
 	TravelLegTransportBoat  TravelLegTransport = "BOAT"
+	TravelLegTransportBus   TravelLegTransport = "BUS"
 )
 
 var AllTravelLegTransport = []TravelLegTransport{
@@ -486,11 +487,12 @@ var AllTravelLegTransport = []TravelLegTransport{
 	TravelLegTransportTrain,
 	TravelLegTransportPlane,
 	TravelLegTransportBoat,
+	TravelLegTransportBus,
 }
 
 func (e TravelLegTransport) IsValid() bool {
 	switch e {
-	case TravelLegTransportCar, TravelLegTransportTrain, TravelLegTransportPlane, TravelLegTransportBoat:
+	case TravelLegTransportCar, TravelLegTransportTrain, TravelLegTransportPlane, TravelLegTransportBoat, TravelLegTransportBus:
 		return true
 	}
 	return false

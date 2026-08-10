@@ -366,9 +366,8 @@ export function TripDetailPage() {
     setTravelLegForm(null);
     if (!created) {
       setSearchParams({ leg: travelLeg.id }, { replace: true });
-      refetchAll();
     }
-  }, [refetchAll, setSearchParams]);
+  }, [setSearchParams]);
 
   const handleDetailClose = useCallback(() => {
     setSearchParams({}, { replace: true });

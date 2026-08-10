@@ -633,6 +633,7 @@ export type TravelLegResolutionInput = {
 
 export type TravelLegTransport =
   | 'BOAT'
+  | 'BUS'
   | 'CAR'
   | 'PLANE'
   | 'TRAIN';

@@ -1920,6 +1920,7 @@ enum TravelLegTransport {
   TRAIN
   PLANE
   BOAT
+  BUS
 }
 
 type TravelLeg {

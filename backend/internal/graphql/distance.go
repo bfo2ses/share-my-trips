@@ -19,13 +19,21 @@ type RouteDistanceProvider interface {
 type distanceCalculator struct{ routeProvider RouteDistanceProvider }
 
 func (c distanceCalculator) calculate(ctx context.Context, transport travelleg.Transport, fromLat, fromLng, toLat, toLng float64) (float64, error) {
-	if transport == travelleg.TransportCar {
+	if transport == travelleg.TransportCar || transport == travelleg.TransportBus {
 		if c.routeProvider == nil {
 			return 0, errRoadDistanceUnavailable
 		}
-		return c.routeProvider.CalculateDrivingDistance(ctx, fromLat, fromLng, toLat, toLng)
+		distanceKm, err := c.routeProvider.CalculateDrivingDistance(ctx, fromLat, fromLng, toLat, toLng)
+		if err != nil {
+			return 0, err
+		}
+		return roundDistanceKm(distanceKm), nil
 	}
-	return haversineDistanceKm(fromLat, fromLng, toLat, toLng), nil
+	return roundDistanceKm(haversineDistanceKm(fromLat, fromLng, toLat, toLng)), nil
+}
+
+func roundDistanceKm(distanceKm float64) float64 {
+	return math.Round(distanceKm*100) / 100
 }
 
 func haversineDistanceKm(fromLat, fromLng, toLat, toLng float64) float64 {

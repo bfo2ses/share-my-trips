@@ -33,12 +33,13 @@ const (
 	TransportTrain Transport = "TRAIN"
 	TransportPlane Transport = "PLANE"
 	TransportBoat  Transport = "BOAT"
+	TransportBus   Transport = "BUS"
 )
 
-// IsValid reports whether transport is supported by the first release.
+// IsValid reports whether the transport is supported.
 func (t Transport) IsValid() bool {
 	switch t {
-	case TransportCar, TransportTrain, TransportPlane, TransportBoat:
+	case TransportCar, TransportTrain, TransportPlane, TransportBoat, TransportBus:
 		return true
 	default:
 		return false

@@ -22,6 +22,10 @@ type TravelLegMutationResult = {
     errors?: Array<unknown>;
     success?: boolean;
   };
+  updateTravelLeg?: {
+    errors?: Array<unknown>;
+    travelLeg?: { id: string } | null;
+  };
 };
 
 type MoveMediaMutationResult = {
@@ -99,6 +103,11 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
               const key = cache.keyOfEntity({ __typename: 'TravelLeg', id: travelLeg.id });
               if (!key) return;
               updateTravelLegLists(cache, (links, tripID) => tripID === travelLeg.tripID && !links.includes(key) ? [...links, key] : links);
+            },
+            updateTravelLeg: (result, _args, cache) => {
+              const payload = (result as TravelLegMutationResult).updateTravelLeg;
+              if (!payload?.travelLeg || (payload.errors?.length ?? 0) > 0) return;
+              invalidateQuery(cache, 'travelLegs');
             },
             deleteTravelLeg: (result, args, cache) => {
               const payload = (result as TravelLegMutationResult).deleteTravelLeg;
