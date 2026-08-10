@@ -23,6 +23,7 @@ const TRIP_DETAIL_QUERY = gql(`
       lat
       lng
       description
+      createdAt
     }
     tripVisits(tripID: $id) {
       id

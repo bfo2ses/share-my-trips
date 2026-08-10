@@ -19,6 +19,10 @@ const ADD_VISIT = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
@@ -39,6 +43,10 @@ const UPDATE_VISIT = gql(`
       }
       errors {
         field
+        message
+      }
+      recalculationWarnings {
+        travelLegID
         message
       }
     }

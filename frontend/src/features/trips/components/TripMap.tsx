@@ -8,7 +8,7 @@ import { transportIconSVG, transportLabel } from '../../travel-legs/transport';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
-type Stage = StagesQuery['stages'][number];
+type Stage = Pick<StagesQuery['stages'][number], 'id' | 'tripID' | 'city' | 'displayName' | 'lat' | 'lng' | 'description'>;
 type Visit = VisitsQuery['visits'][number];
 type TravelLegData = Pick<TravelLeg, 'id' | 'fromStageID' | 'toStageID' | 'transport'>;
 
