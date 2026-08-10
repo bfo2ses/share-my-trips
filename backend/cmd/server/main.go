@@ -8,6 +8,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/bfosses/sharemytrips/internal/adapter/crypto"
@@ -16,9 +17,11 @@ import (
 	"github.com/bfosses/sharemytrips/internal/adapter/mailer"
 	"github.com/bfosses/sharemytrips/internal/adapter/memory"
 	pg "github.com/bfosses/sharemytrips/internal/adapter/postgres"
+	"github.com/bfosses/sharemytrips/internal/adapter/routing"
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 	graph "github.com/bfosses/sharemytrips/internal/graphql"
@@ -40,6 +43,14 @@ func corsMiddleware(origin string, next http.Handler) http.Handler {
 }
 
 func main() {
+	// Local secrets can live beside the backend or at repository root. Production
+	// and Docker inject their environment directly, so never read local files there.
+	if os.Getenv("ENV") == "dev" {
+		if err := godotenv.Load(".env", "../.env"); err != nil && !os.IsNotExist(err) {
+			log.Printf("could not load local .env: %v", err)
+		}
+	}
+
 	ctx := context.Background()
 
 	// Shared adapters.
@@ -83,6 +94,8 @@ func main() {
 	var visitHandler *visit.Handler
 	var authHandler *auth.Handler
 	var mediaHandler *media.Handler
+	var travelLegRepo travelleg.Repository
+	var travelLegHandler *travelleg.Handler
 
 	dsn := os.Getenv("DATABASE_URL")
 
@@ -114,7 +127,9 @@ func main() {
 
 		mediaRepo := pg.NewMediaRepository(pool)
 		visitChecker := pg.NewVisitChecker(pool)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
+		travelLegRepo = pg.NewTravelLegRepository(pool)
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, pg.NewTravelLegChecker(pool))
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler), mediaHandler)
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
@@ -139,7 +154,9 @@ func main() {
 
 		mediaRepo := memory.NewMediaRepository()
 		visitChecker := memory.NewVisitChecker(visitRepo)
-		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker)
+		travelLegRepo = memory.NewTravelLegRepository()
+		mediaHandler = media.NewHandler(mediaRepo, mediaStorage, tripChecker, visitChecker, memory.NewTravelLegChecker(travelLegRepo))
+		travelLegHandler = travelleg.NewHandler(travelLegRepo, tripChecker, graph.NewTravelLegStageSequence(stageHandler, visitHandler), mediaHandler)
 
 		if os.Getenv("ENV") == "dev" {
 			seedData(ctx, userRepo, tripRepo, stageRepo, visitRepo)
@@ -149,7 +166,15 @@ func main() {
 	}
 
 	// GraphQL
-	resolver := graph.NewResolver(tripHandler, stageHandler, visitHandler, authHandler, mediaHandler)
+	resolver := graph.NewResolver(
+		tripHandler,
+		stageHandler,
+		visitHandler,
+		authHandler,
+		mediaHandler,
+		graph.WithTravelLegHandler(travelLegHandler),
+		graph.WithRouteDistanceProvider(routing.NewOpenRouteServiceClient(os.Getenv("OPENROUTESERVICE_API_KEY"))),
+	)
 	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	port := os.Getenv("PORT")

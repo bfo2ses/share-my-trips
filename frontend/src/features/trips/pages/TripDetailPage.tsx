@@ -10,13 +10,18 @@ import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
-import { useUpdateVisit, useDeleteVisit, useReorderVisits } from '../../stages/hooks/useVisitMutations';
+import { useAddVisit, useUpdateVisit, useDeleteVisit, useReorderVisits } from '../../stages/hooks/useVisitMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
 import { TripForm, type FormAction } from '../components/TripForm';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
 import { VisitDetail } from '../components/VisitDetail';
 import { StageForm } from '../../stages/components/StageForm';
-import { VisitForm } from '../../stages/components/VisitForm';
+import { VisitForm, type VisitFormSubmission, type VisitFormSubmissionResult } from '../../stages/components/VisitForm';
+import { TravelLegDetail } from '../../travel-legs/components/TravelLegDetail';
+import { TravelLegForm, type TravelLegData } from '../../travel-legs/components/TravelLegForm';
+import { TravelLegResolutionDialog, type ResolutionLeg, type ResolutionPair, type TravelLegResolution } from '../../travel-legs/components/TravelLegResolutionDialog';
+import { transportLabel } from '../../travel-legs/transport';
+import { TransportIcon } from '../../travel-legs/components/TransportIcon';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
@@ -24,9 +29,21 @@ import type { TripDetailQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
 
 type Stage = TripDetailQuery['stages'][number];
+type EditableMapStage = Pick<Stage, 'id' | 'city' | 'displayName' | 'description'>;
 type Visit = TripDetailQuery['tripVisits'][number];
+type TravelLeg = TripDetailQuery['travelLegs'][number];
 type StageDateRangeMap = Record<string, { start: string; end: string }>;
 type PanTarget = { lat: number; lng: number; seq: number } | null;
+type TravelLegFormState = {
+  fromStageID: string;
+  toStageID: string;
+  travelLeg?: TravelLegData;
+};
+type ResolutionRequest = {
+  legs: ResolutionLeg[];
+  pairs: ResolutionPair[];
+  execute: (plan: TravelLegResolution[]) => Promise<void>;
+};
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
@@ -51,14 +68,20 @@ export function TripDetailPage() {
 
   const selectedStageId = searchParams.get('stage');
   const selectedVisitId = searchParams.get('visit');
+  const selectedTravelLegId = searchParams.get('leg');
   // Manual forms are create-only (opened via map click); editing an existing
   // entity goes through the auto-open forms driven by the URL selection.
   const [stageFormOpen, setStageFormOpen] = useState(false);
   const [visitFormOpen, setVisitFormOpen] = useState(false);
   const [visitFormStageId, setVisitFormStageId] = useState<string | null>(null);
+  const [travelLegForm, setTravelLegForm] = useState<TravelLegFormState | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [resolutionRequest, setResolutionRequest] = useState<ResolutionRequest | null>(null);
+  const [resolving, setResolving] = useState(false);
+  const [resolutionError, setResolutionError] = useState<string | null>(null);
+  const [recalculationNotice, setRecalculationNotice] = useState<string | null>(null);
   const [pendingStageCoords, setPendingStageCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [pendingVisitCoords, setPendingVisitCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [panTarget, setPanTarget] = useState<PanTarget>(null);
@@ -66,6 +89,9 @@ export function TripDetailPage() {
   const timelineScrollRef = useRef<HTMLDivElement>(null);
 
   const refetchAll = useCallback(() => reexecuteDetail({ requestPolicy: 'network-only' }), [reexecuteDetail]);
+  const showRecalculationWarnings = useCallback((warnings: Array<{ message: string }> | null | undefined) => {
+    if (warnings && warnings.length > 0) setRecalculationNotice(warnings.map((warning) => warning.message).join(' '));
+  }, []);
   // Per-entity in-flight drag mutation guard. Ref-based so updates don't
   // re-render the map and lose Leaflet's drag state.
   const savingStagesRef = useRef<Set<string>>(new Set());
@@ -79,6 +105,7 @@ export function TripDetailPage() {
   const [, updateStage] = useUpdateStage();
   const [, deleteStage] = useDeleteStage();
   const [, updateVisit] = useUpdateVisit();
+  const [, addVisit] = useAddVisit();
   const [, deleteVisit] = useDeleteVisit();
 
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Visit'] };
@@ -97,6 +124,7 @@ export function TripDetailPage() {
   const isModifiable = trip ? trip.status !== 'CLOSED' : false;
   const stages = useMemo(() => data?.stages ?? [], [data?.stages]);
   const allVisits = useMemo(() => data?.tripVisits ?? [], [data?.tripVisits]);
+  const travelLegs = useMemo(() => data?.travelLegs ?? [], [data?.travelLegs]);
 
   const selectedVisit = useMemo(
     () => (selectedVisitId ? allVisits.find((v) => v.id === selectedVisitId) ?? null : null),
@@ -107,6 +135,114 @@ export function TripDetailPage() {
     () => (selectedStageId ? stages.find((s) => s.id === selectedStageId) ?? null : null),
     [selectedStageId, stages],
   );
+
+  const selectedTravelLeg = useMemo(
+    () => (selectedTravelLegId ? travelLegs.find((leg) => leg.id === selectedTravelLegId) ?? null : null),
+    [selectedTravelLegId, travelLegs],
+  );
+
+  const stageNames = useMemo(() => new Map(stages.map((stage) => [stage.id, stage.displayName])), [stages]);
+
+  const buildResolutionRequest = useCallback((projectedStages: Stage[]) => {
+    const projectedIDs = projectedStages.map((stage) => stage.id);
+    const pairKeys = new Set(projectedIDs.slice(0, -1).map((fromStageID, index) => `${fromStageID}\u0000${projectedIDs[index + 1]}`));
+    const affected = travelLegs.filter((leg) => !pairKeys.has(`${leg.fromStageID}\u0000${leg.toStageID}`));
+    const occupied = new Set(travelLegs
+      .filter((leg) => !affected.some((candidate) => candidate.id === leg.id))
+      .map((leg) => `${leg.fromStageID}\u0000${leg.toStageID}`));
+    return {
+      legs: affected.map((leg) => ({ id: leg.id, fromStageID: leg.fromStageID, toStageID: leg.toStageID })),
+      pairs: projectedIDs.slice(0, -1)
+        .map((fromStageID, index) => ({ fromStageID, toStageID: projectedIDs[index + 1] }))
+        .filter((pair) => !occupied.has(`${pair.fromStageID}\u0000${pair.toStageID}`)),
+    };
+  }, [travelLegs]);
+
+  const projectedStagesForVisits = useCallback((projectedVisits: Array<Pick<Visit, 'stageIDs' | 'date'>>) => {
+    const earliest = new Map<string, string>();
+    for (const item of projectedVisits) {
+      const stageID = item.stageIDs[0];
+      if (stageID && (!earliest.has(stageID) || item.date < earliest.get(stageID)!)) earliest.set(stageID, item.date);
+    }
+    return [...stages].sort((left, right) => {
+      const leftDate = earliest.get(left.id);
+      const rightDate = earliest.get(right.id);
+      if (leftDate && rightDate && leftDate !== rightDate) return leftDate.localeCompare(rightDate);
+      if (leftDate !== rightDate) return leftDate ? -1 : 1;
+      if (left.createdAt !== right.createdAt) return left.createdAt.localeCompare(right.createdAt);
+      return left.id.localeCompare(right.id);
+    });
+  }, [stages]);
+
+  const submitVisitWithResolution = useCallback(async (
+    submission: VisitFormSubmission,
+    onResolvedSuccess: () => void,
+  ): Promise<VisitFormSubmissionResult> => {
+    const projectedVisits = submission.kind === 'create'
+      ? [...allVisits, { stageIDs: [submission.stageID], date: submission.date }]
+      : allVisits.map((item) => item.id === submission.visitID ? { ...item, date: submission.date } : item);
+    const resolution = buildResolutionRequest(projectedStagesForVisits(projectedVisits));
+
+    const execute = async (resolutionPlan: TravelLegResolution[]) => {
+      if (submission.kind === 'create') {
+        const result = await addVisit({
+          input: {
+            tripID: submission.tripID,
+            stageID: submission.stageID,
+            date: submission.date,
+            title: submission.title,
+            description: submission.description,
+            lat: submission.lat,
+            lng: submission.lng,
+            resolutionPlan,
+          },
+        }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] });
+        const errors = result.data?.addVisit.errors ?? [];
+        if (result.error || errors.length > 0) return errors.map((error) => error.message).length ? errors.map((error) => error.message) : ['Une erreur est survenue.'];
+        showRecalculationWarnings(result.data?.addVisit.recalculationWarnings);
+        return [];
+      }
+
+      const result = await updateVisit({
+        id: submission.visitID!,
+        input: {
+          date: submission.date,
+          title: submission.title,
+          description: submission.description,
+          lat: submission.lat,
+          lng: submission.lng,
+          resolutionPlan,
+        },
+      }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] });
+      const errors = result.data?.updateVisit.errors ?? [];
+      if (result.error || errors.length > 0) return errors.map((error) => error.message).length ? errors.map((error) => error.message) : ['Une erreur est survenue.'];
+      showRecalculationWarnings(result.data?.updateVisit.recalculationWarnings);
+      return [];
+    };
+
+    if (resolution.legs.length === 0) {
+      const errors = await execute([]);
+      if (errors.length > 0) return { completed: false, errors };
+      refetchAll();
+      return { completed: true };
+    }
+
+    setResolutionError(null);
+    setResolutionRequest({
+      ...resolution,
+      execute: async (resolutionPlan) => {
+        const errors = await execute(resolutionPlan);
+        if (errors.length > 0) {
+          setResolutionError(errors.join(' '));
+          return;
+        }
+        setResolutionRequest(null);
+        refetchAll();
+        onResolvedSuccess();
+      },
+    });
+    return { completed: false };
+  }, [addVisit, allVisits, buildResolutionRequest, projectedStagesForVisits, refetchAll, showRecalculationWarnings, updateVisit]);
 
   // Contenu rémanent : la pane détail garde son dernier contenu pendant la
   // translation de retour (adjust-during-render, pattern wasOpen).
@@ -156,6 +292,10 @@ export function TripDetailPage() {
     setPendingVisitCoords(null);
   }, []);
 
+  const closeTravelLegForm = useCallback(() => {
+    setTravelLegForm(null);
+  }, []);
+
   // Sélectionner une étape (timeline ou carte) ne change pas de vue : la carte
   // se centre dessus et la timeline défile pour l'amener en haut. Re-cliquer
   // l'étape active la désélectionne (la carte revient à la vue d'ensemble).
@@ -183,6 +323,38 @@ export function TripDetailPage() {
     setSheetSnap((s) => (s === 'peek' ? 'half' : s));
   }, [setSearchParams]);
 
+  const handleTravelLegClick = useCallback((travelLegID: string) => {
+    const travelLeg = travelLegs.find((leg) => leg.id === travelLegID);
+    if (isAdmin && isModifiable && travelLeg) {
+      closeStageForm();
+      closeVisitForm();
+      setSearchParams({}, { replace: true });
+      setTravelLegForm({
+        fromStageID: travelLeg.fromStageID,
+        toStageID: travelLeg.toStageID,
+        travelLeg,
+      });
+      return;
+    }
+    setSearchParams({ leg: travelLegID }, { replace: true });
+    setSheetSnap((snap) => (snap === 'peek' ? 'half' : snap));
+  }, [closeStageForm, closeVisitForm, isAdmin, isModifiable, setSearchParams, travelLegs]);
+
+  const handleTravelLegCreate = useCallback((fromStageID: string, toStageID: string) => {
+    closeStageForm();
+    closeVisitForm();
+    setSearchParams({}, { replace: true });
+    setTravelLegForm({ fromStageID, toStageID });
+  }, [closeStageForm, closeVisitForm, setSearchParams]);
+
+  const handleTravelLegSaved = useCallback((travelLeg: TravelLegData, created: boolean) => {
+    setTravelLegForm(null);
+    if (!created) {
+      setSearchParams({ leg: travelLeg.id }, { replace: true });
+      refetchAll();
+    }
+  }, [refetchAll, setSearchParams]);
+
   const handleDetailClose = useCallback(() => {
     setSearchParams({}, { replace: true });
   }, [setSearchParams]);
@@ -193,6 +365,72 @@ export function TripDetailPage() {
       return prev;
     }, { replace: true });
   }, [setSearchParams]);
+
+  const handleBackToTimeline = useCallback(() => {
+    setSearchParams({}, { replace: true });
+  }, [setSearchParams]);
+
+  const requestStageDelete = useCallback((stageID: string) => {
+    const resolution = buildResolutionRequest(stages.filter((stage) => stage.id !== stageID));
+    if (resolution.legs.length === 0) {
+      void deleteStage({ id: stageID, resolutionPlan: [] }, { additionalTypenames: ['Stage', 'Visit', 'TravelLeg'] }).then((result) => {
+        if (!result.error && result.data?.deleteStage.success) handleDetailClose();
+      });
+      return;
+    }
+    setResolutionError(null);
+    setResolutionRequest({
+      ...resolution,
+      execute: async (resolutionPlan) => {
+        const result = await deleteStage({ id: stageID, resolutionPlan }, { additionalTypenames: ['Stage', 'Visit', 'TravelLeg'] });
+        const errors = result.data?.deleteStage.errors ?? [];
+        if (result.error || !result.data?.deleteStage.success || errors.length > 0) {
+          setResolutionError(errors.map((error) => error.message).join(' ') || 'Le voyage a changé, actualisez puis recommencez.');
+          return;
+        }
+        setResolutionRequest(null);
+        handleDetailClose();
+        refetchAll();
+      },
+    });
+  }, [buildResolutionRequest, stages, deleteStage, handleDetailClose, refetchAll]);
+
+  const requestVisitDelete = useCallback((visit: Visit) => {
+    const remainingVisits = allVisits.filter((item) => item.id !== visit.id);
+    const projected = projectedStagesForVisits(remainingVisits);
+    const resolution = buildResolutionRequest(projected);
+    if (resolution.legs.length === 0) {
+      void deleteVisit({ id: visit.id, resolutionPlan: [] }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] }).then((result) => {
+        if (!result.error && result.data?.deleteVisit.success) handleBackToStage();
+      });
+      return;
+    }
+    setResolutionError(null);
+    setResolutionRequest({
+      ...resolution,
+      execute: async (resolutionPlan) => {
+        const result = await deleteVisit({ id: visit.id, resolutionPlan }, { additionalTypenames: ['Visit', 'Stage', 'TravelLeg'] });
+        const errors = result.data?.deleteVisit.errors ?? [];
+        if (result.error || !result.data?.deleteVisit.success || errors.length > 0) {
+          setResolutionError(errors.map((error) => error.message).join(' ') || 'Le voyage a changé, actualisez puis recommencez.');
+          return;
+        }
+        setResolutionRequest(null);
+        handleBackToStage();
+        refetchAll();
+      },
+    });
+  }, [allVisits, projectedStagesForVisits, buildResolutionRequest, deleteVisit, handleBackToStage, refetchAll]);
+
+  const confirmResolution = useCallback(async (plan: TravelLegResolution[]) => {
+    if (!resolutionRequest || resolving) return;
+    setResolving(true);
+    try {
+      await resolutionRequest.execute(plan);
+    } finally {
+      setResolving(false);
+    }
+  }, [resolutionRequest, resolving]);
 
   async function handlePublish() {
     await publishTrip({ id: id! }, refetchContext);
@@ -234,7 +472,7 @@ export function TripDetailPage() {
   // F8 in-flight guard: ignore subsequent drags on the same entity until the
   // first save resolves, and revert the marker via the provided closure.
   const handleStageDragEnd = useCallback(
-    async (stage: Stage, coords: { lat: number; lng: number }, revert: () => void) => {
+    async (stage: EditableMapStage, coords: { lat: number; lng: number }, revert: () => void) => {
       const autoEdit = isAdmin && isModifiable;
       const stageFormShown = autoEdit && selectedStageId === stage.id && !selectedVisitId;
       if (savingStagesRef.current.has(stage.id)) {
@@ -264,12 +502,13 @@ export function TripDetailPage() {
           refetchAll();
           return;
         }
+        showRecalculationWarnings(result.data?.updateStage.recalculationWarnings);
         setPanTarget({ lat: coords.lat, lng: coords.lng, seq: Date.now() });
       } finally {
         savingStagesRef.current.delete(stage.id);
       }
     },
-    [isAdmin, isModifiable, selectedStageId, selectedVisitId, updateStage, refetchAll],
+    [isAdmin, isModifiable, selectedStageId, selectedVisitId, updateStage, refetchAll, showRecalculationWarnings],
   );
 
   const handleVisitDragEnd = useCallback(
@@ -324,7 +563,7 @@ export function TripDetailPage() {
 
   // Auto-open edit forms in edit mode based on current selection.
   // Manual opens (create via map click / menu) take priority over auto-open.
-  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !stageFormOpen && !visitFormOpen;
+  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !selectedTravelLegId && !travelLegForm && !stageFormOpen && !visitFormOpen;
   const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedVisitId && !stageFormOpen && !visitFormOpen;
   const autoVisitForm = isAdmin && isModifiable && !!selectedVisit && !!selectedStageId && !visitFormOpen;
 
@@ -377,12 +616,12 @@ export function TripDetailPage() {
   };
 
   // Auto-form is one of the three auto-open forms (panel mode in-grid).
-  const anyAutoForm = autoTripForm || autoStageForm || autoVisitForm;
+  const anyAutoForm = autoTripForm || autoStageForm || autoVisitForm || !!travelLegForm;
 
   // Niveau du panneau unique : seule une visite sélectionnée change de vue. En
   // mode édition (auto-form), le panneau reste sur la timeline — c'est le
   // formulaire qui porte le détail sélectionné.
-  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedVisit ? 1 : 0;
+  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedVisit || selectedTravelLeg ? 1 : 0;
 
   // Actions for each form panel
   const tripFormActions: FormAction[] = isAdmin ? [
@@ -397,10 +636,7 @@ export function TripDetailPage() {
     {
       label: 'Supprimer l\'étape',
       danger: true,
-      onClick: async () => {
-        const result = await deleteStage({ id: selectedStage.id }, { additionalTypenames: ['Stage', 'Visit'] });
-        if (!result.error && result.data?.deleteStage.success) handleDetailClose();
-      },
+      onClick: () => requestStageDelete(selectedStage.id),
     },
   ] : [];
 
@@ -408,10 +644,7 @@ export function TripDetailPage() {
     {
       label: 'Supprimer la visite',
       danger: true,
-      onClick: async () => {
-        const result = await deleteVisit({ id: selectedVisit.id }, { additionalTypenames: ['Visit'] });
-        if (!result.error && result.data?.deleteVisit.success) handleBackToStage();
-      },
+      onClick: () => requestVisitDelete(selectedVisit),
     },
   ] : [];
 
@@ -427,6 +660,11 @@ export function TripDetailPage() {
 
   return (
     <>
+    {recalculationNotice && (
+      <div role="status" style={{ position: 'fixed', right: 16, bottom: 16, zIndex: 2000, maxWidth: 360, padding: 12, borderRadius: 8, background: 'var(--color-surface)', boxShadow: '0 4px 16px rgb(0 0 0 / 20%)' }}>
+        {recalculationNotice}
+      </div>
+    )}
     <div className={`${styles.page} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
       {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de visite ── */}
       <TripPanel
@@ -459,16 +697,21 @@ export function TripDetailPage() {
             </p>
           ) : (
             <div className={styles.timeline}>
-              {stages.map((stage) => (
+              {stages.map((stage, index) => (
                 <StageSection
                   key={stage.id}
                   stage={stage}
+                  nextStage={stages[index + 1]}
                   visits={visitsByStage.get(stage.id) ?? []}
                   dateRange={stageDateRanges[stage.id]}
                   active={selectedStageId === stage.id}
                   canReorder={!!isAdmin && isModifiable}
+                  travelLeg={travelLegs.find((leg) => leg.fromStageID === stage.id && leg.toStageID === stages[index + 1]?.id)}
+                  canEditTravelLegs={canEditDetail}
                   onStageClick={handleStageClick}
                   onVisitClick={handleVisitClickFromTimeline}
+                  onTravelLegClick={handleTravelLegClick}
+                  onTravelLegCreate={handleTravelLegCreate}
                 />
               ))}
             </div>
@@ -476,12 +719,25 @@ export function TripDetailPage() {
         </div>
           </>
         }
-        visitDetail={displayVisit && (
+        visitDetail={selectedTravelLeg ? (
+          <TravelLegDetail
+            travelLeg={selectedTravelLeg}
+            canEdit={canEditDetail}
+            onClose={handleDetailClose}
+            onBack={handleBackToTimeline}
+            onEdit={() => setTravelLegForm({
+              fromStageID: selectedTravelLeg.fromStageID,
+              toStageID: selectedTravelLeg.toStageID,
+              travelLeg: selectedTravelLeg,
+            })}
+          />
+        ) : displayVisit && (
           <VisitDetail
             visit={displayVisit}
             canEdit={canEditDetail}
             onClose={handleDetailClose}
             onBack={handleBackToStage}
+            onRequestDelete={requestVisitDelete}
           />
         )}
       />
@@ -510,6 +766,7 @@ export function TripDetailPage() {
               stage={selectedStage}
               pendingCoords={pendingStageCoords}
               actions={stageFormActions}
+              onRecalculationWarning={setRecalculationNotice}
             />
           )}
           {autoVisitForm && selectedVisit && effectiveVisitStageId && (
@@ -523,6 +780,20 @@ export function TripDetailPage() {
               visit={selectedVisit}
               pendingCoords={pendingVisitCoords}
               actions={visitFormActions}
+              onSubmitWithResolution={(submission) => submitVisitWithResolution(submission, handleBackToStage)}
+            />
+          )}
+          {travelLegForm && (
+            <TravelLegForm
+              key={travelLegForm.travelLeg?.id ?? `${travelLegForm.fromStageID}-${travelLegForm.toStageID}`}
+              open
+              panel
+              tripID={id!}
+              fromStageID={travelLegForm.fromStageID}
+              toStageID={travelLegForm.toStageID}
+              travelLeg={travelLegForm.travelLeg}
+              onClose={closeTravelLegForm}
+              onSaved={handleTravelLegSaved}
             />
           )}
         </div>
@@ -533,15 +804,19 @@ export function TripDetailPage() {
         {stages.length > 0 || canEditMarkers ? (
           <TripMap
             stages={stages}
+            travelLegs={travelLegs}
             activeStageId={selectedStageId}
             activeStageVisits={activeStageVisits}
             stageDateRanges={stageDateRanges}
             onStageClick={handleStageClick}
             onVisitClick={handleVisitClickFromTimeline}
+            onTravelLegClick={handleTravelLegClick}
+            onTravelLegCreate={handleTravelLegCreate}
             placementMode={placementMode}
             pendingCoords={pendingMapCoords}
             onMapClick={handleMapClick}
             canEditMarkers={canEditMarkers}
+            canEditTravelLegs={canEditDetail}
             onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
             onVisitDragEnd={canEditMarkers ? handleVisitDragEnd : undefined}
             panTarget={panTarget}
@@ -573,6 +848,7 @@ export function TripDetailPage() {
             stageID={visitFormStageId}
             pendingCoords={pendingVisitCoords}
             noBackdrop
+            onSubmitWithResolution={(submission) => submitVisitWithResolution(submission, closeVisitForm)}
           />
         )}
         <ConfirmModal
@@ -585,6 +861,16 @@ export function TripDetailPage() {
           onConfirm={handleDelete}
           onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
         />
+        <TravelLegResolutionDialog
+          open={!!resolutionRequest}
+          legs={resolutionRequest?.legs ?? []}
+          pairs={resolutionRequest?.pairs ?? []}
+          stageNames={stageNames}
+          busy={resolving}
+          error={resolutionError}
+          onConfirm={confirmResolution}
+          onCancel={() => { if (!resolving) { setResolutionRequest(null); setResolutionError(null); } }}
+        />
       </>
     )}
     </>
@@ -593,15 +879,33 @@ export function TripDetailPage() {
 
 interface StageSectionProps {
   stage: Stage;
+  nextStage?: Stage;
   visits: Visit[];
   dateRange?: { start: string; end: string };
   active: boolean;
   canReorder: boolean;
+  travelLeg?: TravelLeg;
+  canEditTravelLegs: boolean;
   onStageClick: (stageId: string) => void;
   onVisitClick: (stageId: string, visit: Visit) => void;
+  onTravelLegClick: (travelLegID: string) => void;
+  onTravelLegCreate: (fromStageID: string, toStageID: string) => void;
 }
 
-function StageSection({ stage, visits, dateRange, active, canReorder, onStageClick, onVisitClick }: StageSectionProps) {
+function StageSection({
+  stage,
+  nextStage,
+  visits,
+  dateRange,
+  active,
+  canReorder,
+  travelLeg,
+  canEditTravelLegs,
+  onStageClick,
+  onVisitClick,
+  onTravelLegClick,
+  onTravelLegCreate,
+}: StageSectionProps) {
   // Memoized so each group's `visits` array keeps a stable reference across
   // re-renders unrelated to this data (form open/close, other stages' drags,
   // etc.) — SameDateVisitGroup relies on that stability to detect real data
@@ -639,16 +943,37 @@ function StageSection({ stage, visits, dateRange, active, canReorder, onStageCli
               : ` · ${formatDate(dateRange.start)} — ${formatDate(dateRange.end)}`)}
         </span>
       </button>
-      {dateGroups.map((group) => (
-        <SameDateVisitGroup
-          key={group.date}
-          stageId={stage.id}
-          date={group.date}
-          visits={group.visits}
-          canReorder={canReorder}
-          onVisitClick={(visit) => onVisitClick(stage.id, visit)}
-        />
-      ))}
+      <div className={styles.stageContentRow}>
+        <div className={styles.stageVisits}>
+          {dateGroups.map((group) => (
+            <SameDateVisitGroup
+              key={group.date}
+              stageId={stage.id}
+              date={group.date}
+              visits={group.visits}
+              canReorder={canReorder}
+              onVisitClick={(visit) => onVisitClick(stage.id, visit)}
+            />
+          ))}
+        </div>
+        {nextStage && (travelLeg || canEditTravelLegs) && (
+          <button
+            type="button"
+            className={`${styles.travelLegBoundary} ${travelLeg ? '' : styles.travelLegBoundaryCreate}`}
+            aria-label={travelLeg
+              ? `${transportLabel(travelLeg.transport)} de ${stage.displayName} à ${nextStage.displayName}`
+              : `Ajouter un trajet de ${stage.displayName} à ${nextStage.displayName}`}
+            onClick={() => {
+              if (travelLeg) onTravelLegClick(travelLeg.id);
+              else onTravelLegCreate(stage.id, nextStage.id);
+            }}
+          >
+            <span className={styles.travelLegIcon} aria-hidden="true">
+              {travelLeg ? <TransportIcon transport={travelLeg.transport} /> : '+'}
+            </span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -87,11 +87,15 @@ type Stage {
 type StagePayload {
   stage: Stage
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type DeleteStagePayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddStageInput {
@@ -136,6 +140,8 @@ type Visit {
 type VisitPayload {
   visit: Visit
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 type ReorderVisitsPayload {
@@ -146,6 +152,8 @@ type ReorderVisitsPayload {
 type DeleteVisitPayload {
   success: Boolean!
   errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic travel-leg distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
 }
 
 input AddVisitInput {
@@ -157,6 +165,8 @@ input AddVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this creation changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 input UpdateVisitInput {
@@ -165,6 +175,8 @@ input UpdateVisitInput {
   description: String
   lat: Float!
   lng: Float!
+  "Required when this update changes the stage sequence of existing travel legs."
+  resolutionPlan: [TravelLegResolutionInput!]
 }
 
 enum AccountRole {
@@ -234,7 +246,10 @@ input ChangePasswordInput {
 
 type Media {
   id: ID!
-  visitID: ID!
+  "The visit that owns this item, if any."
+  visitID: ID
+  "The travel leg that owns this item, if any."
+  travelLegID: ID
   tripID: ID!
   filename: String!
   contentType: String!
@@ -264,6 +279,88 @@ type DeleteMediaPayload {
   errors: [UserError!]!
 }
 
+enum TravelLegTransport {
+  CAR
+  TRAIN
+  PLANE
+  BOAT
+}
+
+type TravelLeg {
+  id: ID!
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  description: String
+  "Distance in kilometres. Null when not provided or when an automatic recalculation failed."
+  distanceKm: Float
+  "RFC 3339 timestamp."
+  createdAt: String!
+  "RFC 3339 timestamp."
+  updatedAt: String!
+}
+
+type TravelLegPayload {
+  travelLeg: TravelLeg
+  errors: [UserError!]!
+  "Non-blocking warnings emitted after automatic distance recalculation."
+  recalculationWarnings: [TravelLegRecalculationWarning!]
+}
+
+type TravelLegRecalculationWarning {
+  travelLegID: ID!
+  message: String!
+}
+
+type DeleteTravelLegPayload {
+  success: Boolean!
+  errors: [UserError!]!
+}
+
+type ReorderTravelLegMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
+type CalculateTravelLegDistancePayload {
+  distanceKm: Float
+  errors: [UserError!]!
+}
+
+input CreateTravelLegInput {
+  tripID: ID!
+  fromStageID: ID!
+  toStageID: ID!
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input UpdateTravelLegInput {
+  transport: TravelLegTransport!
+  description: String
+  distanceKm: Float
+}
+
+input MoveTravelLegInput {
+  fromStageID: ID!
+  toStageID: ID!
+}
+
+enum TravelLegResolutionAction {
+  MOVE
+  DELETE
+}
+
+"One explicit decision for a journey invalidated by a stage-sequence change."
+input TravelLegResolutionInput {
+  travelLegID: ID!
+  action: TravelLegResolutionAction!
+  fromStageID: ID
+  toStageID: ID
+}
+
 type Query {
   "Returns all trips sorted by startDate descending. Trips without a startDate appear last in undefined order."
   trips(status: [TripStatus!]): [Trip!]!
@@ -281,6 +378,12 @@ type Query {
   tripVisits(tripID: ID!): [Visit!]!
   "Returns all media for a visit, sorted by position ascending."
   visitMedia(visitID: ID!): [Media!]!
+  "Returns a single travel leg by ID, or null if not found."
+  travelLeg(id: ID!): TravelLeg
+  "Returns every travel leg for a trip."
+  travelLegs(tripID: ID!): [TravelLeg!]!
+  "Returns all media for a travel leg, sorted by position ascending."
+  travelLegMedia(travelLegID: ID!): [Media!]!
   "Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit."
   tripMedia(tripID: ID!): [Media!]!
   "Returns the currently authenticated account, or null if not authenticated."
@@ -301,12 +404,18 @@ type Mutation {
   deleteTrip(id: ID!): DeleteTripPayload!
   addStage(input: AddStageInput!): StagePayload!
   updateStage(id: ID!, input: UpdateStageInput!): StagePayload!
-  deleteStage(id: ID!): DeleteStagePayload!
+  deleteStage(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteStagePayload!
   addVisit(input: AddVisitInput!): VisitPayload!
   updateVisit(id: ID!, input: UpdateVisitInput!): VisitPayload!
-  deleteVisit(id: ID!): DeleteVisitPayload!
-  attachVisitToStage(visitID: ID!, stageID: ID!): VisitPayload!
-  detachVisitFromStage(visitID: ID!, stageID: ID!): VisitPayload!
+  deleteVisit(id: ID!, resolutionPlan: [TravelLegResolutionInput!]): DeleteVisitPayload!
+  createTravelLeg(input: CreateTravelLegInput!): TravelLegPayload!
+  updateTravelLeg(id: ID!, input: UpdateTravelLegInput!): TravelLegPayload!
+  moveTravelLeg(id: ID!, input: MoveTravelLegInput!): TravelLegPayload!
+  deleteTravelLeg(id: ID!): DeleteTravelLegPayload!
+  "Calculates a candidate distance without creating or updating a travel leg. Requires editor role."
+  calculateTravelLegDistance(fromStageID: ID!, toStageID: ID!, transport: TravelLegTransport!): CalculateTravelLegDistancePayload!
+  attachVisitToStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
+  detachVisitFromStage(visitID: ID!, stageID: ID!, resolutionPlan: [TravelLegResolutionInput!]): VisitPayload!
   "Reorders visits sharing a primary stage and date. Requires editor role."
   reorderVisits(stageID: ID!, date: String!, visitIDs: [ID!]!): ReorderVisitsPayload!
   "Creates the first admin account. Returns ErrSetupAlreadyDone if an admin already exists."
@@ -325,6 +434,8 @@ type Mutation {
   updateMediaCaption(id: ID!, caption: String): MediaPayload!
   "Reorders media within a visit. Requires admin role."
   reorderMedia(visitID: ID!, mediaIDs: [ID!]!): ReorderMediaPayload!
+  "Reorders media within a travel leg. Requires editor role."
+  reorderTravelLegMedia(travelLegID: ID!, mediaIDs: [ID!]!): ReorderTravelLegMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
@@ -189,7 +190,8 @@ func (r *Resolver) requireEditor(ctx context.Context) error {
 func toGraphQLMedia(m *media.Media) *Media {
 	return &Media{
 		ID:          m.ID,
-		VisitID:     m.VisitID,
+		VisitID:     nullableString(m.VisitID),
+		TravelLegID: nullableString(m.TravelLegID),
 		TripID:      m.TripID,
 		Filename:    m.Filename,
 		ContentType: m.ContentType,
@@ -199,6 +201,44 @@ func toGraphQLMedia(m *media.Media) *Media {
 		Position:    m.Position,
 		CreatedAt:   m.CreatedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func toGraphQLTravelLeg(leg *travelleg.TravelLeg) *TravelLeg {
+	return &TravelLeg{
+		ID:          leg.ID,
+		TripID:      leg.TripID,
+		FromStageID: leg.FromStageID,
+		ToStageID:   leg.ToStageID,
+		Transport:   toGraphQLTravelLegTransport(leg.Transport),
+		Description: nullableString(leg.Description),
+		DistanceKm:  cloneFloat64(leg.DistanceKm),
+		CreatedAt:   leg.CreatedAt.UTC().Format(time.RFC3339),
+		UpdatedAt:   leg.UpdatedAt.UTC().Format(time.RFC3339),
+	}
+}
+
+func toGraphQLTravelLegList(legs []*travelleg.TravelLeg) []*TravelLeg {
+	result := make([]*TravelLeg, len(legs))
+	for index, leg := range legs {
+		result[index] = toGraphQLTravelLeg(leg)
+	}
+	return result
+}
+
+func toDomainTravelLegTransport(transport TravelLegTransport) travelleg.Transport {
+	return travelleg.Transport(transport)
+}
+
+func toGraphQLTravelLegTransport(transport travelleg.Transport) TravelLegTransport {
+	return TravelLegTransport(transport)
+}
+
+func cloneFloat64(value *float64) *float64 {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
 }
 
 func toGraphQLMediaList(list []*media.Media) []*Media {

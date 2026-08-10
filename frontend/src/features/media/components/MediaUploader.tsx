@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../../auth/hooks/useAuth';
+import { mediaOwnerFormField, type MediaOwner } from '../mediaOwner';
 import styles from './MediaUploader.module.css';
 
 interface UploadItem {
@@ -9,7 +10,7 @@ interface UploadItem {
 }
 
 interface MediaUploaderProps {
-  visitID: string;
+  owner: MediaOwner;
   tripID: string;
   onUploadComplete: () => void;
 }
@@ -20,7 +21,7 @@ const ACCEPTED_TYPES = new Set([
 ]);
 const ACCEPT = Array.from(ACCEPTED_TYPES).join(',');
 
-export function MediaUploader({ visitID, tripID, onUploadComplete }: MediaUploaderProps) {
+export function MediaUploader({ owner, tripID, onUploadComplete }: MediaUploaderProps) {
   const { token } = useAuth();
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -29,7 +30,7 @@ export function MediaUploader({ visitID, tripID, onUploadComplete }: MediaUpload
   function uploadFile(file: File, index: number) {
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('visitID', visitID);
+    formData.append(mediaOwnerFormField(owner), owner.id);
     formData.append('tripID', tripID);
 
     const xhr = new XMLHttpRequest();

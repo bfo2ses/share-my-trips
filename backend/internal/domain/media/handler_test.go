@@ -55,13 +55,15 @@ func newStubStorage() *stubStorage {
 	return &stubStorage{deleted: make(map[string]bool)}
 }
 
-func (s *stubStorage) Store(id, tripID, visitID, ext string, _ io.Reader) error { return nil }
-func (s *stubStorage) Delete(id, tripID, visitID, ext string) error {
+func (s *stubStorage) Store(id, tripID string, owner media.Owner, ext string, _ io.Reader) error {
+	return nil
+}
+func (s *stubStorage) Delete(id, tripID string, owner media.Owner, ext string) error {
 	s.deleted[id] = true
 	return nil
 }
-func (s *stubStorage) FilePath(id, tripID, visitID, ext string) string { return "" }
-func (s *stubStorage) ThumbPath(id, tripID, visitID string) string     { return "" }
+func (s *stubStorage) FilePath(id, tripID string, owner media.Owner, ext string) string { return "" }
+func (s *stubStorage) ThumbPath(id, tripID string, owner media.Owner) string            { return "" }
 
 // mediaRepository is an in-memory media.Repository for tests.
 type mediaRepository struct {
@@ -88,9 +90,17 @@ func (r *mediaRepository) FindByID(_ context.Context, id string) (*media.Media, 
 }
 
 func (r *mediaRepository) ListByVisit(_ context.Context, visitID string) ([]*media.Media, error) {
+	return r.ListByOwner(context.Background(), media.VisitOwner(visitID))
+}
+
+func (r *mediaRepository) ListByTravelLeg(_ context.Context, travelLegID string) ([]*media.Media, error) {
+	return r.ListByOwner(context.Background(), media.TravelLegOwner(travelLegID))
+}
+
+func (r *mediaRepository) ListByOwner(_ context.Context, owner media.Owner) ([]*media.Media, error) {
 	var result []*media.Media
 	for _, m := range r.media {
-		if m.VisitID == visitID {
+		if m.Owner() == owner {
 			cp := *m
 			result = append(result, &cp)
 		}
@@ -118,9 +128,13 @@ func (r *mediaRepository) Delete(_ context.Context, id string) error {
 }
 
 func (r *mediaRepository) NextPosition(_ context.Context, visitID string) (int, error) {
+	return r.NextPositionForOwner(context.Background(), media.VisitOwner(visitID))
+}
+
+func (r *mediaRepository) NextPositionForOwner(_ context.Context, owner media.Owner) (int, error) {
 	max := -1
 	for _, m := range r.media {
-		if m.VisitID == visitID && m.Position > max {
+		if m.Owner() == owner && m.Position > max {
 			max = m.Position
 		}
 	}
@@ -128,8 +142,12 @@ func (r *mediaRepository) NextPosition(_ context.Context, visitID string) (int, 
 }
 
 func (r *mediaRepository) Reorder(_ context.Context, visitID string, orderedIDs []string) error {
+	return r.ReorderForOwner(context.Background(), media.VisitOwner(visitID), orderedIDs)
+}
+
+func (r *mediaRepository) ReorderForOwner(_ context.Context, owner media.Owner, orderedIDs []string) error {
 	for pos, id := range orderedIDs {
-		if m, ok := r.media[id]; ok && m.VisitID == visitID {
+		if m, ok := r.media[id]; ok && m.Owner() == owner {
 			m.Position = pos
 		}
 	}

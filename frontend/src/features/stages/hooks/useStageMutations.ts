@@ -17,6 +17,10 @@ const ADD_STAGE = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
@@ -37,16 +41,24 @@ const UPDATE_STAGE = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
 
 const DELETE_STAGE = gql(`
-  mutation DeleteStage($id: ID!) {
-    deleteStage(id: $id) {
+  mutation DeleteStage($id: ID!, $resolutionPlan: [TravelLegResolutionInput!]) {
+    deleteStage(id: $id, resolutionPlan: $resolutionPlan) {
       success
       errors {
         field
+        message
+      }
+      recalculationWarnings {
+        travelLegID
         message
       }
     }

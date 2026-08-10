@@ -15,6 +15,23 @@ interface VisitData {
   lng: number;
 }
 
+export type VisitFormSubmission = {
+  kind: 'create' | 'update';
+  visitID?: string;
+  tripID: string;
+  stageID: string;
+  date: string;
+  title?: string;
+  description?: string;
+  lat: number;
+  lng: number;
+};
+
+export type VisitFormSubmissionResult = {
+  completed: boolean;
+  errors?: string[];
+};
+
 interface VisitFormProps {
   open: boolean;
   onClose: () => void;
@@ -25,9 +42,10 @@ interface VisitFormProps {
   noBackdrop?: boolean;
   panel?: boolean;
   actions?: FormAction[];
+  onSubmitWithResolution?: (submission: VisitFormSubmission) => Promise<VisitFormSubmissionResult>;
 }
 
-export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords, noBackdrop, panel, actions }: VisitFormProps) {
+export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords, noBackdrop, panel, actions, onSubmitWithResolution }: VisitFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
@@ -43,6 +61,7 @@ export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords
             onClose={onClose}
             panel={panel}
             actions={actions}
+            onSubmitWithResolution={onSubmitWithResolution}
           />
         )}
       </aside>
@@ -58,6 +77,7 @@ function VisitFormContent({
   onClose,
   panel,
   actions,
+  onSubmitWithResolution,
 }: {
   tripID: string;
   stageID: string;
@@ -66,6 +86,7 @@ function VisitFormContent({
   onClose: () => void;
   panel?: boolean;
   actions?: FormAction[];
+  onSubmitWithResolution?: (submission: VisitFormSubmission) => Promise<VisitFormSubmissionResult>;
 }) {
   const isEdit = !!visit;
 
@@ -96,6 +117,26 @@ function VisitFormContent({
     }
 
     const context = { additionalTypenames: ['Visit'] };
+
+    if (onSubmitWithResolution) {
+      const result = await onSubmitWithResolution({
+        kind: isEdit ? 'update' : 'create',
+        visitID: visit?.id,
+        tripID,
+        stageID,
+        date,
+        title: title || undefined,
+        description: description || undefined,
+        lat,
+        lng,
+      });
+      if (result.errors?.length) {
+        setErrors(result.errors);
+      } else if (result.completed) {
+        onClose();
+      }
+      return;
+    }
 
     if (isEdit) {
       const result = await updateVisit({
@@ -200,8 +241,8 @@ function VisitFormContent({
 
         {isEdit && (
           <div className={styles.mediaSection}>
-            <MediaGallery media={media} isAdmin onDeleted={refetchMedia} />
-            <MediaUploader visitID={visit!.id} tripID={tripID} onUploadComplete={refetchMedia} />
+            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} isAdmin onDeleted={refetchMedia} />
+            <MediaUploader owner={{ type: 'visit', id: visit!.id }} tripID={tripID} onUploadComplete={refetchMedia} />
           </div>
         )}
 

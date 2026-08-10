@@ -139,6 +139,12 @@
   border-color: var(--color-gold);
 }
 
+.errorMessage {
+  margin: 0 0 10px;
+  color: #e55;
+  font-size: 0.8rem;
+}
+
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .gallery {

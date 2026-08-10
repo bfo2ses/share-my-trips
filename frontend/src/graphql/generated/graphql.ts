@@ -52,6 +52,8 @@ export type AddVisitInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   lat: Scalars['Float']['input'];
   lng: Scalars['Float']['input'];
+  /** Required when this creation changes the stage sequence of existing travel legs. */
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
   stageID: Scalars['ID']['input'];
   title?: InputMaybe<Scalars['String']['input']>;
   tripID: Scalars['ID']['input'];
@@ -63,6 +65,12 @@ export type AuthPayload = {
   errors: Array<UserError>;
   /** Session token. Present on success, null on error. */
   token?: Maybe<Scalars['String']['output']>;
+};
+
+export type CalculateTravelLegDistancePayload = {
+  __typename?: 'CalculateTravelLegDistancePayload';
+  distanceKm?: Maybe<Scalars['Float']['output']>;
+  errors: Array<UserError>;
 };
 
 export type ChangePasswordInput = {
@@ -84,6 +92,15 @@ export type CreateAccountInput = {
   passwordConfirm?: InputMaybe<Scalars['String']['input']>;
   /** Optional. Defaults to FAMILY. Only FAMILY and EDITOR are allowed. */
   role?: InputMaybe<AccountRole>;
+};
+
+export type CreateTravelLegInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  distanceKm?: InputMaybe<Scalars['Float']['input']>;
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+  transport: TravelLegTransport;
+  tripID: Scalars['ID']['input'];
 };
 
 export type CreateTripInput = {
@@ -112,6 +129,14 @@ export type DeleteMediaPayload = {
 export type DeleteStagePayload = {
   __typename?: 'DeleteStagePayload';
   errors: Array<UserError>;
+  /** Non-blocking warnings emitted after automatic travel-leg distance recalculation. */
+  recalculationWarnings?: Maybe<Array<TravelLegRecalculationWarning>>;
+  success: Scalars['Boolean']['output'];
+};
+
+export type DeleteTravelLegPayload = {
+  __typename?: 'DeleteTravelLegPayload';
+  errors: Array<UserError>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -124,6 +149,8 @@ export type DeleteTripPayload = {
 export type DeleteVisitPayload = {
   __typename?: 'DeleteVisitPayload';
   errors: Array<UserError>;
+  /** Non-blocking warnings emitted after automatic travel-leg distance recalculation. */
+  recalculationWarnings?: Maybe<Array<TravelLegRecalculationWarning>>;
   success: Scalars['Boolean']['output'];
 };
 
@@ -139,10 +166,13 @@ export type Media = {
   position: Scalars['Int']['output'];
   /** URL to serve the thumbnail. */
   thumbUrl: Scalars['String']['output'];
+  /** The travel leg that owns this item, if any. */
+  travelLegID?: Maybe<Scalars['ID']['output']>;
   tripID: Scalars['ID']['output'];
   /** URL to serve the original file. */
   url: Scalars['String']['output'];
-  visitID: Scalars['ID']['output'];
+  /** The visit that owns this item, if any. */
+  visitID?: Maybe<Scalars['ID']['output']>;
 };
 
 export type MediaPayload = {
@@ -151,30 +181,42 @@ export type MediaPayload = {
   media?: Maybe<Media>;
 };
 
+export type MoveTravelLegInput = {
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+};
+
 export type Mutation = {
   __typename?: 'Mutation';
   addStage: StagePayload;
   addVisit: VisitPayload;
   attachVisitToStage: VisitPayload;
+  /** Calculates a candidate distance without creating or updating a travel leg. Requires editor role. */
+  calculateTravelLegDistance: CalculateTravelLegDistancePayload;
   changePassword: AccountPayload;
   closeTrip: TripPayload;
   /** Creates a family account. Requires admin role. */
   createAccount: AccountPayload;
+  createTravelLeg: TravelLegPayload;
   createTrip: TripPayload;
   /** Deletes an account. Requires admin role. Cannot delete own account. */
   deleteAccount: DeleteAccountPayload;
   /** Deletes a media and its files. Requires admin role. */
   deleteMedia: DeleteMediaPayload;
   deleteStage: DeleteStagePayload;
+  deleteTravelLeg: DeleteTravelLegPayload;
   deleteTrip: DeleteTripPayload;
   deleteVisit: DeleteVisitPayload;
   detachVisitFromStage: VisitPayload;
   login: AuthPayload;
   logout: Scalars['Boolean']['output'];
+  moveTravelLeg: TravelLegPayload;
   publishTrip: TripPayload;
   reopenTrip: TripPayload;
   /** Reorders media within a visit. Requires admin role. */
   reorderMedia: ReorderMediaPayload;
+  /** Reorders media within a travel leg. Requires editor role. */
+  reorderTravelLegMedia: ReorderTravelLegMediaPayload;
   /** Reorders visits sharing a primary stage and date. Requires editor role. */
   reorderVisits: ReorderVisitsPayload;
   /** Sends a password reset email. Always returns true regardless of whether the email exists. */
@@ -186,6 +228,7 @@ export type Mutation = {
   /** Updates a media's caption. Requires admin role. */
   updateMediaCaption: MediaPayload;
   updateStage: StagePayload;
+  updateTravelLeg: TravelLegPayload;
   updateTrip: TripPayload;
   updateVisit: VisitPayload;
 };
@@ -202,8 +245,16 @@ export type MutationAddVisitArgs = {
 
 
 export type MutationAttachVisitToStageArgs = {
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
   stageID: Scalars['ID']['input'];
   visitID: Scalars['ID']['input'];
+};
+
+
+export type MutationCalculateTravelLegDistanceArgs = {
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+  transport: TravelLegTransport;
 };
 
 
@@ -220,6 +271,11 @@ export type MutationCloseTripArgs = {
 
 export type MutationCreateAccountArgs = {
   input: CreateAccountInput;
+};
+
+
+export type MutationCreateTravelLegArgs = {
+  input: CreateTravelLegInput;
 };
 
 
@@ -240,6 +296,12 @@ export type MutationDeleteMediaArgs = {
 
 export type MutationDeleteStageArgs = {
   id: Scalars['ID']['input'];
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
+};
+
+
+export type MutationDeleteTravelLegArgs = {
+  id: Scalars['ID']['input'];
 };
 
 
@@ -250,10 +312,12 @@ export type MutationDeleteTripArgs = {
 
 export type MutationDeleteVisitArgs = {
   id: Scalars['ID']['input'];
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
 };
 
 
 export type MutationDetachVisitFromStageArgs = {
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
   stageID: Scalars['ID']['input'];
   visitID: Scalars['ID']['input'];
 };
@@ -262,6 +326,12 @@ export type MutationDetachVisitFromStageArgs = {
 export type MutationLoginArgs = {
   email: Scalars['String']['input'];
   password: Scalars['String']['input'];
+};
+
+
+export type MutationMoveTravelLegArgs = {
+  id: Scalars['ID']['input'];
+  input: MoveTravelLegInput;
 };
 
 
@@ -278,6 +348,12 @@ export type MutationReopenTripArgs = {
 export type MutationReorderMediaArgs = {
   mediaIDs: Array<Scalars['ID']['input']>;
   visitID: Scalars['ID']['input'];
+};
+
+
+export type MutationReorderTravelLegMediaArgs = {
+  mediaIDs: Array<Scalars['ID']['input']>;
+  travelLegID: Scalars['ID']['input'];
 };
 
 
@@ -320,6 +396,12 @@ export type MutationUpdateStageArgs = {
 };
 
 
+export type MutationUpdateTravelLegArgs = {
+  id: Scalars['ID']['input'];
+  input: UpdateTravelLegInput;
+};
+
+
 export type MutationUpdateTripArgs = {
   id: Scalars['ID']['input'];
   input: UpdateTripInput;
@@ -343,6 +425,12 @@ export type Query = {
   stage?: Maybe<Stage>;
   /** Returns all stages for a trip, sorted by the date of their first visit ascending. Stages without any visit appear last in undefined order. */
   stages: Array<Stage>;
+  /** Returns a single travel leg by ID, or null if not found. */
+  travelLeg?: Maybe<TravelLeg>;
+  /** Returns all media for a travel leg, sorted by position ascending. */
+  travelLegMedia: Array<Media>;
+  /** Returns every travel leg for a trip. */
+  travelLegs: Array<TravelLeg>;
   /** Returns a single trip by ID, or null if not found. */
   trip?: Maybe<Trip>;
   /** Returns all media for a trip, grouped by visit (stable but arbitrary visit order), sorted by position within each visit. */
@@ -366,6 +454,21 @@ export type QueryStageArgs = {
 
 
 export type QueryStagesArgs = {
+  tripID: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegArgs = {
+  id: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegMediaArgs = {
+  travelLegID: Scalars['ID']['input'];
+};
+
+
+export type QueryTravelLegsArgs = {
   tripID: Scalars['ID']['input'];
 };
 
@@ -406,6 +509,12 @@ export type QueryVisitsArgs = {
 
 export type ReorderMediaPayload = {
   __typename?: 'ReorderMediaPayload';
+  errors: Array<UserError>;
+  media: Array<Media>;
+};
+
+export type ReorderTravelLegMediaPayload = {
+  __typename?: 'ReorderTravelLegMediaPayload';
   errors: Array<UserError>;
   media: Array<Media>;
 };
@@ -455,8 +564,58 @@ export type Stage = {
 export type StagePayload = {
   __typename?: 'StagePayload';
   errors: Array<UserError>;
+  /** Non-blocking warnings emitted after automatic travel-leg distance recalculation. */
+  recalculationWarnings?: Maybe<Array<TravelLegRecalculationWarning>>;
   stage?: Maybe<Stage>;
 };
+
+export type TravelLeg = {
+  __typename?: 'TravelLeg';
+  /** RFC 3339 timestamp. */
+  createdAt: Scalars['String']['output'];
+  description?: Maybe<Scalars['String']['output']>;
+  /** Distance in kilometres. Null when not provided or when an automatic recalculation failed. */
+  distanceKm?: Maybe<Scalars['Float']['output']>;
+  fromStageID: Scalars['ID']['output'];
+  id: Scalars['ID']['output'];
+  toStageID: Scalars['ID']['output'];
+  transport: TravelLegTransport;
+  tripID: Scalars['ID']['output'];
+  /** RFC 3339 timestamp. */
+  updatedAt: Scalars['String']['output'];
+};
+
+export type TravelLegPayload = {
+  __typename?: 'TravelLegPayload';
+  errors: Array<UserError>;
+  /** Non-blocking warnings emitted after automatic distance recalculation. */
+  recalculationWarnings?: Maybe<Array<TravelLegRecalculationWarning>>;
+  travelLeg?: Maybe<TravelLeg>;
+};
+
+export type TravelLegRecalculationWarning = {
+  __typename?: 'TravelLegRecalculationWarning';
+  message: Scalars['String']['output'];
+  travelLegID: Scalars['ID']['output'];
+};
+
+export type TravelLegResolutionAction =
+  | 'DELETE'
+  | 'MOVE';
+
+/** One explicit decision for a journey invalidated by a stage-sequence change. */
+export type TravelLegResolutionInput = {
+  action: TravelLegResolutionAction;
+  fromStageID?: InputMaybe<Scalars['ID']['input']>;
+  toStageID?: InputMaybe<Scalars['ID']['input']>;
+  travelLegID: Scalars['ID']['input'];
+};
+
+export type TravelLegTransport =
+  | 'BOAT'
+  | 'CAR'
+  | 'PLANE'
+  | 'TRAIN';
 
 export type Trip = {
   __typename?: 'Trip';
@@ -499,6 +658,12 @@ export type UpdateStageInput = {
   name?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type UpdateTravelLegInput = {
+  description?: InputMaybe<Scalars['String']['input']>;
+  distanceKm?: InputMaybe<Scalars['Float']['input']>;
+  transport: TravelLegTransport;
+};
+
 export type UpdateTripInput = {
   country: Scalars['String']['input'];
   coverPhoto?: InputMaybe<Scalars['String']['input']>;
@@ -515,6 +680,8 @@ export type UpdateVisitInput = {
   description?: InputMaybe<Scalars['String']['input']>;
   lat: Scalars['Float']['input'];
   lng: Scalars['Float']['input'];
+  /** Required when this update changes the stage sequence of existing travel legs. */
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput>>;
   title?: InputMaybe<Scalars['String']['input']>;
 };
 
@@ -550,6 +717,8 @@ export type Visit = {
 export type VisitPayload = {
   __typename?: 'VisitPayload';
   errors: Array<UserError>;
+  /** Non-blocking warnings emitted after automatic travel-leg distance recalculation. */
+  recalculationWarnings?: Maybe<Array<TravelLegRecalculationWarning>>;
   visit?: Maybe<Visit>;
 };
 
@@ -646,26 +815,41 @@ export type DeleteMediaMutationVariables = Exact<{
 
 export type DeleteMediaMutation = { __typename?: 'Mutation', deleteMedia: { __typename?: 'DeleteMediaPayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
 
+export type ReorderTravelLegMediaMutationVariables = Exact<{
+  travelLegID: Scalars['ID']['input'];
+  mediaIDs: Array<Scalars['ID']['input']> | Scalars['ID']['input'];
+}>;
+
+
+export type ReorderTravelLegMediaMutation = { __typename?: 'Mutation', reorderTravelLegMedia: { __typename?: 'ReorderTravelLegMediaPayload', media: Array<{ __typename?: 'Media', id: string, position: number }>, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+
 export type VisitMediaQueryVariables = Exact<{
   visitID: Scalars['ID']['input'];
 }>;
 
 
-export type VisitMediaQuery = { __typename?: 'Query', visitMedia: Array<{ __typename?: 'Media', id: string, visitID: string, tripID: string, filename: string, contentType: string, caption?: string | null, url: string, thumbUrl: string, position: number, createdAt: string }> };
+export type VisitMediaQuery = { __typename?: 'Query', visitMedia: Array<{ __typename?: 'Media', id: string, visitID?: string | null, tripID: string, filename: string, contentType: string, caption?: string | null, url: string, thumbUrl: string, position: number, createdAt: string }> };
+
+export type TravelLegMediaQueryVariables = Exact<{
+  travelLegID: Scalars['ID']['input'];
+}>;
+
+
+export type TravelLegMediaQuery = { __typename?: 'Query', travelLegMedia: Array<{ __typename?: 'Media', id: string, visitID?: string | null, travelLegID?: string | null, tripID: string, filename: string, contentType: string, caption?: string | null, url: string, thumbUrl: string, position: number, createdAt: string }> };
 
 export type TripMediaQueryVariables = Exact<{
   tripID: Scalars['ID']['input'];
 }>;
 
 
-export type TripMediaQuery = { __typename?: 'Query', tripMedia: Array<{ __typename?: 'Media', id: string, visitID: string, tripID: string, contentType: string, thumbUrl: string }> };
+export type TripMediaQuery = { __typename?: 'Query', tripMedia: Array<{ __typename?: 'Media', id: string, visitID?: string | null, tripID: string, contentType: string, thumbUrl: string }> };
 
 export type AddStageMutationVariables = Exact<{
   input: AddStageInput;
 }>;
 
 
-export type AddStageMutation = { __typename?: 'Mutation', addStage: { __typename?: 'StagePayload', stage?: { __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type AddStageMutation = { __typename?: 'Mutation', addStage: { __typename?: 'StagePayload', stage?: { __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type UpdateStageMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -673,14 +857,15 @@ export type UpdateStageMutationVariables = Exact<{
 }>;
 
 
-export type UpdateStageMutation = { __typename?: 'Mutation', updateStage: { __typename?: 'StagePayload', stage?: { __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type UpdateStageMutation = { __typename?: 'Mutation', updateStage: { __typename?: 'StagePayload', stage?: { __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type DeleteStageMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput> | TravelLegResolutionInput>;
 }>;
 
 
-export type DeleteStageMutation = { __typename?: 'Mutation', deleteStage: { __typename?: 'DeleteStagePayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type DeleteStageMutation = { __typename?: 'Mutation', deleteStage: { __typename?: 'DeleteStagePayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type StagesQueryVariables = Exact<{
   tripID: Scalars['ID']['input'];
@@ -701,7 +886,7 @@ export type AddVisitMutationVariables = Exact<{
 }>;
 
 
-export type AddVisitMutation = { __typename?: 'Mutation', addVisit: { __typename?: 'VisitPayload', visit?: { __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type AddVisitMutation = { __typename?: 'Mutation', addVisit: { __typename?: 'VisitPayload', visit?: { __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type UpdateVisitMutationVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -709,14 +894,15 @@ export type UpdateVisitMutationVariables = Exact<{
 }>;
 
 
-export type UpdateVisitMutation = { __typename?: 'Mutation', updateVisit: { __typename?: 'VisitPayload', visit?: { __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type UpdateVisitMutation = { __typename?: 'Mutation', updateVisit: { __typename?: 'VisitPayload', visit?: { __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type DeleteVisitMutationVariables = Exact<{
   id: Scalars['ID']['input'];
+  resolutionPlan?: InputMaybe<Array<TravelLegResolutionInput> | TravelLegResolutionInput>;
 }>;
 
 
-export type DeleteVisitMutation = { __typename?: 'Mutation', deleteVisit: { __typename?: 'DeleteVisitPayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+export type DeleteVisitMutation = { __typename?: 'Mutation', deleteVisit: { __typename?: 'DeleteVisitPayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }>, recalculationWarnings?: Array<{ __typename?: 'TravelLegRecalculationWarning', travelLegID: string, message: string }> | null } };
 
 export type ReorderVisitsMutationVariables = Exact<{
   stageID: Scalars['ID']['input'];
@@ -733,6 +919,45 @@ export type VisitsQueryVariables = Exact<{
 
 
 export type VisitsQuery = { __typename?: 'Query', visits: Array<{ __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number }> };
+
+export type CreateTravelLegMutationVariables = Exact<{
+  input: CreateTravelLegInput;
+}>;
+
+
+export type CreateTravelLegMutation = { __typename?: 'Mutation', createTravelLeg: { __typename?: 'TravelLegPayload', travelLeg?: { __typename?: 'TravelLeg', id: string, tripID: string, fromStageID: string, toStageID: string, transport: TravelLegTransport, description?: string | null, distanceKm?: number | null, createdAt: string, updatedAt: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+
+export type UpdateTravelLegMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: UpdateTravelLegInput;
+}>;
+
+
+export type UpdateTravelLegMutation = { __typename?: 'Mutation', updateTravelLeg: { __typename?: 'TravelLegPayload', travelLeg?: { __typename?: 'TravelLeg', id: string, tripID: string, fromStageID: string, toStageID: string, transport: TravelLegTransport, description?: string | null, distanceKm?: number | null, createdAt: string, updatedAt: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+
+export type MoveTravelLegMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+  input: MoveTravelLegInput;
+}>;
+
+
+export type MoveTravelLegMutation = { __typename?: 'Mutation', moveTravelLeg: { __typename?: 'TravelLegPayload', travelLeg?: { __typename?: 'TravelLeg', id: string, tripID: string, fromStageID: string, toStageID: string, transport: TravelLegTransport, description?: string | null, distanceKm?: number | null, createdAt: string, updatedAt: string } | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+
+export type DeleteTravelLegMutationVariables = Exact<{
+  id: Scalars['ID']['input'];
+}>;
+
+
+export type DeleteTravelLegMutation = { __typename?: 'Mutation', deleteTravelLeg: { __typename?: 'DeleteTravelLegPayload', success: boolean, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
+
+export type CalculateTravelLegDistanceMutationVariables = Exact<{
+  fromStageID: Scalars['ID']['input'];
+  toStageID: Scalars['ID']['input'];
+  transport: TravelLegTransport;
+}>;
+
+
+export type CalculateTravelLegDistanceMutation = { __typename?: 'Mutation', calculateTravelLegDistance: { __typename?: 'CalculateTravelLegDistancePayload', distanceKm?: number | null, errors: Array<{ __typename?: 'UserError', field?: string | null, message: string }> } };
 
 export type TripQueryVariables = Exact<{
   id: Scalars['ID']['input'];
@@ -753,7 +978,7 @@ export type TripDetailQueryVariables = Exact<{
 }>;
 
 
-export type TripDetailQuery = { __typename?: 'Query', trip?: { __typename?: 'Trip', id: string, title: string, country: string, description: string, lat: number, lng: number, startDate?: string | null, endDate?: string | null, status: TripStatus, coverPhoto: string } | null, stages: Array<{ __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string }>, tripVisits: Array<{ __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number }> };
+export type TripDetailQuery = { __typename?: 'Query', trip?: { __typename?: 'Trip', id: string, title: string, country: string, description: string, lat: number, lng: number, startDate?: string | null, endDate?: string | null, status: TripStatus, coverPhoto: string } | null, stages: Array<{ __typename?: 'Stage', id: string, tripID: string, city: string, displayName: string, lat: number, lng: number, description: string, createdAt: string }>, tripVisits: Array<{ __typename?: 'Visit', id: string, tripID: string, stageIDs: Array<string>, date: string, title?: string | null, description?: string | null, lat: number, lng: number, position: number }>, travelLegs: Array<{ __typename?: 'TravelLeg', id: string, tripID: string, fromStageID: string, toStageID: string, transport: TravelLegTransport, description?: string | null, distanceKm?: number | null, createdAt: string, updatedAt: string }> };
 
 export type CreateTripMutationVariables = Exact<{
   input: CreateTripInput;
@@ -828,21 +1053,28 @@ export const SetupStatusDocument = {"kind":"Document","definitions":[{"kind":"Op
 export const UpdateMediaCaptionDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateMediaCaption"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"caption"}},"type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateMediaCaption"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"caption"},"value":{"kind":"Variable","name":{"kind":"Name","value":"caption"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"media"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"caption"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateMediaCaptionMutation, UpdateMediaCaptionMutationVariables>;
 export const ReorderMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ReorderMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"visitID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"mediaIDs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"reorderMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"visitID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"visitID"}}},{"kind":"Argument","name":{"kind":"Name","value":"mediaIDs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"mediaIDs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"media"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<ReorderMediaMutation, ReorderMediaMutationVariables>;
 export const DeleteMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteMediaMutation, DeleteMediaMutationVariables>;
+export const ReorderTravelLegMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ReorderTravelLegMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"travelLegID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"mediaIDs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"reorderTravelLegMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"travelLegID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"travelLegID"}}},{"kind":"Argument","name":{"kind":"Name","value":"mediaIDs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"mediaIDs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"media"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<ReorderTravelLegMediaMutation, ReorderTravelLegMediaMutationVariables>;
 export const VisitMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"VisitMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"visitID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visitMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"visitID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"visitID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"visitID"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"caption"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"thumbUrl"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<VisitMediaQuery, VisitMediaQueryVariables>;
+export const TravelLegMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TravelLegMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"travelLegID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"travelLegID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"travelLegID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"visitID"}},{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"filename"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"caption"}},{"kind":"Field","name":{"kind":"Name","value":"url"}},{"kind":"Field","name":{"kind":"Name","value":"thumbUrl"}},{"kind":"Field","name":{"kind":"Name","value":"position"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}}]}}]} as unknown as DocumentNode<TravelLegMediaQuery, TravelLegMediaQueryVariables>;
 export const TripMediaDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TripMedia"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tripMedia"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"visitID"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"contentType"}},{"kind":"Field","name":{"kind":"Name","value":"thumbUrl"}}]}}]}}]} as unknown as DocumentNode<TripMediaQuery, TripMediaQueryVariables>;
-export const AddStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AddStageInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<AddStageMutation, AddStageMutationVariables>;
-export const UpdateStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateStageInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateStageMutation, UpdateStageMutationVariables>;
-export const DeleteStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteStageMutation, DeleteStageMutationVariables>;
+export const AddStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AddStageInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<AddStageMutation, AddStageMutationVariables>;
+export const UpdateStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateStageInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stage"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateStageMutation, UpdateStageMutationVariables>;
+export const DeleteStageDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteStage"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"resolutionPlan"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TravelLegResolutionInput"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteStage"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"resolutionPlan"},"value":{"kind":"Variable","name":{"kind":"Name","value":"resolutionPlan"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteStageMutation, DeleteStageMutationVariables>;
 export const StagesDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Stages"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}}]}}]} as unknown as DocumentNode<StagesQuery, StagesQueryVariables>;
 export const TripVisitsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TripVisits"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"tripVisits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}}]}}]} as unknown as DocumentNode<TripVisitsQuery, TripVisitsQueryVariables>;
-export const AddVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AddVisitInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<AddVisitMutation, AddVisitMutationVariables>;
-export const UpdateVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateVisitInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateVisitMutation, UpdateVisitMutationVariables>;
-export const DeleteVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteVisitMutation, DeleteVisitMutationVariables>;
+export const AddVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"AddVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"AddVisitInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"addVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<AddVisitMutation, AddVisitMutationVariables>;
+export const UpdateVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateVisitInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visit"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateVisitMutation, UpdateVisitMutationVariables>;
+export const DeleteVisitDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteVisit"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"resolutionPlan"}},"type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TravelLegResolutionInput"}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteVisit"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"resolutionPlan"},"value":{"kind":"Variable","name":{"kind":"Name","value":"resolutionPlan"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}},{"kind":"Field","name":{"kind":"Name","value":"recalculationWarnings"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLegID"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteVisitMutation, DeleteVisitMutationVariables>;
 export const ReorderVisitsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"ReorderVisits"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stageID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"date"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"String"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"visitIDs"}},"type":{"kind":"NonNullType","type":{"kind":"ListType","type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"reorderVisits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stageID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stageID"}}},{"kind":"Argument","name":{"kind":"Name","value":"date"},"value":{"kind":"Variable","name":{"kind":"Name","value":"date"}}},{"kind":"Argument","name":{"kind":"Name","value":"visitIDs"},"value":{"kind":"Variable","name":{"kind":"Name","value":"visitIDs"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visits"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<ReorderVisitsMutation, ReorderVisitsMutationVariables>;
 export const VisitsDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Visits"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"stageID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"visits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"stageID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"stageID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}}]}}]} as unknown as DocumentNode<VisitsQuery, VisitsQueryVariables>;
+export const CreateTravelLegDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateTravelLeg"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateTravelLegInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTravelLeg"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLeg"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"fromStageID"}},{"kind":"Field","name":{"kind":"Name","value":"toStageID"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"distanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<CreateTravelLegMutation, CreateTravelLegMutationVariables>;
+export const UpdateTravelLegDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateTravelLeg"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateTravelLegInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateTravelLeg"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLeg"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"fromStageID"}},{"kind":"Field","name":{"kind":"Name","value":"toStageID"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"distanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateTravelLegMutation, UpdateTravelLegMutationVariables>;
+export const MoveTravelLegDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"MoveTravelLeg"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"MoveTravelLegInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"moveTravelLeg"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"travelLeg"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"fromStageID"}},{"kind":"Field","name":{"kind":"Name","value":"toStageID"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"distanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<MoveTravelLegMutation, MoveTravelLegMutationVariables>;
+export const DeleteTravelLegDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTravelLeg"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTravelLeg"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteTravelLegMutation, DeleteTravelLegMutationVariables>;
+export const CalculateTravelLegDistanceDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CalculateTravelLegDistance"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"fromStageID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"toStageID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"transport"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"TravelLegTransport"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"calculateTravelLegDistance"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"fromStageID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"fromStageID"}}},{"kind":"Argument","name":{"kind":"Name","value":"toStageID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"toStageID"}}},{"kind":"Argument","name":{"kind":"Name","value":"transport"},"value":{"kind":"Variable","name":{"kind":"Name","value":"transport"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"distanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<CalculateTravelLegDistanceMutation, CalculateTravelLegDistanceMutationVariables>;
 export const TripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"Trip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"coverPhoto"}}]}}]}}]} as unknown as DocumentNode<TripQuery, TripQueryVariables>;
 export const TripCloseDataDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TripCloseData"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"stages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tripVisits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"tripID"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}}]}}]}}]} as unknown as DocumentNode<TripCloseDataQuery, TripCloseDataQueryVariables>;
-export const TripDetailDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TripDetail"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"coverPhoto"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tripVisits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}}]}}]} as unknown as DocumentNode<TripDetailQuery, TripDetailQueryVariables>;
+export const TripDetailDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"query","name":{"kind":"Name","value":"TripDetail"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"coverPhoto"}}]}},{"kind":"Field","name":{"kind":"Name","value":"stages"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"city"}},{"kind":"Field","name":{"kind":"Name","value":"displayName"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}}]}},{"kind":"Field","name":{"kind":"Name","value":"tripVisits"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"stageIDs"}},{"kind":"Field","name":{"kind":"Name","value":"date"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"position"}}]}},{"kind":"Field","name":{"kind":"Name","value":"travelLegs"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"tripID"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"tripID"}},{"kind":"Field","name":{"kind":"Name","value":"fromStageID"}},{"kind":"Field","name":{"kind":"Name","value":"toStageID"}},{"kind":"Field","name":{"kind":"Name","value":"transport"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"distanceKm"}},{"kind":"Field","name":{"kind":"Name","value":"createdAt"}},{"kind":"Field","name":{"kind":"Name","value":"updatedAt"}}]}}]}}]} as unknown as DocumentNode<TripDetailQuery, TripDetailQueryVariables>;
 export const CreateTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"CreateTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"CreateTripInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"createTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trip"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"coverPhoto"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<CreateTripMutation, CreateTripMutationVariables>;
 export const UpdateTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"UpdateTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}},{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"input"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"UpdateTripInput"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"updateTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}},{"kind":"Argument","name":{"kind":"Name","value":"input"},"value":{"kind":"Variable","name":{"kind":"Name","value":"input"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"trip"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"id"}},{"kind":"Field","name":{"kind":"Name","value":"title"}},{"kind":"Field","name":{"kind":"Name","value":"country"}},{"kind":"Field","name":{"kind":"Name","value":"description"}},{"kind":"Field","name":{"kind":"Name","value":"lat"}},{"kind":"Field","name":{"kind":"Name","value":"lng"}},{"kind":"Field","name":{"kind":"Name","value":"startDate"}},{"kind":"Field","name":{"kind":"Name","value":"endDate"}},{"kind":"Field","name":{"kind":"Name","value":"status"}},{"kind":"Field","name":{"kind":"Name","value":"coverPhoto"}}]}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<UpdateTripMutation, UpdateTripMutationVariables>;
 export const DeleteTripDocument = {"kind":"Document","definitions":[{"kind":"OperationDefinition","operation":"mutation","name":{"kind":"Name","value":"DeleteTrip"},"variableDefinitions":[{"kind":"VariableDefinition","variable":{"kind":"Variable","name":{"kind":"Name","value":"id"}},"type":{"kind":"NonNullType","type":{"kind":"NamedType","name":{"kind":"Name","value":"ID"}}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"deleteTrip"},"arguments":[{"kind":"Argument","name":{"kind":"Name","value":"id"},"value":{"kind":"Variable","name":{"kind":"Name","value":"id"}}}],"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"success"}},{"kind":"Field","name":{"kind":"Name","value":"errors"},"selectionSet":{"kind":"SelectionSet","selections":[{"kind":"Field","name":{"kind":"Name","value":"field"}},{"kind":"Field","name":{"kind":"Name","value":"message"}}]}}]}}]}}]} as unknown as DocumentNode<DeleteTripMutation, DeleteTripMutationVariables>;

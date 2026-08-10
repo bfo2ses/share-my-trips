@@ -7,6 +7,7 @@ import (
 	"github.com/bfosses/sharemytrips/internal/domain/auth"
 	"github.com/bfosses/sharemytrips/internal/domain/media"
 	"github.com/bfosses/sharemytrips/internal/domain/stage"
+	"github.com/bfosses/sharemytrips/internal/domain/travelleg"
 	"github.com/bfosses/sharemytrips/internal/domain/trip"
 	"github.com/bfosses/sharemytrips/internal/domain/visit"
 )
@@ -67,6 +68,30 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("stageID"), Message: visit.ErrStageNotInTrip.Error()}}
 	case errors.Is(err, visit.ErrReorderIDMismatch):
 		return []*UserError{{Field: strPtr("visitIDs"), Message: visit.ErrReorderIDMismatch.Error()}}
+	// travel-leg errors
+	case errors.Is(err, travelleg.ErrNotFound):
+		return []*UserError{{Message: travelleg.ErrNotFound.Error()}}
+	case errors.Is(err, travelleg.ErrTripClosed):
+		return []*UserError{{Message: travelleg.ErrTripClosed.Error()}}
+	case errors.Is(err, travelleg.ErrInvalidTransport):
+		return []*UserError{{Field: strPtr("transport"), Message: travelleg.ErrInvalidTransport.Error()}}
+	case errors.Is(err, travelleg.ErrInvalidDistance):
+		return []*UserError{{Field: strPtr("distanceKm"), Message: travelleg.ErrInvalidDistance.Error()}}
+	case errors.Is(err, travelleg.ErrStageNotInTrip):
+		return []*UserError{{Field: strPtr("fromStageID"), Message: travelleg.ErrStageNotInTrip.Error()}}
+	case errors.Is(err, travelleg.ErrStagesNotConsecutive):
+		return []*UserError{{Field: strPtr("toStageID"), Message: travelleg.ErrStagesNotConsecutive.Error()}}
+	case errors.Is(err, travelleg.ErrPairAlreadyExists):
+		return []*UserError{{Message: travelleg.ErrPairAlreadyExists.Error()}}
+	case errors.Is(err, travelleg.ErrIncompleteResolutionPlan):
+		return []*UserError{{Field: strPtr("resolutionPlan"), Message: "resolve every affected journey by moving or deleting it before changing the itinerary"}}
+	case errors.Is(err, travelleg.ErrDuplicateResolution),
+		errors.Is(err, travelleg.ErrResolutionForValidLeg),
+		errors.Is(err, travelleg.ErrInvalidResolution),
+		errors.Is(err, travelleg.ErrResolutionTargetNotConsecutive),
+		errors.Is(err, travelleg.ErrDuplicateResolutionTarget),
+		errors.Is(err, travelleg.ErrResolutionTargetOccupied):
+		return []*UserError{{Field: strPtr("resolutionPlan"), Message: err.Error()}}
 	// auth errors
 	case errors.Is(err, auth.ErrNameRequired):
 		return []*UserError{{Field: strPtr("name"), Message: auth.ErrNameRequired.Error()}}
@@ -109,6 +134,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Message: media.ErrTripClosed.Error()}}
 	case errors.Is(err, media.ErrVisitNotFound):
 		return []*UserError{{Field: strPtr("visitID"), Message: media.ErrVisitNotFound.Error()}}
+	case errors.Is(err, media.ErrTravelLegNotFound):
+		return []*UserError{{Field: strPtr("travelLegID"), Message: media.ErrTravelLegNotFound.Error()}}
 	case errors.Is(err, media.ErrIDMismatch):
 		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrIDMismatch.Error()}}
 	default:

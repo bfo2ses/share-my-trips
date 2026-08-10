@@ -19,6 +19,10 @@ const ADD_VISIT = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
@@ -41,16 +45,24 @@ const UPDATE_VISIT = gql(`
         field
         message
       }
+      recalculationWarnings {
+        travelLegID
+        message
+      }
     }
   }
 `);
 
 const DELETE_VISIT = gql(`
-  mutation DeleteVisit($id: ID!) {
-    deleteVisit(id: $id) {
+  mutation DeleteVisit($id: ID!, $resolutionPlan: [TravelLegResolutionInput!]) {
+    deleteVisit(id: $id, resolutionPlan: $resolutionPlan) {
       success
       errors {
         field
+        message
+      }
+      recalculationWarnings {
+        travelLegID
         message
       }
     }

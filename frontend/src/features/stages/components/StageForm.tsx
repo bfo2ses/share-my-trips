@@ -21,9 +21,10 @@ interface StageFormProps {
   noBackdrop?: boolean;
   panel?: boolean;
   actions?: FormAction[];
+  onRecalculationWarning?: (message: string) => void;
 }
 
-export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackdrop, panel, actions }: StageFormProps) {
+export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackdrop, panel, actions, onRecalculationWarning }: StageFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
@@ -38,6 +39,7 @@ export function StageForm({ open, onClose, tripID, stage, pendingCoords, noBackd
             onClose={onClose}
             panel={panel}
             actions={actions}
+            onRecalculationWarning={onRecalculationWarning}
           />
         )}
       </aside>
@@ -52,6 +54,7 @@ function StageFormContent({
   onClose,
   panel,
   actions,
+  onRecalculationWarning,
 }: {
   tripID: string;
   stage?: StageData | null;
@@ -59,6 +62,7 @@ function StageFormContent({
   onClose: () => void;
   panel?: boolean;
   actions?: FormAction[];
+  onRecalculationWarning?: (message: string) => void;
 }) {
   const isEdit = !!stage;
 
@@ -99,6 +103,8 @@ function StageFormContent({
         setErrors(errs.map((err) => err.message));
         return;
       }
+      const warnings = result.data?.updateStage.recalculationWarnings ?? [];
+      if (warnings.length > 0) onRecalculationWarning?.(warnings.map((warning) => warning.message).join(' '));
     } else {
       const result = await addStage({
         input: { tripID, city, name: name || undefined, lat, lng, description: description || undefined },
