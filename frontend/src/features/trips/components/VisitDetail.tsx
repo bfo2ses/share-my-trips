@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { useDeleteVisit } from '../../stages/hooks/useVisitMutations';
 import { useVisitMedia } from '../../media/hooks/useMediaQueries';
 import { MediaGallery } from '../../media/components/MediaGallery';
-import { MediaUploader } from '../../media/components/MediaUploader';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { VisitsQuery } from '../../../graphql/generated/graphql';
@@ -72,11 +71,7 @@ export function VisitDetail({ visit, canEdit, onClose, onBack, onRequestDelete, 
           <p className={styles.description}>{visit.description}</p>
         )}
 
-        <MediaGallery media={media} owner={{ type: 'visit', id: visit.id }} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
-
-        {canEdit && (
-          <MediaUploader owner={{ type: 'visit', id: visit.id }} tripID={visit.tripID} onUploadComplete={refetchMedia} />
-        )}
+        <MediaGallery media={media} owner={{ type: 'visit', id: visit.id }} tripID={visit.tripID} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
       </div>
 
       <ConfirmModal

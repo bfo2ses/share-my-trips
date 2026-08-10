@@ -138,15 +138,17 @@ Fonctionnalité: Gestion des étapes et des visites d'un voyage
     Et que je les ajoute à la visite "2025-07-01"
     Alors tous les fichiers sont associés à la visite
 
-  Scénario: Supprimer une photo d'une visite
+  Scénario: Supprimer une photo d'une visite via la sélection multiple
     Etant donné qu'une visite "2025-07-01" contient la photo "eglise.jpg"
-    Quand je supprime la photo "eglise.jpg"
+    Quand je sélectionne la photo "eglise.jpg"
+    Et que je confirme la suppression de la sélection
     Alors la photo n'est plus associée à la visite
     Et le fichier est supprimé du stockage
 
-  Scénario: Supprimer une vidéo d'une visite
+  Scénario: Supprimer une vidéo d'une visite via la sélection multiple
     Etant donné qu'une visite "2025-07-01" contient la vidéo "balade.mp4"
-    Quand je supprime la vidéo "balade.mp4"
+    Quand je sélectionne la vidéo "balade.mp4"
+    Et que je confirme la suppression de la sélection
     Alors la vidéo n'est plus associée à la visite
     Et le fichier est supprimé du stockage
 

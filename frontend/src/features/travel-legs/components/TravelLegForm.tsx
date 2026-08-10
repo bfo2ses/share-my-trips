@@ -1,7 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import type { TravelLeg, TravelLegTransport } from '../../../graphql/generated/graphql';
 import { MediaGallery } from '../../media/components/MediaGallery';
-import { MediaUploader } from '../../media/components/MediaUploader';
 import type { MediaTarget } from '../../media/mediaOwner';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
@@ -228,8 +227,7 @@ function TravelLegFormContent({
         {isEdit && (
           <>
             <div className={styles.mediaSection}>
-              <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
-              <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} onUploadComplete={refetchMedia} />
+              <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
             </div>
           </>
         )}

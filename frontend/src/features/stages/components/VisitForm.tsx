@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { useAddVisit, useUpdateVisit } from '../hooks/useVisitMutations';
 import { useVisitMedia } from '../../media/hooks/useMediaQueries';
 import { MediaGallery } from '../../media/components/MediaGallery';
-import { MediaUploader } from '../../media/components/MediaUploader';
 import type { MediaTarget } from '../../media/mediaOwner';
 import type { FormAction } from '../../trips/components/TripForm';
 import styles from './VisitForm.module.css';
@@ -263,8 +262,7 @@ function VisitFormContent({
 
         {isEdit && (
           <div className={styles.mediaSection}>
-            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
-            <MediaUploader owner={{ type: 'visit', id: visit!.id }} tripID={tripID} onUploadComplete={refetchMedia} />
+            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} tripID={tripID} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
           </div>
         )}
 

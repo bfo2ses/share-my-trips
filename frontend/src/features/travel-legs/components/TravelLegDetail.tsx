@@ -2,7 +2,6 @@ import { useCallback, useState } from 'react';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { MediaGallery } from '../../media/components/MediaGallery';
-import { MediaUploader } from '../../media/components/MediaUploader';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { useDeleteTravelLeg } from '../hooks/useTravelLegMutations';
 import { formatDistanceKm, transportLabel } from '../transport';
@@ -65,8 +64,7 @@ export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit, m
       <div className={styles.body}>
         {distance && <p className={styles.description}>{distance}</p>}
         {travelLeg.description && <p className={styles.description}>{travelLeg.description}</p>}
-        <MediaGallery media={mediaData?.travelLegMedia ?? []} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
-        {canEdit && <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={travelLeg.tripID} onUploadComplete={refetchMedia} />}
+        <MediaGallery media={mediaData?.travelLegMedia ?? []} owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={travelLeg.tripID} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
       </div>
 
       <ConfirmModal
