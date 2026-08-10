@@ -75,13 +75,14 @@ func newGraphQLHarnessWithRouteProvider(t *testing.T, routeProvider graph.RouteD
 		&crypto.UUIDTokenGenerator{},
 		noopMailer{},
 	)
+	travelLegRepo := memory.NewTravelLegRepository()
 	mediaHandler := media.NewHandler(
 		memory.NewMediaRepository(),
 		filesystem.NewStorage(t.TempDir()),
 		tripChecker,
 		memory.NewVisitChecker(visitRepo),
+		memory.NewTravelLegChecker(travelLegRepo),
 	)
-	travelLegRepo := memory.NewTravelLegRepository()
 	travelLegHandler := travelleg.NewHandler(
 		travelLegRepo,
 		tripChecker,
@@ -188,6 +189,41 @@ func TestGraphQLHTTP_ProtectedMutationRejectsMissingOrInvalidToken(t *testing.T)
 			assert.Equal(t, auth.ErrForbidden.Error(), data.CreateTrip.Errors[0].Message)
 		})
 	}
+}
+
+func TestGraphQLHTTP_MoveMediaReturnsPayloadErrors(t *testing.T) {
+	harness := newGraphQLHarness(t)
+	setupEnvelope := harness.post(t, `mutation SetupAdmin($input: SetupAdminInput!) {
+		setupAdmin(input: $input) { token errors { field message } }
+	}`, map[string]any{"input": map[string]any{
+		"name": "Admin", "email": "media@example.com", "password": "strong-password", "passwordConfirm": "strong-password",
+	}}, "")
+	setup := decodeData[struct {
+		SetupAdmin struct {
+			Token  *string     `json:"token"`
+			Errors []userError `json:"errors"`
+		} `json:"setupAdmin"`
+	}](t, setupEnvelope)
+	require.Empty(t, setup.SetupAdmin.Errors)
+	require.NotNil(t, setup.SetupAdmin.Token)
+
+	envelope := harness.post(t, `mutation MoveMedia($input: MoveMediaInput!) {
+		moveMedia(input: $input) { media { id } errors { field message } }
+	}`, map[string]any{"input": map[string]any{
+		"mediaIDs": []string{}, "visitID": "visit-1",
+	}}, *setup.SetupAdmin.Token)
+	data := decodeData[struct {
+		MoveMedia struct {
+			Media []struct {
+				ID string `json:"id"`
+			} `json:"media"`
+			Errors []userError `json:"errors"`
+		} `json:"moveMedia"`
+	}](t, envelope)
+	require.Empty(t, data.MoveMedia.Media)
+	require.Len(t, data.MoveMedia.Errors, 1)
+	assert.Equal(t, "mediaIDs", *data.MoveMedia.Errors[0].Field)
+	assert.Equal(t, media.ErrMediaRequired.Error(), data.MoveMedia.Errors[0].Message)
 }
 
 func TestGraphQLHTTP_MissingOrInvalidTokenReturnsNullMe(t *testing.T) {

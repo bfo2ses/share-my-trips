@@ -15,7 +15,9 @@ vi.mock('../../media/hooks/useMediaQueries', () => ({
 }));
 
 vi.mock('../../media/components/MediaGallery', () => ({
-  MediaGallery: () => <div>Galerie média</div>,
+  MediaGallery: ({ mediaTargets }: { mediaTargets?: unknown[] }) => (
+    <div data-testid="media-gallery" data-target-count={mediaTargets?.length ?? 0}>Galerie média</div>
+  ),
 }));
 
 vi.mock('../../media/components/MediaUploader', () => ({
@@ -205,5 +207,22 @@ describe('TravelLegForm', () => {
 
     await waitFor(() => expect(deleteLeg).toHaveBeenCalledWith({ id: 'leg-1' }, expect.anything()));
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it('passes media destinations to the existing travel leg gallery', () => {
+    render(
+      <TravelLegForm
+        open
+        panel
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null }}
+        mediaTargets={[{ owner: { type: 'travelLeg', id: 'leg-2' }, label: 'Trajet suivant' }]}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('media-gallery')).toHaveAttribute('data-target-count', '1');
   });
 });

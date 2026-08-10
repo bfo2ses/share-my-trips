@@ -61,6 +61,48 @@ func (s *Storage) Delete(id, tripID string, owner media.Owner, ext string) error
 	return nil
 }
 
+func (s *Storage) Move(id, tripID string, from, to media.Owner, ext string) error {
+	fromDir, err := s.ownerDir(tripID, from)
+	if err != nil {
+		return err
+	}
+	toDir, err := s.ownerDir(tripID, to)
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(toDir, 0755); err != nil {
+		return fmt.Errorf("create destination media dir: %w", err)
+	}
+
+	if err := os.Rename(filepath.Join(fromDir, id+ext), filepath.Join(toDir, id+ext)); err != nil {
+		return fmt.Errorf("move media file: %w", err)
+	}
+	originalFrom := filepath.Join(fromDir, id+ext)
+	originalTo := filepath.Join(toDir, id+ext)
+	restoreOriginal := func() {
+		_ = os.Rename(originalTo, originalFrom)
+	}
+
+	fromThumb := filepath.Join(fromDir, "thumbs", id+".jpg")
+	toThumb := filepath.Join(toDir, "thumbs", id+".jpg")
+	if _, err := os.Stat(fromThumb); err == nil {
+		if err := os.MkdirAll(filepath.Dir(toThumb), 0755); err != nil {
+			restoreOriginal()
+			return fmt.Errorf("create destination thumbnail dir: %w", err)
+		}
+		if err := os.Rename(fromThumb, toThumb); err != nil {
+			// Restore the original so callers can retry the operation.
+			restoreOriginal()
+			return fmt.Errorf("move media thumbnail: %w", err)
+		}
+	} else if !os.IsNotExist(err) {
+		restoreOriginal()
+		return fmt.Errorf("check media thumbnail: %w", err)
+	}
+
+	return nil
+}
+
 func (s *Storage) FilePath(id, tripID string, owner media.Owner, ext string) string {
 	dir, err := s.ownerDir(tripID, owner)
 	if err != nil {

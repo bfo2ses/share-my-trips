@@ -144,7 +144,7 @@
 }
 
 .submit {
-  margin-top: 8px;
+  margin-top: 0;
   background: var(--color-gold);
   color: var(--color-bg);
   border: none;
@@ -187,9 +187,12 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border-top: 1px solid var(--color-border);
-  padding-top: 18px;
-  margin-top: 8px;
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .actionBtn {
@@ -220,6 +223,26 @@
 .actionDanger:hover {
   background: rgba(238, 85, 85, 0.08);
   border-color: rgba(238, 85, 85, 0.4);
+}
+
+@media (min-width: 769px) {
+  .formActions {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .formActions > .submit,
+  .formActions > .actions {
+    flex: 1;
+  }
+
+  .formActions > .actions {
+    justify-content: center;
+  }
+
+  .formActions .actionBtn {
+    width: 100%;
+  }
 }
 
 /* ── Mobile ── */

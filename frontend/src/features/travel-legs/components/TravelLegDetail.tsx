@@ -7,6 +7,7 @@ import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { useDeleteTravelLeg } from '../hooks/useTravelLegMutations';
 import { formatDistanceKm, transportLabel } from '../transport';
 import { TransportIcon } from './TransportIcon';
+import type { MediaTarget } from '../../media/mediaOwner';
 import type { TravelLegData } from './TravelLegForm';
 import styles from '../../trips/components/DetailView.module.css';
 
@@ -16,9 +17,10 @@ interface TravelLegDetailProps {
   onClose: () => void;
   onBack: () => void;
   onEdit?: () => void;
+  mediaTargets?: MediaTarget[];
 }
 
-export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit }: TravelLegDetailProps) {
+export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit, mediaTargets }: TravelLegDetailProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -63,7 +65,7 @@ export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit }:
       <div className={styles.body}>
         {distance && <p className={styles.description}>{distance}</p>}
         {travelLeg.description && <p className={styles.description}>{travelLeg.description}</p>}
-        <MediaGallery media={mediaData?.travelLegMedia ?? []} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin={canEdit} onDeleted={refetchMedia} />
+        <MediaGallery media={mediaData?.travelLegMedia ?? []} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
         {canEdit && <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={travelLeg.tripID} onUploadComplete={refetchMedia} />}
       </div>
 

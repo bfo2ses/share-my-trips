@@ -145,6 +145,97 @@
   font-size: 0.8rem;
 }
 
+.moveBar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid rgba(198, 163, 93, 0.35);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(198, 163, 93, 0.14), var(--color-bg-subtle));
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.16);
+  font-size: 0.82rem;
+}
+
+.moveBar span {
+  flex: 1 1 auto;
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.moveBar button {
+  padding: 7px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface, #fff);
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.moveBar button:hover {
+  border-color: var(--color-gold);
+  color: var(--color-text);
+  transform: translateY(-1px);
+}
+
+.moveBar .moveButton {
+  background: var(--color-gold);
+  border-color: var(--color-gold);
+  color: var(--color-bg);
+}
+
+.moveBar .moveButton:hover {
+  background: var(--color-gold-light);
+  color: var(--color-bg);
+}
+
+.moveBar .clearSelection {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-muted);
+}
+
+.moveDestination {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 20px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+}
+
+.moveDestination select {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+}
+
+.moveDestination span {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.selectBox {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  z-index: 2;
+  padding: 3px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+}
+
 /* ── Mobile ── */
 @media (max-width: 768px) {
   .gallery {
@@ -154,5 +245,17 @@
 
   .thumbWrapper {
     padding: 4px;
+  }
+
+  .moveBar {
+    align-items: stretch;
+  }
+
+  .moveBar span {
+    flex-basis: 100%;
+  }
+
+  .moveBar button {
+    flex: 1;
   }
 }

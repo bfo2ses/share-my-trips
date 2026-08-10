@@ -115,8 +115,106 @@ func (r *MediaRepository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+func (r *MediaRepository) Move(ctx context.Context, mediaIDs []string, destination media.Owner) error {
+	if err := destination.Validate(); err != nil {
+		return err
+	}
+	if len(mediaIDs) == 0 {
+		return media.ErrMediaRequired
+	}
+
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("move media: begin tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	rows, err := tx.Query(ctx, `
+		SELECT id, COALESCE(visit_id, ''), COALESCE(travel_leg_id, ''), position
+		FROM media WHERE id = ANY($1) ORDER BY position, id FOR UPDATE`, mediaIDs)
+	if err != nil {
+		return fmt.Errorf("move media: lock rows: %w", err)
+	}
+	type row struct {
+		id       string
+		visitID  string
+		legID    string
+		position int
+	}
+	selected := make([]row, 0, len(mediaIDs))
+	for rows.Next() {
+		var item row
+		if err := rows.Scan(&item.id, &item.visitID, &item.legID, &item.position); err != nil {
+			rows.Close()
+			return fmt.Errorf("move media: scan rows: %w", err)
+		}
+		selected = append(selected, item)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return fmt.Errorf("move media: read rows: %w", err)
+	}
+	rows.Close()
+	if len(selected) != len(mediaIDs) {
+		return media.ErrIDMismatch
+	}
+
+	source := media.Owner{VisitID: selected[0].visitID, TravelLegID: selected[0].legID}
+	if source == destination {
+		return media.ErrSameOwner
+	}
+	for _, item := range selected[1:] {
+		itemOwner := media.Owner{VisitID: item.visitID, TravelLegID: item.legID}
+		if itemOwner != source {
+			return media.ErrMixedOwners
+		}
+	}
+
+	destinationColumn, destinationID := ownerColumn(destination)
+	var maxPosition int
+	if err := tx.QueryRow(ctx, `SELECT COALESCE(MAX(position), -1) FROM media WHERE `+destinationColumn+` = $1`, destinationID).Scan(&maxPosition); err != nil {
+		return fmt.Errorf("move media: get destination position: %w", err)
+	}
+
+	for position, id := range mediaIDs {
+		var query string
+		if destination.IsVisit() {
+			query = `UPDATE media SET visit_id = $1, travel_leg_id = NULL, position = $2 WHERE id = $3`
+		} else {
+			query = `UPDATE media SET visit_id = NULL, travel_leg_id = $1, position = $2 WHERE id = $3`
+		}
+		if _, err := tx.Exec(ctx, query, destinationID, maxPosition+position+1, id); err != nil {
+			return fmt.Errorf("move media: update %s: %w", id, err)
+		}
+	}
+
+	sourceColumn, sourceID := ownerColumn(source)
+	if _, err := tx.Exec(ctx, `
+		WITH ordered AS (
+			SELECT id, ROW_NUMBER() OVER (ORDER BY position, id) - 1 AS new_position
+			FROM media
+			WHERE `+sourceColumn+` = $1 AND NOT (id = ANY($2))
+		)
+		UPDATE media AS m SET position = ordered.new_position
+		FROM ordered WHERE m.id = ordered.id`, sourceID, mediaIDs); err != nil {
+		return fmt.Errorf("move media: compact source positions: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("move media: commit: %w", err)
+	}
+	return nil
+}
+
 func (r *MediaRepository) NextPosition(ctx context.Context, visitID string) (int, error) {
 	return r.NextPositionForOwner(ctx, media.VisitOwner(visitID))
+}
+
+func ownerColumn(owner media.Owner) (string, string) {
+	if owner.IsVisit() {
+		return "visit_id", owner.VisitID
+	}
+	return "travel_leg_id", owner.TravelLegID
 }
 
 func (r *MediaRepository) NextPositionForOwner(ctx context.Context, owner media.Owner) (int, error) {

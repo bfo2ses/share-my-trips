@@ -279,6 +279,18 @@ type DeleteMediaPayload {
   errors: [UserError!]!
 }
 
+input MoveMediaInput {
+  mediaIDs: [ID!]!
+  "Exactly one of visitID or travelLegID must be set."
+  visitID: ID
+  travelLegID: ID
+}
+
+type MoveMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
 enum TravelLegTransport {
   CAR
   TRAIN
@@ -438,4 +450,6 @@ type Mutation {
   reorderTravelLegMedia(travelLegID: ID!, mediaIDs: [ID!]!): ReorderTravelLegMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
+  "Moves selected media to another visit or travel leg in the same trip. Requires editor role."
+  moveMedia(input: MoveMediaInput!): MoveMediaPayload!
 }

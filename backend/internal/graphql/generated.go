@@ -109,6 +109,11 @@ type ComplexityRoot struct {
 		Media  func(childComplexity int) int
 	}
 
+	MoveMediaPayload struct {
+		Errors func(childComplexity int) int
+		Media  func(childComplexity int) int
+	}
+
 	Mutation struct {
 		AddStage                   func(childComplexity int, input AddStageInput) int
 		AddVisit                   func(childComplexity int, input AddVisitInput) int
@@ -128,6 +133,7 @@ type ComplexityRoot struct {
 		DetachVisitFromStage       func(childComplexity int, visitID string, stageID string, resolutionPlan []*TravelLegResolutionInput) int
 		Login                      func(childComplexity int, email string, password string) int
 		Logout                     func(childComplexity int) int
+		MoveMedia                  func(childComplexity int, input MoveMediaInput) int
 		MoveTravelLeg              func(childComplexity int, id string, input MoveTravelLegInput) int
 		PublishTrip                func(childComplexity int, id string) int
 		ReopenTrip                 func(childComplexity int, id string) int
@@ -304,6 +310,7 @@ type MutationResolver interface {
 	ReorderMedia(ctx context.Context, visitID string, mediaIDs []string) (*ReorderMediaPayload, error)
 	ReorderTravelLegMedia(ctx context.Context, travelLegID string, mediaIDs []string) (*ReorderTravelLegMediaPayload, error)
 	DeleteMedia(ctx context.Context, id string) (*DeleteMediaPayload, error)
+	MoveMedia(ctx context.Context, input MoveMediaInput) (*MoveMediaPayload, error)
 }
 type QueryResolver interface {
 	Trips(ctx context.Context, status []TripStatus) ([]*Trip, error)
@@ -583,6 +590,19 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 
 		return e.ComplexityRoot.MediaPayload.Media(childComplexity), true
 
+	case "MoveMediaPayload.errors":
+		if e.ComplexityRoot.MoveMediaPayload.Errors == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MoveMediaPayload.Errors(childComplexity), true
+	case "MoveMediaPayload.media":
+		if e.ComplexityRoot.MoveMediaPayload.Media == nil {
+			break
+		}
+
+		return e.ComplexityRoot.MoveMediaPayload.Media(childComplexity), true
+
 	case "Mutation.addStage":
 		if e.ComplexityRoot.Mutation.AddStage == nil {
 			break
@@ -776,6 +796,17 @@ func (e *executableSchema) Complexity(ctx context.Context, typeName, field strin
 		}
 
 		return e.ComplexityRoot.Mutation.Logout(childComplexity), true
+	case "Mutation.moveMedia":
+		if e.ComplexityRoot.Mutation.MoveMedia == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_moveMedia_args(ctx, rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.ComplexityRoot.Mutation.MoveMedia(childComplexity, args["input"].(MoveMediaInput)), true
 	case "Mutation.moveTravelLeg":
 		if e.ComplexityRoot.Mutation.MoveTravelLeg == nil {
 			break
@@ -1507,6 +1538,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCreateAccountInput,
 		ec.unmarshalInputCreateTravelLegInput,
 		ec.unmarshalInputCreateTripInput,
+		ec.unmarshalInputMoveMediaInput,
 		ec.unmarshalInputMoveTravelLegInput,
 		ec.unmarshalInputResetPasswordInput,
 		ec.unmarshalInputSetupAdminInput,
@@ -1871,6 +1903,18 @@ type DeleteMediaPayload {
   errors: [UserError!]!
 }
 
+input MoveMediaInput {
+  mediaIDs: [ID!]!
+  "Exactly one of visitID or travelLegID must be set."
+  visitID: ID
+  travelLegID: ID
+}
+
+type MoveMediaPayload {
+  media: [Media!]!
+  errors: [UserError!]!
+}
+
 enum TravelLegTransport {
   CAR
   TRAIN
@@ -2030,6 +2074,8 @@ type Mutation {
   reorderTravelLegMedia(travelLegID: ID!, mediaIDs: [ID!]!): ReorderTravelLegMediaPayload!
   "Deletes a media and its files. Requires admin role."
   deleteMedia(id: ID!): DeleteMediaPayload!
+  "Moves selected media to another visit or travel leg in the same trip. Requires editor role."
+  moveMedia(input: MoveMediaInput!): MoveMediaPayload!
 }
 `, BuiltIn: false},
 }
@@ -2273,6 +2319,17 @@ func (ec *executionContext) field_Mutation_login_args(ctx context.Context, rawAr
 		return nil, err
 	}
 	args["password"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_moveMedia_args(ctx context.Context, rawArgs map[string]any) (map[string]any, error) {
+	var err error
+	args := map[string]any{}
+	arg0, err := graphql.ProcessArgField(ctx, rawArgs, "input", ec.unmarshalNMoveMediaInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveMediaInput)
+	if err != nil {
+		return nil, err
+	}
+	args["input"] = arg0
 	return args, nil
 }
 
@@ -3937,6 +3994,94 @@ func (ec *executionContext) fieldContext_MediaPayload_errors(_ context.Context, 
 	return fc, nil
 }
 
+func (ec *executionContext) _MoveMediaPayload_media(ctx context.Context, field graphql.CollectedField, obj *MoveMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MoveMediaPayload_media,
+		func(ctx context.Context) (any, error) {
+			return obj.Media, nil
+		},
+		nil,
+		ec.marshalNMedia2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMediaᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MoveMediaPayload_media(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MoveMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Media_id(ctx, field)
+			case "visitID":
+				return ec.fieldContext_Media_visitID(ctx, field)
+			case "travelLegID":
+				return ec.fieldContext_Media_travelLegID(ctx, field)
+			case "tripID":
+				return ec.fieldContext_Media_tripID(ctx, field)
+			case "filename":
+				return ec.fieldContext_Media_filename(ctx, field)
+			case "contentType":
+				return ec.fieldContext_Media_contentType(ctx, field)
+			case "caption":
+				return ec.fieldContext_Media_caption(ctx, field)
+			case "url":
+				return ec.fieldContext_Media_url(ctx, field)
+			case "thumbUrl":
+				return ec.fieldContext_Media_thumbUrl(ctx, field)
+			case "position":
+				return ec.fieldContext_Media_position(ctx, field)
+			case "createdAt":
+				return ec.fieldContext_Media_createdAt(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Media", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _MoveMediaPayload_errors(ctx context.Context, field graphql.CollectedField, obj *MoveMediaPayload) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_MoveMediaPayload_errors,
+		func(ctx context.Context) (any, error) {
+			return obj.Errors, nil
+		},
+		nil,
+		ec.marshalNUserError2ᚕᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐUserErrorᚄ,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_MoveMediaPayload_errors(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "MoveMediaPayload",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "field":
+				return ec.fieldContext_UserError_field(ctx, field)
+			case "message":
+				return ec.fieldContext_UserError_message(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type UserError", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createTrip(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	return graphql.ResolveField(
 		ctx,
@@ -5484,6 +5629,53 @@ func (ec *executionContext) fieldContext_Mutation_deleteMedia(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_moveMedia(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	return graphql.ResolveField(
+		ctx,
+		ec.OperationContext,
+		field,
+		ec.fieldContext_Mutation_moveMedia,
+		func(ctx context.Context) (any, error) {
+			fc := graphql.GetFieldContext(ctx)
+			return ec.Resolvers.Mutation().MoveMedia(ctx, fc.Args["input"].(MoveMediaInput))
+		},
+		nil,
+		ec.marshalNMoveMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveMediaPayload,
+		true,
+		true,
+	)
+}
+
+func (ec *executionContext) fieldContext_Mutation_moveMedia(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "media":
+				return ec.fieldContext_MoveMediaPayload_media(ctx, field)
+			case "errors":
+				return ec.fieldContext_MoveMediaPayload_errors(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type MoveMediaPayload", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_moveMedia_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -10438,6 +10630,50 @@ func (ec *executionContext) unmarshalInputCreateTripInput(ctx context.Context, o
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputMoveMediaInput(ctx context.Context, obj any) (MoveMediaInput, error) {
+	var it MoveMediaInput
+	if obj == nil {
+		return it, nil
+	}
+
+	asMap := map[string]any{}
+	for k, v := range obj.(map[string]any) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"mediaIDs", "visitID", "travelLegID"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "mediaIDs":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("mediaIDs"))
+			data, err := ec.unmarshalNID2ᚕstringᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.MediaIDs = data
+		case "visitID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("visitID"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.VisitID = data
+		case "travelLegID":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("travelLegID"))
+			data, err := ec.unmarshalOID2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.TravelLegID = data
+		}
+	}
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputMoveTravelLegInput(ctx context.Context, obj any) (MoveTravelLegInput, error) {
 	var it MoveTravelLegInput
 	if obj == nil {
@@ -11448,6 +11684,50 @@ func (ec *executionContext) _MediaPayload(ctx context.Context, sel ast.Selection
 	return out
 }
 
+var moveMediaPayloadImplementors = []string{"MoveMediaPayload"}
+
+func (ec *executionContext) _MoveMediaPayload(ctx context.Context, sel ast.SelectionSet, obj *MoveMediaPayload) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, moveMediaPayloadImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MoveMediaPayload")
+		case "media":
+			out.Values[i] = ec._MoveMediaPayload_media(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "errors":
+			out.Values[i] = ec._MoveMediaPayload_errors(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.Deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.ProcessDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -11694,6 +11974,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteMedia":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteMedia(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "moveMedia":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_moveMedia(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -13501,6 +13788,25 @@ func (ec *executionContext) marshalNMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsha
 		return graphql.Null
 	}
 	return ec._MediaPayload(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNMoveMediaInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveMediaInput(ctx context.Context, v any) (MoveMediaInput, error) {
+	res, err := ec.unmarshalInputMoveMediaInput(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalNMoveMediaPayload2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveMediaPayload(ctx context.Context, sel ast.SelectionSet, v MoveMediaPayload) graphql.Marshaler {
+	return ec._MoveMediaPayload(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNMoveMediaPayload2ᚖgithubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveMediaPayload(ctx context.Context, sel ast.SelectionSet, v *MoveMediaPayload) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			graphql.AddErrorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._MoveMediaPayload(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNMoveTravelLegInput2githubᚗcomᚋbfossesᚋsharemytripsᚋinternalᚋgraphqlᚐMoveTravelLegInput(ctx context.Context, v any) (MoveTravelLegInput, error) {

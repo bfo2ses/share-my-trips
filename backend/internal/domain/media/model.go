@@ -16,7 +16,10 @@ var (
 	ErrTravelLegNotFound  = errors.New("travel leg not found")
 	ErrOwnerRequired      = errors.New("exactly one media owner is required")
 	ErrTripMismatch       = errors.New("media owner does not belong to the trip")
-	ErrIDMismatch         = errors.New("media IDs do not match the visit's media")
+	ErrIDMismatch         = errors.New("media IDs do not match the owner's media")
+	ErrMediaRequired      = errors.New("at least one media is required")
+	ErrMixedOwners        = errors.New("media must belong to the same owner")
+	ErrSameOwner          = errors.New("media already belongs to this owner")
 )
 
 // Owner is the single entity that owns a media item. The zero value is

@@ -3,6 +3,7 @@ import { useAddVisit, useUpdateVisit } from '../hooks/useVisitMutations';
 import { useVisitMedia } from '../../media/hooks/useMediaQueries';
 import { MediaGallery } from '../../media/components/MediaGallery';
 import { MediaUploader } from '../../media/components/MediaUploader';
+import type { MediaTarget } from '../../media/mediaOwner';
 import type { FormAction } from '../../trips/components/TripForm';
 import styles from './VisitForm.module.css';
 
@@ -43,9 +44,10 @@ interface VisitFormProps {
   panel?: boolean;
   actions?: FormAction[];
   onSubmitWithResolution?: (submission: VisitFormSubmission) => Promise<VisitFormSubmissionResult>;
+  mediaTargets?: MediaTarget[];
 }
 
-export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords, noBackdrop, panel, actions, onSubmitWithResolution }: VisitFormProps) {
+export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords, noBackdrop, panel, actions, onSubmitWithResolution, mediaTargets }: VisitFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
@@ -62,6 +64,7 @@ export function VisitForm({ open, onClose, tripID, stageID, visit, pendingCoords
             panel={panel}
             actions={actions}
             onSubmitWithResolution={onSubmitWithResolution}
+            mediaTargets={mediaTargets}
           />
         )}
       </aside>
@@ -78,6 +81,7 @@ function VisitFormContent({
   panel,
   actions,
   onSubmitWithResolution,
+  mediaTargets,
 }: {
   tripID: string;
   stageID: string;
@@ -87,6 +91,7 @@ function VisitFormContent({
   panel?: boolean;
   actions?: FormAction[];
   onSubmitWithResolution?: (submission: VisitFormSubmission) => Promise<VisitFormSubmissionResult>;
+  mediaTargets?: MediaTarget[];
 }) {
   const isEdit = !!visit;
 
@@ -235,18 +240,35 @@ function VisitFormContent({
           <textarea className={styles.textarea} value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </label>
 
-        <button type="submit" className={styles.submit}>
-          {isEdit ? 'Enregistrer' : 'Ajouter la visite'}
-        </button>
+        <div className={styles.formActions}>
+          <button type="submit" className={styles.submit}>
+            {isEdit ? 'Enregistrer' : 'Ajouter la visite'}
+          </button>
+
+          {isEdit && actions && actions.length > 0 && (
+            <div className={styles.actions}>
+              {actions.map((action, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
+                  onClick={action.onClick}
+                >
+                  {action.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {isEdit && (
           <div className={styles.mediaSection}>
-            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} isAdmin onDeleted={refetchMedia} />
+            <MediaGallery media={media} owner={{ type: 'visit', id: visit!.id }} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
             <MediaUploader owner={{ type: 'visit', id: visit!.id }} tripID={tripID} onUploadComplete={refetchMedia} />
           </div>
         )}
 
-        {actions && actions.length > 0 && (
+        {!isEdit && actions && actions.length > 0 && (
           <div className={styles.actions}>
             {actions.map((action, i) => (
               <button

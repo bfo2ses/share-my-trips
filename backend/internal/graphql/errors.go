@@ -138,6 +138,16 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("travelLegID"), Message: media.ErrTravelLegNotFound.Error()}}
 	case errors.Is(err, media.ErrIDMismatch):
 		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrIDMismatch.Error()}}
+	case errors.Is(err, media.ErrOwnerRequired):
+		return []*UserError{{Field: strPtr("input"), Message: media.ErrOwnerRequired.Error()}}
+	case errors.Is(err, media.ErrMediaRequired):
+		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrMediaRequired.Error()}}
+	case errors.Is(err, media.ErrMixedOwners):
+		return []*UserError{{Field: strPtr("mediaIDs"), Message: media.ErrMixedOwners.Error()}}
+	case errors.Is(err, media.ErrSameOwner):
+		return []*UserError{{Message: media.ErrSameOwner.Error()}}
+	case errors.Is(err, media.ErrTripMismatch):
+		return []*UserError{{Field: strPtr("input"), Message: media.ErrTripMismatch.Error()}}
 	default:
 		log.Printf("unhandled domain error: %v", err)
 		return []*UserError{{Message: "internal error"}}

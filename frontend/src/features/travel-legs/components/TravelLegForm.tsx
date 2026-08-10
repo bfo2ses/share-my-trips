@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { TravelLeg, TravelLegTransport } from '../../../graphql/generated/graphql';
 import { MediaGallery } from '../../media/components/MediaGallery';
 import { MediaUploader } from '../../media/components/MediaUploader';
+import type { MediaTarget } from '../../media/mediaOwner';
 import { useTravelLegMedia } from '../../media/hooks/useMediaQueries';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { transportOptions } from '../transport';
@@ -20,6 +21,7 @@ interface TravelLegFormProps {
   onSaved?: (travelLeg: TravelLegData, created: boolean) => void;
   noBackdrop?: boolean;
   panel?: boolean;
+  mediaTargets?: MediaTarget[];
 }
 
 export function TravelLegForm({ open, noBackdrop, panel, ...props }: TravelLegFormProps) {
@@ -41,6 +43,7 @@ function TravelLegFormContent({
   onClose,
   onSaved,
   panel,
+  mediaTargets,
 }: Omit<TravelLegFormProps, 'open' | 'noBackdrop'>) {
   const isEdit = !!travelLeg;
   const [transport, setTransport] = useState<TravelLegTransport>(travelLeg?.transport ?? 'CAR');
@@ -208,20 +211,25 @@ function TravelLegFormContent({
         </button>
         {calculationMessage && <p className={styles.coordText} role="status">{calculationMessage}</p>}
 
-        <button type="submit" className={styles.submit} disabled={saving || calculating}>
-          {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer le trajet' : 'Créer le trajet'}
-        </button>
+        <div className={styles.formActions}>
+          <button type="submit" className={styles.submit} disabled={saving || calculating}>
+            {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer le trajet' : 'Créer le trajet'}
+          </button>
 
-        {isEdit && (
-          <>
-            <div className={styles.mediaSection}>
-              <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin onDeleted={refetchMedia} />
-              <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} onUploadComplete={refetchMedia} />
-            </div>
+          {isEdit && (
             <div className={styles.actions}>
               <button type="button" className={`${styles.actionBtn} ${styles.actionDanger}`} onClick={() => setConfirmDelete(true)}>
                 Supprimer le trajet
               </button>
+            </div>
+          )}
+        </div>
+
+        {isEdit && (
+          <>
+            <div className={styles.mediaSection}>
+              <MediaGallery media={media} owner={{ type: 'travelLeg', id: travelLeg.id }} isAdmin onDeleted={refetchMedia} mediaTargets={mediaTargets} />
+              <MediaUploader owner={{ type: 'travelLeg', id: travelLeg.id }} tripID={tripID} onUploadComplete={refetchMedia} />
             </div>
           </>
         )}

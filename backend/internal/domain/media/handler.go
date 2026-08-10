@@ -182,6 +182,85 @@ func (h *Handler) Delete(ctx context.Context, cmd DeleteMediaCommand) error {
 	return nil
 }
 
+// Move transfers selected media to another owner in the same trip.
+func (h *Handler) Move(ctx context.Context, cmd MoveMediaCommand) ([]*Media, error) {
+	if len(cmd.MediaIDs) == 0 {
+		return nil, fmt.Errorf("move media: %w", ErrMediaRequired)
+	}
+	if err := cmd.Owner.Validate(); err != nil {
+		return nil, fmt.Errorf("move media: %w", err)
+	}
+
+	selected := make([]*Media, 0, len(cmd.MediaIDs))
+	seen := make(map[string]struct{}, len(cmd.MediaIDs))
+	for _, id := range cmd.MediaIDs {
+		if _, ok := seen[id]; ok {
+			return nil, fmt.Errorf("move media: %w", ErrIDMismatch)
+		}
+		seen[id] = struct{}{}
+
+		item, err := h.repo.FindByID(ctx, id)
+		if err != nil {
+			return nil, fmt.Errorf("move media: %w", err)
+		}
+		selected = append(selected, item)
+	}
+
+	source := selected[0].Owner()
+	if source == cmd.Owner {
+		return nil, fmt.Errorf("move media: %w", ErrSameOwner)
+	}
+	for _, item := range selected[1:] {
+		if item.Owner() != source {
+			return nil, fmt.Errorf("move media: %w", ErrMixedOwners)
+		}
+	}
+
+	destination, destinationTripID, err := h.resolveOwner(ctx, cmd.Owner)
+	if err != nil {
+		return nil, fmt.Errorf("move media: %w", err)
+	}
+	if selected[0].TripID != destinationTripID {
+		return nil, fmt.Errorf("move media: %w", ErrTripMismatch)
+	}
+
+	modifiable, err := h.tripChecker.IsModifiable(ctx, selected[0].TripID)
+	if err != nil {
+		return nil, fmt.Errorf("move media: %w", err)
+	}
+	if !modifiable {
+		return nil, fmt.Errorf("move media: %w", ErrTripClosed)
+	}
+
+	// The caller's order is the explicit order users selected. Storage and the
+	// repository are updated as one logical operation, with filesystem rollback
+	// if a later move or persistence step fails.
+	moved := make([]*Media, 0, len(selected))
+	for _, item := range selected {
+		if err := h.storage.Move(item.ID, item.TripID, source, destination, item.Ext()); err != nil {
+			for _, completed := range moved {
+				_ = h.storage.Move(completed.ID, completed.TripID, destination, source, completed.Ext())
+			}
+			return nil, fmt.Errorf("move media: %w", err)
+		}
+		moved = append(moved, item)
+	}
+
+	if err := h.repo.Move(ctx, cmd.MediaIDs, destination); err != nil {
+		for _, item := range moved {
+			_ = h.storage.Move(item.ID, item.TripID, destination, source, item.Ext())
+		}
+		return nil, fmt.Errorf("move media: %w", err)
+	}
+
+	result, err := h.repo.ListByOwner(ctx, destination)
+	if err != nil {
+		return nil, fmt.Errorf("move media: %w", err)
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Position < result[j].Position })
+	return result, nil
+}
+
 // --- Queries ---
 
 // GetByID handles the GetMediaQuery.

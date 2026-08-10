@@ -11,6 +11,8 @@ type Repository interface {
 	ListByTravelLeg(ctx context.Context, travelLegID string) ([]*Media, error)
 	ListByTrip(ctx context.Context, tripID string) ([]*Media, error)
 	Delete(ctx context.Context, id string) error
+	// Move changes ownership and positions for media selected from one owner.
+	Move(ctx context.Context, mediaIDs []string, owner Owner) error
 	// NextPosition returns the next available position for a visit.
 	NextPosition(ctx context.Context, visitID string) (int, error)
 	NextPositionForOwner(ctx context.Context, owner Owner) (int, error)

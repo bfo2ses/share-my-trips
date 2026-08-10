@@ -25,6 +25,7 @@ type Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": typeof types.LogoutDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": typeof types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": typeof types.SetupStatusDocument,
+    "\n  mutation MoveMedia($input: MoveMediaInput!) {\n    moveMedia(input: $input) {\n      media {\n        id\n        visitID\n        travelLegID\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.MoveMediaDocument,
     "\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.UpdateMediaCaptionDocument,
     "\n  mutation ReorderMedia($visitID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(visitID: $visitID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.ReorderMediaDocument,
     "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": typeof types.DeleteMediaDocument,
@@ -71,6 +72,7 @@ const documents: Documents = {
     "\n  mutation Logout {\n    logout\n  }\n": types.LogoutDocument,
     "\n  query Me {\n    me {\n      id\n      name\n      email\n      role\n    }\n  }\n": types.MeDocument,
     "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n": types.SetupStatusDocument,
+    "\n  mutation MoveMedia($input: MoveMediaInput!) {\n    moveMedia(input: $input) {\n      media {\n        id\n        visitID\n        travelLegID\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.MoveMediaDocument,
     "\n  mutation UpdateMediaCaption($id: ID!, $caption: String) {\n    updateMediaCaption(id: $id, caption: $caption) {\n      media {\n        id\n        caption\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.UpdateMediaCaptionDocument,
     "\n  mutation ReorderMedia($visitID: ID!, $mediaIDs: [ID!]!) {\n    reorderMedia(visitID: $visitID, mediaIDs: $mediaIDs) {\n      media {\n        id\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.ReorderMediaDocument,
     "\n  mutation DeleteMedia($id: ID!) {\n    deleteMedia(id: $id) {\n      success\n      errors {\n        field\n        message\n      }\n    }\n  }\n": types.DeleteMediaDocument,
@@ -164,6 +166,10 @@ export function gql(source: "\n  query Me {\n    me {\n      id\n      name\n   
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
 export function gql(source: "\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n"): (typeof documents)["\n  query SetupStatus {\n    setupStatus {\n      done\n    }\n  }\n"];
+/**
+ * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function gql(source: "\n  mutation MoveMedia($input: MoveMediaInput!) {\n    moveMedia(input: $input) {\n      media {\n        id\n        visitID\n        travelLegID\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"): (typeof documents)["\n  mutation MoveMedia($input: MoveMediaInput!) {\n    moveMedia(input: $input) {\n      media {\n        id\n        visitID\n        travelLegID\n        position\n      }\n      errors {\n        field\n        message\n      }\n    }\n  }\n"];
 /**
  * The gql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
  */
