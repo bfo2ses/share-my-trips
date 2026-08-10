@@ -1,5 +1,6 @@
 import Lightbox, { type Slide } from 'yet-another-react-lightbox';
 import Captions from 'yet-another-react-lightbox/plugins/captions';
+import Download from 'yet-another-react-lightbox/plugins/download';
 import 'yet-another-react-lightbox/styles.css';
 import 'yet-another-react-lightbox/plugins/captions.css';
 import type { Media } from '../../../graphql/generated/graphql';
@@ -26,6 +27,7 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
       src: m.url,
       alt: m.caption ?? m.filename,
       description: m.caption ?? undefined,
+      download: { url: m.url, filename: m.filename },
     };
   });
 
@@ -35,7 +37,8 @@ export function MediaLightbox({ media, index, open, onClose }: MediaLightboxProp
       close={onClose}
       index={index}
       slides={slides}
-      plugins={[Captions]}
+      plugins={[Captions, Download]}
+      labels={{ Download: 'Télécharger' }}
       controller={{ closeOnPullDown: true }}
       render={{
         slide: ({ slide }) => {

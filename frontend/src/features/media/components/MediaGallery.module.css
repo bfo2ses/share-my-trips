@@ -45,6 +45,10 @@
   background: #f0f0f0;
 }
 
+.thumbDisabled {
+  cursor: default;
+}
+
 .thumb img {
   width: 100%;
   height: 100%;
