@@ -187,7 +187,6 @@ describe('TravelLegForm', () => {
 
   it('confirms deletion from an existing journey form', async () => {
     const onClose = vi.fn();
-    const onDeleted = vi.fn();
     deleteLeg.mockResolvedValue({ data: { deleteTravelLeg: { success: true, errors: [] } } });
     render(
       <TravelLegForm
@@ -198,7 +197,6 @@ describe('TravelLegForm', () => {
         toStageID="stage-2"
         travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null }}
         onClose={onClose}
-        onDeleted={onDeleted}
       />,
     );
 
@@ -207,6 +205,5 @@ describe('TravelLegForm', () => {
 
     await waitFor(() => expect(deleteLeg).toHaveBeenCalledWith({ id: 'leg-1' }, expect.anything()));
     expect(onClose).toHaveBeenCalledOnce();
-    expect(onDeleted).toHaveBeenCalledOnce();
   });
 });

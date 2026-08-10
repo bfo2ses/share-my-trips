@@ -18,7 +18,6 @@ interface TravelLegFormProps {
   travelLeg?: TravelLegData | null;
   onClose: () => void;
   onSaved?: (travelLeg: TravelLegData, created: boolean) => void;
-  onDeleted?: () => void;
   noBackdrop?: boolean;
   panel?: boolean;
 }
@@ -41,7 +40,6 @@ function TravelLegFormContent({
   travelLeg,
   onClose,
   onSaved,
-  onDeleted,
   panel,
 }: Omit<TravelLegFormProps, 'open' | 'noBackdrop'>) {
   const isEdit = !!travelLeg;
@@ -165,7 +163,6 @@ function TravelLegFormContent({
       setDeleteError(payload?.errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce trajet. Réessayez.');
       return;
     }
-    onDeleted?.();
     onClose();
   }
 

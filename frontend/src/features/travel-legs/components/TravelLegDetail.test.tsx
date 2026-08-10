@@ -27,8 +27,7 @@ describe('TravelLegDetail', () => {
     vi.mocked(useDeleteTravelLeg).mockReturnValue([{ fetching: false }, deleteLeg] as unknown as ReturnType<typeof useDeleteTravelLeg>);
   });
 
-  it('refreshes the trip data before returning to the timeline after deletion', async () => {
-    const onDeleted = vi.fn();
+  it('returns to the timeline after deletion', async () => {
     const onBack = vi.fn();
     deleteLeg.mockResolvedValue({ data: { deleteTravelLeg: { success: true, errors: [] } } });
     render(
@@ -37,7 +36,6 @@ describe('TravelLegDetail', () => {
         canEdit
         onClose={vi.fn()}
         onBack={onBack}
-        onDeleted={onDeleted}
       />,
     );
 
@@ -45,8 +43,6 @@ describe('TravelLegDetail', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
 
-    await waitFor(() => expect(onDeleted).toHaveBeenCalledOnce());
-    expect(onBack).toHaveBeenCalledOnce();
-    expect(onDeleted.mock.invocationCallOrder[0]).toBeLessThan(onBack.mock.invocationCallOrder[0]);
+    await waitFor(() => expect(onBack).toHaveBeenCalledOnce());
   });
 });

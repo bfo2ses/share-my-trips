@@ -11,6 +11,61 @@ const MeDocument = parse(`
   }
 `);
 
+const TripDetailDocument = parse(`
+  query TestTripDetail($id: ID!) {
+    trip(id: $id) {
+      __typename
+      id
+      title
+    }
+    stages(tripID: $id) {
+      __typename
+      id
+      city
+    }
+    tripVisits(tripID: $id) {
+      __typename
+      id
+      title
+    }
+    travelLegs(tripID: $id) {
+      __typename
+      id
+      transport
+    }
+  }
+`);
+
+const CreateTravelLegDocument = parse(`
+  mutation TestCreateTravelLeg($input: CreateTravelLegInput!) {
+    createTravelLeg(input: $input) {
+      __typename
+      travelLeg {
+        __typename
+        id
+        transport
+      }
+      errors {
+        __typename
+        message
+      }
+    }
+  }
+`);
+
+const DeleteTravelLegDocument = parse(`
+  mutation TestDeleteTravelLeg($id: ID!) {
+    deleteTravelLeg(id: $id) {
+      __typename
+      success
+      errors {
+        __typename
+        message
+      }
+    }
+  }
+`);
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -77,5 +132,43 @@ describe('makeClient', () => {
     await makeClient('token-a', onUnauthorized).query(MeDocument, {}).toPromise();
 
     expect(onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('invalidates the travel leg list after creating one', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        trip: { __typename: 'Trip', id: 'trip-1', title: 'Road trip' }, stages: [], tripVisits: [],
+        travelLegs: [{ __typename: 'TravelLeg', id: 'leg-1', transport: 'CAR' }],
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { createTravelLeg: { __typename: 'CreateTravelLegPayload', travelLeg: { __typename: 'TravelLeg', id: 'leg-2', tripID: 'trip-1', transport: 'TRAIN' }, errors: [] } } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = makeClient('token-a', vi.fn());
+
+    await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+    await client.mutation(CreateTravelLegDocument, {
+      input: { tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'TRAIN' },
+    }).toPromise();
+    const result = await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.data?.travelLegs).toHaveLength(2);
+  });
+
+  it('invalidates the travel leg list after deleting one', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        trip: { __typename: 'Trip', id: 'trip-1', title: 'Road trip' }, stages: [], tripVisits: [],
+        travelLegs: [{ __typename: 'TravelLeg', id: 'leg-1', transport: 'CAR' }],
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { deleteTravelLeg: { __typename: 'DeleteTravelLegPayload', success: true, errors: [] } } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = makeClient('token-a', vi.fn());
+
+    await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+    await client.mutation(DeleteTravelLegDocument, { id: 'leg-1' }).toPromise();
+    const result = await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.data?.travelLegs).toHaveLength(0);
   });
 });
