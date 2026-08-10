@@ -15,6 +15,12 @@ Fonctionnalité: Gestion des trajets entre les étapes
     Alors le trajet est ajouté au voyage
     Et le trajet utilise le moyen de locomotion "voiture"
 
+  Scénario: Un trajet peut utiliser le bus
+    Etant donné que les étapes "San Francisco" et "Las Vegas" sont consécutives dans le voyage
+    Quand je crée un trajet en bus entre "San Francisco" et "Las Vegas"
+    Alors le trajet est ajouté au voyage
+    Et le trajet utilise le moyen de locomotion "bus"
+
   Scénario: Un trajet doit relier deux étapes consécutives
     Etant donné que les étapes "San Francisco", "Yosemite" et "Las Vegas" existent dans cet ordre
     Quand je tente de créer un trajet entre "San Francisco" et "Las Vegas"

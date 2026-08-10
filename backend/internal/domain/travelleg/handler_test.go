@@ -20,6 +20,10 @@ func TestNewTravelLeg_ValidatesTransportAndDistance(t *testing.T) {
 	require.NotNil(t, leg.DistanceKm)
 	assert.Equal(t, 42.5, *leg.DistanceKm)
 
+	busLeg, err := NewTravelLeg("leg-bus", "trip-1", "stage-a", "stage-b", TransportBus, "A bus ride", nil)
+	require.NoError(t, err)
+	assert.Equal(t, TransportBus, busLeg.Transport)
+
 	_, err = NewTravelLeg("leg-2", "trip-1", "stage-a", "stage-b", Transport("WALK"), "", nil)
 	assert.ErrorIs(t, err, ErrInvalidTransport)
 

@@ -5,6 +5,7 @@ export const transportOptions: ReadonlyArray<{ value: TravelLegTransport; label:
   { value: 'TRAIN', label: 'Train', icon: '' },
   { value: 'PLANE', label: 'Avion', icon: '' },
   { value: 'BOAT', label: 'Bateau', icon: '' },
+  { value: 'BUS', label: 'Bus', icon: '' },
 ];
 
 export function transportLabel(transport: TravelLegTransport) {
@@ -17,11 +18,17 @@ export function transportIconSVG(transport: TravelLegTransport) {
     TRAIN: '<rect x="6" y="3" width="12" height="15" rx="2"/><path d="M9 7h6M9 11h.01M15 11h.01M8 21l2-3m6 3-2-3"/>',
     PLANE: '<path d="m21 16-8-4V4l-2-1-2 1v8l-8 4v2l8-1v4l-2 1v1h8v-1l-2-1v-4l8 1v-2Z"/>',
     BOAT: '<path d="M4 15h16l-2 4H6l-2-4Z"/><path d="M12 4v11M12 5l5 6h-5M10 7 7 11h5M4 21c1.5 0 1.5-1 3-1s1.5 1 3 1 1.5-1 3-1 1.5 1 3 1 1.5-1 3-1"/>',
+    BUS: '<path d="M5 16V6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v10"/><path d="M5 10h14M8 14h.01M16 14h.01M7 19v2M17 19v2"/><path d="M5 16h14a1 1 0 0 1 1 1v1H4v-1a1 1 0 0 1 1-1Z"/>',
   };
   return `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[transport]}</svg>`;
 }
 
 export function formatDistanceKm(distanceKm: number | null | undefined) {
   if (distanceKm == null) return null;
-  return `${new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(distanceKm)} km`;
+  return `${new Intl.NumberFormat('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(distanceKm)} km`;
+}
+
+export function formatDistanceKmInput(distanceKm: number | null | undefined) {
+  if (distanceKm == null) return '';
+  return distanceKm.toFixed(2);
 }

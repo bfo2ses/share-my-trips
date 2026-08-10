@@ -27,6 +27,19 @@ describe('TravelLegDetail', () => {
     vi.mocked(useDeleteTravelLeg).mockReturnValue([{ fetching: false }, deleteLeg] as unknown as ReturnType<typeof useDeleteTravelLeg>);
   });
 
+  it('displays distances with two decimal places', () => {
+    render(
+      <TravelLegDetail
+        travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: 12.3 }}
+        canEdit={false}
+        onClose={vi.fn()}
+        onBack={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText('12,30 km')).toBeInTheDocument();
+  });
+
   it('returns to the timeline after deletion', async () => {
     const onBack = vi.fn();
     deleteLeg.mockResolvedValue({ data: { deleteTravelLeg: { success: true, errors: [] } } });

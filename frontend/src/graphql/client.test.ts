@@ -66,6 +66,24 @@ const DeleteTravelLegDocument = parse(`
   }
 `);
 
+const UpdateTravelLegDocument = parse(`
+  mutation TestUpdateTravelLeg($id: ID!, $input: UpdateTravelLegInput!) {
+    updateTravelLeg(id: $id, input: $input) {
+      __typename
+      travelLeg {
+        __typename
+        id
+        tripID
+        transport
+      }
+      errors {
+        __typename
+        message
+      }
+    }
+  }
+`);
+
 const VisitMediaDocument = parse(`
   query TestVisitMedia($visitID: ID!) {
     visitMedia(visitID: $visitID) {
@@ -249,6 +267,35 @@ describe('makeClient', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.data?.travelLegs).toHaveLength(0);
+  });
+
+  it('invalidates the travel leg list after updating one', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        trip: { __typename: 'Trip', id: 'trip-1', title: 'Road trip' }, stages: [], tripVisits: [],
+        travelLegs: [{ __typename: 'TravelLeg', id: 'leg-1', tripID: 'trip-1', transport: 'CAR' }],
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { updateTravelLeg: {
+        __typename: 'TravelLegPayload',
+        travelLeg: { __typename: 'TravelLeg', id: 'leg-1', tripID: 'trip-1', transport: 'TRAIN' },
+        errors: [],
+      } } }))
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        trip: { __typename: 'Trip', id: 'trip-1', title: 'Road trip' }, stages: [], tripVisits: [],
+        travelLegs: [{ __typename: 'TravelLeg', id: 'leg-1', tripID: 'trip-1', transport: 'TRAIN' }],
+      } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = makeClient('token-a', vi.fn());
+
+    await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+    await client.mutation(UpdateTravelLegDocument, {
+      id: 'leg-1',
+      input: { transport: 'TRAIN' },
+    }).toPromise();
+    const result = await client.query(TripDetailDocument, { id: 'trip-1' }).toPromise();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.data?.travelLegs[0].transport).toBe('TRAIN');
   });
 
   it('invalidates source and destination media galleries after moving media', async () => {

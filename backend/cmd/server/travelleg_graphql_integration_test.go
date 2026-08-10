@@ -88,11 +88,11 @@ func TestGraphQLHTTP_TravelLegCRUDAndDirectDistance(t *testing.T) {
 	}](t, distanceEnvelope)
 	require.Empty(t, distance.CalculateTravelLegDistance.Errors)
 	require.NotNil(t, distance.CalculateTravelLegDistance.DistanceKm)
-	assert.InDelta(t, 559.12, *distance.CalculateTravelLegDistance.DistanceKm, 1)
+	assert.Equal(t, 559.12, *distance.CalculateTravelLegDistance.DistanceKm)
 }
 
 func TestGraphQLHTTP_CarDistanceUsesProviderWithoutPersisting(t *testing.T) {
-	provider := &routeDistanceStub{distanceKm: 734.25}
+	provider := &routeDistanceStub{distanceKm: 734.256}
 	harness := newGraphQLHarnessWithRouteProvider(t, provider)
 	token, tripID, stageIDs := createTravelLegFixture(t, harness)
 
@@ -107,7 +107,7 @@ func TestGraphQLHTTP_CarDistanceUsesProviderWithoutPersisting(t *testing.T) {
 	}](t, envelope)
 	require.Empty(t, data.CalculateTravelLegDistance.Errors)
 	require.NotNil(t, data.CalculateTravelLegDistance.DistanceKm)
-	assert.Equal(t, 734.25, *data.CalculateTravelLegDistance.DistanceKm)
+	assert.Equal(t, 734.26, *data.CalculateTravelLegDistance.DistanceKm)
 	assert.Equal(t, 1, provider.calls)
 
 	legsEnvelope := harness.post(t, `query TravelLegs($tripID: ID!) { travelLegs(tripID: $tripID) { id } }`, map[string]any{"tripID": tripID}, "")

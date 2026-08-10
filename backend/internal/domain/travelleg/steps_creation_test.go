@@ -15,6 +15,7 @@ func registerCreationFeatureSteps(ctx *godog.ScenarioContext, tc *featureContext
 	ctx.Step(`^les étapes "([^"]*)" et "([^"]*)" sont consécutives dans le voyage$`, tc.stagesAreConsecutive)
 	ctx.Step(`^les étapes "([^"]*)", "([^"]*)" et "([^"]*)" existent dans cet ordre$`, tc.threeStagesExistInOrder)
 	ctx.Step(`^je crée un trajet en voiture entre "([^"]*)" et "([^"]*)"$`, tc.createCarLeg)
+	ctx.Step(`^je crée un trajet en bus entre "([^"]*)" et "([^"]*)"$`, tc.createBusLeg)
 	ctx.Step(`^je tente de créer un trajet entre "([^"]*)" et "([^"]*)"$`, tc.tryToCreateLeg)
 	ctx.Step(`^le trajet est ajouté au voyage$`, tc.legIsAdded)
 	ctx.Step(`^le trajet utilise le moyen de locomotion "([^"]*)"$`, tc.legUsesTransport)
@@ -46,6 +47,11 @@ func (tc *featureContext) threeStagesExistInOrder(first, second, third string) e
 
 func (tc *featureContext) createCarLeg(from, to string) error {
 	tc.createLeg(from, to, TransportCar, nil)
+	return nil
+}
+
+func (tc *featureContext) createBusLeg(from, to string) error {
+	tc.createLeg(from, to, TransportBus, nil)
 	return nil
 }
 
@@ -174,6 +180,8 @@ func transportFromFrench(transport string) Transport {
 		return TransportPlane
 	case "bateau":
 		return TransportBoat
+	case "bus":
+		return TransportBus
 	default:
 		return Transport(transport)
 	}

@@ -72,6 +72,46 @@ describe('TravelLegForm', () => {
     expect(calculate).toHaveBeenCalledWith({ fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR' });
   });
 
+  it('displays calculated distances with two decimal places', async () => {
+    calculate.mockResolvedValue({ data: { calculateTravelLegDistance: { distanceKm: 42.3, errors: [] } } });
+    renderForm();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Calculer la distance' }));
+
+    await waitFor(() => expect(screen.getByLabelText('Distance (km)')).toHaveValue(42.3));
+    const distanceInput = screen.getByLabelText('Distance (km)') as HTMLInputElement;
+    expect(distanceInput.value).toBe('42.30');
+    expect(distanceInput).toHaveAttribute('step', '0.01');
+  });
+
+  it('formats an existing distance with two decimal places', () => {
+    render(
+      <TravelLegForm
+        open
+        panel
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: 12.3 }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect((screen.getByLabelText('Distance (km)') as HTMLInputElement).value).toBe('12.30');
+  });
+
+  it('saves a bus transport selection', async () => {
+    createLeg.mockResolvedValue({ data: { createTravelLeg: { travelLeg: { id: 'leg-1' }, errors: [] } } });
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText('Moyen de transport'), { target: { value: 'BUS' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le trajet' }));
+
+    await waitFor(() => expect(createLeg).toHaveBeenCalledWith({
+      input: expect.objectContaining({ transport: 'BUS' }),
+    }, expect.anything()));
+  });
+
   it('allows saving a manually entered distance after a failed calculation', async () => {
     calculate.mockResolvedValue({ data: { calculateTravelLegDistance: { distanceKm: null, errors: [{ message: 'Service indisponible' }] } } });
     createLeg.mockResolvedValue({ data: { createTravelLeg: { travelLeg: { id: 'leg-1' }, errors: [] } } });
@@ -79,11 +119,11 @@ describe('TravelLegForm', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Calculer la distance' }));
     await screen.findByText('Service indisponible');
-    fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '450.5' } });
+    fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '450.56' } });
     fireEvent.click(screen.getByRole('button', { name: 'Créer le trajet' }));
 
     await waitFor(() => expect(createLeg).toHaveBeenCalledWith({
-      input: expect.objectContaining({ distanceKm: 450.5, transport: 'CAR' }),
+      input: expect.objectContaining({ distanceKm: 450.56, transport: 'CAR' }),
     }, expect.anything()));
   });
 
