@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
+import { formatDateOnly } from '../../../lib/date';
 import { tripColor } from '../utils/tripColor';
 import styles from './TripCard.module.css';
 
@@ -22,7 +23,7 @@ const STATUS_LABELS: Record<string, string> = {
 function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
   if (!start || !end) return '';
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
-  return `${new Date(start).toLocaleDateString('fr-FR', opts)} — ${new Date(end).toLocaleDateString('fr-FR', opts)}`;
+  return `${formatDateOnly(start, opts)} — ${formatDateOnly(end, opts)}`;
 }
 
 export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {

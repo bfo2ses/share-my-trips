@@ -5,6 +5,7 @@ import type { StagesQuery, TravelLeg, VisitsQuery } from '../../../graphql/gener
 import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
 import { travelLegBoundaries } from '../../travel-legs/pairs';
 import { transportIconSVG, transportLabel } from '../../travel-legs/transport';
+import { formatDateOnly } from '../../../lib/date';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
 
@@ -110,7 +111,7 @@ const pendingIcon = L.divIcon({
 });
 
 function formatShortDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return formatDateOnly(d, { day: 'numeric', month: 'short' });
 }
 
 function markerLatLng(e: L.LeafletEvent): { lat: number; lng: number } {

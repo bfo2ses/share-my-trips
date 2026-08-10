@@ -26,6 +26,7 @@ import { TransportIcon } from '../../travel-legs/components/TransportIcon';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import { tripColor } from '../utils/tripColor';
+import { formatDateOnly } from '../../../lib/date';
 import type { TripDetailQuery } from '../../../graphql/generated/graphql';
 import styles from './TripDetailPage.module.css';
 
@@ -47,12 +48,12 @@ type ResolutionRequest = {
 };
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  return formatDateOnly(d, { day: 'numeric', month: 'short' });
 }
 
 function formatDateRange(start: string | null | undefined, end: string | null | undefined) {
   if (!start || !end) return '';
-  return `${formatDate(start)} — ${new Date(end).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}`;
+  return `${formatDate(start)} — ${formatDateOnly(end, { day: 'numeric', month: 'short', year: 'numeric' })}`;
 }
 
 export function TripDetailPage() {
