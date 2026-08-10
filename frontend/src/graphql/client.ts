@@ -30,6 +30,13 @@ type MoveMediaMutationResult = {
   };
 };
 
+type DeleteMediaMutationResult = {
+  deleteMedia?: {
+    success?: boolean;
+    errors?: Array<unknown>;
+  };
+};
+
 function updateTravelLegLists(cache: Cache, update: (links: string[], tripID: string | undefined) => string[]) {
   for (const field of cache.inspectFields('Query')) {
     if (field.fieldName !== 'travelLegs') continue;
@@ -107,6 +114,13 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
             moveMedia: (result, _args, cache) => {
               const payload = (result as MoveMediaMutationResult).moveMedia;
               if ((payload?.errors?.length ?? 0) > 0) return;
+              invalidateQuery(cache, 'visitMedia');
+              invalidateQuery(cache, 'travelLegMedia');
+              invalidateQuery(cache, 'tripMedia');
+            },
+            deleteMedia: (result, _args, cache) => {
+              const payload = (result as DeleteMediaMutationResult).deleteMedia;
+              if (!payload?.success || (payload.errors?.length ?? 0) > 0) return;
               invalidateQuery(cache, 'visitMedia');
               invalidateQuery(cache, 'travelLegMedia');
               invalidateQuery(cache, 'tripMedia');

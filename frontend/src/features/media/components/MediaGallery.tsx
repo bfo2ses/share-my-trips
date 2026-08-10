@@ -5,6 +5,7 @@ import { restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import { useDeleteMedia, useMoveMedia, useReorderMedia, useReorderTravelLegMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
 import { MediaLightbox } from './MediaLightbox';
+import { MediaUploader } from './MediaUploader';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { Media } from '../../../graphql/generated/graphql';
 import type { MediaOwner, MediaTarget } from '../mediaOwner';
@@ -13,12 +14,13 @@ import styles from './MediaGallery.module.css';
 interface MediaGalleryProps {
   media: Media[];
   owner: MediaOwner;
+  tripID: string;
   isAdmin: boolean;
   onDeleted: () => void;
   mediaTargets?: MediaTarget[];
 }
 
-export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = [] }: MediaGalleryProps) {
+export function MediaGallery({ media, owner, tripID, isAdmin, onDeleted, mediaTargets = [] }: MediaGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [localMedia, setLocalMedia] = useState<Media[] | null>(null);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
@@ -28,8 +30,10 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
   const [destinationKey, setDestinationKey] = useState('');
   const [moveModalOpen, setMoveModalOpen] = useState(false);
   const [moveError, setMoveError] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const [, deleteMedia] = useDeleteMedia();
+  const [{ fetching: deleting }, deleteMedia] = useDeleteMedia();
   const [, reorderMedia] = useReorderMedia();
   const [, reorderTravelLegMedia] = useReorderTravelLegMedia();
   const [, updateCaption] = useUpdateMediaCaption();
@@ -45,18 +49,6 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
   if (media !== prevMediaRef.current) { // eslint-disable-line react-hooks/refs
     prevMediaRef.current = media; // eslint-disable-line react-hooks/refs
     setLocalMedia(null);
-  }
-
-  async function handleDelete(e: React.MouseEvent, id: string) {
-    e.stopPropagation();
-    setActionError(null);
-    const result = await deleteMedia({ id }, { additionalTypenames: ['Media'] });
-    const errors = result.data?.deleteMedia.errors ?? [];
-    if (result.error || !result.data?.deleteMedia.success || errors.length > 0) {
-      setActionError(errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce média.');
-      return;
-    }
-    onDeleted();
   }
 
   // Require a small movement before a press counts as a drag, so a plain
@@ -144,6 +136,28 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
     onDeleted();
   }
 
+  async function handleBulkDelete() {
+    if (selectedIDs.length === 0) return;
+    setDeleteError(null);
+    const deletedIDs: string[] = [];
+
+    for (const id of selectedIDs) {
+      const result = await deleteMedia({ id }, { additionalTypenames: ['Media'] });
+      const errors = result.data?.deleteMedia.errors ?? [];
+      if (result.error || !result.data?.deleteMedia.success || errors.length > 0) {
+        setSelectedIDs((current) => current.filter((mediaID) => !deletedIDs.includes(mediaID)));
+        if (deletedIDs.length > 0) onDeleted();
+        setDeleteError(errors.map((error) => error.message).join(' ') || result.error?.message || 'Impossible de supprimer les médias.');
+        return;
+      }
+      deletedIDs.push(id);
+    }
+
+    setSelectedIDs([]);
+    setDeleteModalOpen(false);
+    onDeleted();
+  }
+
   function openMoveModal() {
     setMoveError(null);
     setDestinationKey('');
@@ -156,7 +170,18 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
     setMoveModalOpen(false);
   }
 
-  if (items.length === 0) {
+  function openDeleteModal() {
+    setDeleteError(null);
+    setDeleteModalOpen(true);
+  }
+
+  function closeDeleteModal() {
+    if (deleting) return;
+    setDeleteError(null);
+    setDeleteModalOpen(false);
+  }
+
+  if (items.length === 0 && !isAdmin) {
     return null;
   }
 
@@ -179,15 +204,6 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
             <span className={styles.playBadge}>▶</span>
           )}
         </button>
-        {isAdmin && (
-          <button
-            className={styles.deleteBtn}
-            onClick={(e) => handleDelete(e, m.id)}
-            aria-label="Supprimer"
-          >
-            ✕
-          </button>
-        )}
         {isAdmin && editingCaption === m.id ? (
           <input
             className={styles.captionInput}
@@ -213,37 +229,60 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
   return (
     <>
       {actionError && <p role="alert" className={styles.errorMessage}>{actionError}</p>}
-      {isAdmin && selectedIDs.length > 0 && (
-        <div className={styles.moveBar}>
-          <span>{selectedIDs.length} média{selectedIDs.length > 1 ? 's' : ''} sélectionné{selectedIDs.length > 1 ? 's' : ''}</span>
-          <button type="button" className={styles.clearSelection} onClick={() => setSelectedIDs([])}>Annuler</button>
-          <button type="button" className={styles.moveButton} onClick={openMoveModal}>Déplacer vers…</button>
+      <div className={styles.galleryFrame}>
+        <div className={styles.gallery}>
+          {canDrag ? (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToParentElement]}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={items.map((m) => m.id)} strategy={rectSortingStrategy}>
+                {items.map((m, i) => (
+                  <SortableThumb key={m.id} id={m.id}>
+                    {renderThumb(m, i)}
+                  </SortableThumb>
+                ))}
+              </SortableContext>
+            </DndContext>
+          ) : (
+            items.map((m, i) => (
+              <div key={m.id} className={styles.thumbWrapper}>
+                {renderThumb(m, i)}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+      {isAdmin && (
+        <div className={styles.mediaActionsSlot}>
+          {selectedIDs.length > 0 ? (
+            <div className={styles.selectionBar} role="toolbar" aria-label="Actions sur la sélection">
+              <span className={styles.selectionCount}>
+                <strong>{selectedIDs.length}</strong>
+                <span>média{selectedIDs.length > 1 ? 's' : ''} sélectionné{selectedIDs.length > 1 ? 's' : ''}</span>
+              </span>
+              <div className={styles.selectionActions}>
+                <button type="button" className={styles.clearSelection} onClick={() => setSelectedIDs([])} aria-label="Annuler la sélection" data-tooltip="Annuler la sélection">
+                  <span className={styles.actionIcon} aria-hidden="true">×</span>
+                  <span className={styles.actionLabel}>Annuler</span>
+                </button>
+                <button type="button" className={styles.moveButton} onClick={openMoveModal} aria-label="Déplacer vers…" data-tooltip="Déplacer vers…">
+                  <span className={styles.actionIcon} aria-hidden="true">↗</span>
+                  <span className={styles.actionLabel}>Déplacer vers…</span>
+                </button>
+                <button type="button" className={styles.deleteSelectionButton} onClick={openDeleteModal} aria-label="Supprimer la sélection" data-tooltip="Supprimer la sélection">
+                  <span className={styles.actionIcon} aria-hidden="true">⌫</span>
+                  <span className={styles.actionLabel}>Supprimer</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <MediaUploader owner={owner} tripID={tripID} onUploadComplete={onDeleted} />
+          )}
         </div>
       )}
-      <div className={styles.gallery}>
-        {canDrag ? (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCenter}
-            modifiers={[restrictToParentElement]}
-            onDragEnd={handleDragEnd}
-          >
-            <SortableContext items={items.map((m) => m.id)} strategy={rectSortingStrategy}>
-              {items.map((m, i) => (
-                <SortableThumb key={m.id} id={m.id}>
-                  {renderThumb(m, i)}
-                </SortableThumb>
-              ))}
-            </SortableContext>
-          </DndContext>
-        ) : (
-          items.map((m, i) => (
-            <div key={m.id} className={styles.thumbWrapper}>
-              {renderThumb(m, i)}
-            </div>
-          ))
-        )}
-      </div>
 
       <MediaLightbox
         media={items}
@@ -281,6 +320,19 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = 
           {destinations.length === 0 && <span>Aucune autre visite ou trajet disponible dans ce voyage.</span>}
         </label>
       </ConfirmModal>
+      <ConfirmModal
+        open={deleteModalOpen}
+        title="Supprimer les médias"
+        message={deleteError ?? (selectedIDs.length > 1
+          ? `${selectedIDs.length} médias seront définitivement supprimés.`
+          : '1 média sera définitivement supprimé.')}
+        confirmLabel="Supprimer"
+        cancelLabel="Annuler"
+        danger
+        busy={deleting}
+        onConfirm={handleBulkDelete}
+        onCancel={closeDeleteModal}
+      />
     </>
   );
 }

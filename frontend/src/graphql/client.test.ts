@@ -112,6 +112,19 @@ const MoveMediaDocument = parse(`
   }
 `);
 
+const DeleteMediaDocument = parse(`
+  mutation TestDeleteMedia($id: ID!) {
+    deleteMedia(id: $id) {
+      __typename
+      success
+      errors {
+        __typename
+        message
+      }
+    }
+  }
+`);
+
 const SetupStatusDocument = parse(`
   query TestSetupStatus {
     setupStatus {
@@ -269,5 +282,25 @@ describe('makeClient', () => {
     expect(fetchMock).toHaveBeenCalledTimes(5);
     expect(source.data?.visitMedia).toHaveLength(0);
     expect(destination.data?.travelLegMedia).toHaveLength(1);
+  });
+
+  it('invalidates media galleries after deleting media', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        visitMedia: [{ __typename: 'Media', id: 'media-1', visitID: 'visit-1', travelLegID: null, tripID: 'trip-1', filename: 'photo.jpg' }],
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        deleteMedia: { __typename: 'DeleteMediaPayload', success: true, errors: [] },
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { visitMedia: [] } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = makeClient('token-a', vi.fn());
+
+    await client.query(VisitMediaDocument, { visitID: 'visit-1' }).toPromise();
+    await client.mutation(DeleteMediaDocument, { id: 'media-1' }).toPromise();
+    const result = await client.query(VisitMediaDocument, { visitID: 'visit-1' }).toPromise();
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(result.data?.visitMedia).toHaveLength(0);
   });
 });
