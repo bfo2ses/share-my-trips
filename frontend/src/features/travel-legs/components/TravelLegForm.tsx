@@ -17,7 +17,8 @@ interface TravelLegFormProps {
   toStageID: string;
   travelLeg?: TravelLegData | null;
   onClose: () => void;
-  onSaved?: (travelLeg: TravelLegData) => void;
+  onSaved?: (travelLeg: TravelLegData, created: boolean) => void;
+  onDeleted?: () => void;
   noBackdrop?: boolean;
   panel?: boolean;
 }
@@ -40,6 +41,7 @@ function TravelLegFormContent({
   travelLeg,
   onClose,
   onSaved,
+  onDeleted,
   panel,
 }: Omit<TravelLegFormProps, 'open' | 'noBackdrop'>) {
   const isEdit = !!travelLeg;
@@ -129,7 +131,7 @@ function TravelLegFormContent({
         setErrors(payload?.errors.map((error) => error.message) ?? ['Une erreur est survenue.']);
         return;
       }
-      onSaved?.(payload.travelLeg);
+      onSaved?.(payload.travelLeg, false);
       onClose();
       return;
     }
@@ -148,7 +150,7 @@ function TravelLegFormContent({
       setErrors(payload?.errors.map((error) => error.message) ?? ['Une erreur est survenue.']);
       return;
     }
-    onSaved?.(payload.travelLeg);
+    onSaved?.(payload.travelLeg, true);
     onClose();
   }
 
@@ -163,6 +165,7 @@ function TravelLegFormContent({
       setDeleteError(payload?.errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce trajet. Réessayez.');
       return;
     }
+    onDeleted?.();
     onClose();
   }
 

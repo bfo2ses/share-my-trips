@@ -347,9 +347,9 @@ export function TripDetailPage() {
     setTravelLegForm({ fromStageID, toStageID });
   }, [closeStageForm, closeVisitForm, setSearchParams]);
 
-  const handleTravelLegSaved = useCallback((travelLeg: TravelLegData) => {
+  const handleTravelLegSaved = useCallback((travelLeg: TravelLegData, created: boolean) => {
     setTravelLegForm(null);
-    setSearchParams({ leg: travelLeg.id }, { replace: true });
+    if (!created) setSearchParams({ leg: travelLeg.id }, { replace: true });
     refetchAll();
   }, [refetchAll, setSearchParams]);
 
@@ -728,6 +728,7 @@ export function TripDetailPage() {
               toStageID: selectedTravelLeg.toStageID,
               travelLeg: selectedTravelLeg,
             })}
+            onDeleted={refetchAll}
           />
         ) : displayVisit && (
           <VisitDetail
@@ -792,6 +793,7 @@ export function TripDetailPage() {
               travelLeg={travelLegForm.travelLeg}
               onClose={closeTravelLegForm}
               onSaved={handleTravelLegSaved}
+              onDeleted={refetchAll}
             />
           )}
         </div>

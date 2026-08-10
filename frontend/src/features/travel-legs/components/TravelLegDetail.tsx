@@ -16,9 +16,10 @@ interface TravelLegDetailProps {
   onClose: () => void;
   onBack: () => void;
   onEdit?: () => void;
+  onDeleted?: () => void;
 }
 
-export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit }: TravelLegDetailProps) {
+export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit, onDeleted }: TravelLegDetailProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function TravelLegDetail({ travelLeg, canEdit, onClose, onBack, onEdit }:
       setDeleteError(errors.map((error) => error.message).join(' ') || 'Impossible de supprimer ce trajet. Réessayez.');
       return;
     }
+    onDeleted?.();
     onBack();
   }
 

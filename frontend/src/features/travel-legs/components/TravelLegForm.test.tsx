@@ -147,6 +147,32 @@ describe('TravelLegForm', () => {
     }, expect.anything()));
   });
 
+  it('identifies a saved journey as newly created', async () => {
+    const onSaved = vi.fn();
+    createLeg.mockResolvedValue({
+      data: {
+        createTravelLeg: {
+          travelLeg: { id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null },
+          errors: [],
+        },
+      },
+    });
+    render(
+      <TravelLegForm
+        open
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        onClose={vi.fn()}
+        onSaved={onSaved}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Créer le trajet' }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ id: 'leg-1' }), true));
+  });
+
   it('prevents duplicate calculations while one is pending', () => {
     const pending = deferred<{ data: { calculateTravelLegDistance: { distanceKm: number; errors: [] } } }>();
     calculate.mockReturnValue(pending.promise);
@@ -161,6 +187,7 @@ describe('TravelLegForm', () => {
 
   it('confirms deletion from an existing journey form', async () => {
     const onClose = vi.fn();
+    const onDeleted = vi.fn();
     deleteLeg.mockResolvedValue({ data: { deleteTravelLeg: { success: true, errors: [] } } });
     render(
       <TravelLegForm
@@ -171,6 +198,7 @@ describe('TravelLegForm', () => {
         toStageID="stage-2"
         travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null }}
         onClose={onClose}
+        onDeleted={onDeleted}
       />,
     );
 
@@ -179,5 +207,6 @@ describe('TravelLegForm', () => {
 
     await waitFor(() => expect(deleteLeg).toHaveBeenCalledWith({ id: 'leg-1' }, expect.anything()));
     expect(onClose).toHaveBeenCalledOnce();
+    expect(onDeleted).toHaveBeenCalledOnce();
   });
 });
