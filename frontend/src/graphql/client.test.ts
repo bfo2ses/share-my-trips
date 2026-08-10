@@ -66,6 +66,14 @@ const DeleteTravelLegDocument = parse(`
   }
 `);
 
+const SetupStatusDocument = parse(`
+  query TestSetupStatus {
+    setupStatus {
+      done
+    }
+  }
+`);
+
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -114,6 +122,18 @@ describe('makeClient', () => {
     const authenticatedClient = makeClient('token-a', vi.fn());
     expect((await authenticatedClient.query(MeDocument, {}).toPromise()).data?.me).toMatchObject({ id: '1', name: 'Alice' });
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('keeps setup status embedded without a graphcache warning', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse({
+      data: { setupStatus: { __typename: 'SetupStatusPayload', done: false } },
+    })));
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await makeClient(null, vi.fn()).query(SetupStatusDocument, {}).toPromise();
+
+    expect(result.data?.setupStatus).toEqual({ done: false });
+    expect(warnSpy).not.toHaveBeenCalled();
   });
 
   it('signals one unauthorized response exactly once', async () => {

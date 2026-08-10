@@ -52,6 +52,11 @@ export function makeClient(token: string | null, onUnauthorized: () => void) {
         },
       }),
       cacheExchange({
+        keys: {
+          // SetupStatusPayload is a value object returned by Query.setupStatus;
+          // it has no stable identity and must remain embedded in the query.
+          SetupStatusPayload: () => null,
+        },
         updates: {
           Mutation: {
             createTrip: (_result, _args, cache) => invalidateQuery(cache, 'trips'),
