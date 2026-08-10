@@ -4,15 +4,12 @@ import { useVisitMedia } from '../../media/hooks/useMediaQueries';
 import { MediaGallery } from '../../media/components/MediaGallery';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
+import { formatDateOnly } from '../../../lib/date';
 import type { VisitsQuery } from '../../../graphql/generated/graphql';
 import type { MediaTarget } from '../../media/mediaOwner';
 import styles from './DetailView.module.css';
 
 type Visit = VisitsQuery['visits'][number];
-
-function formatFullDate(d: string) {
-  return new Date(d).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
 
 interface VisitDetailProps {
   visit: Visit;
@@ -57,7 +54,7 @@ export function VisitDetail({ visit, canEdit, onClose, onBack, onRequestDelete, 
       <div className={styles.header}>
         <div className={styles.headerText}>
           <button className={styles.back} onClick={onBack}>← Retour à la timeline</button>
-          <p className={styles.label}>{formatFullDate(visit.date)}</p>
+          <p className={styles.label}>{formatDateOnly(visit.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</p>
           <h3 className={styles.title}>{visit.title ?? visit.date}</h3>
         </div>
         {menuItems.length > 0 && (
