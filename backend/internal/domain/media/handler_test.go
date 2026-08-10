@@ -2,6 +2,7 @@ package media_test
 
 import (
 	"context"
+	"sort"
 	"testing"
 
 	"io"
@@ -28,6 +29,27 @@ func (s *stubTripChecker) IsModifiable(_ context.Context, tripID string) (bool, 
 
 type stubVisitChecker struct {
 	visits map[string]string // visitID -> tripID
+}
+
+type stubTravelLegChecker struct {
+	legs map[string]string // travelLegID -> tripID
+}
+
+func newStubTravelLegChecker() *stubTravelLegChecker {
+	return &stubTravelLegChecker{legs: make(map[string]string)}
+}
+
+func (s *stubTravelLegChecker) Exists(_ context.Context, legID string) (bool, error) {
+	_, ok := s.legs[legID]
+	return ok, nil
+}
+
+func (s *stubTravelLegChecker) TripID(_ context.Context, legID string) (string, error) {
+	tripID, ok := s.legs[legID]
+	if !ok {
+		return "", media.ErrTravelLegNotFound
+	}
+	return tripID, nil
 }
 
 func newStubVisitChecker() *stubVisitChecker {
@@ -60,6 +82,9 @@ func (s *stubStorage) Store(id, tripID string, owner media.Owner, ext string, _ 
 }
 func (s *stubStorage) Delete(id, tripID string, owner media.Owner, ext string) error {
 	s.deleted[id] = true
+	return nil
+}
+func (s *stubStorage) Move(_ string, _ string, _ media.Owner, _ media.Owner, _ string) error {
 	return nil
 }
 func (s *stubStorage) FilePath(id, tripID string, owner media.Owner, ext string) string { return "" }
@@ -127,6 +152,55 @@ func (r *mediaRepository) Delete(_ context.Context, id string) error {
 	return nil
 }
 
+func (r *mediaRepository) Move(_ context.Context, mediaIDs []string, destination media.Owner) error {
+	selected := make([]*media.Media, 0, len(mediaIDs))
+	seen := make(map[string]struct{}, len(mediaIDs))
+	for _, id := range mediaIDs {
+		if _, ok := seen[id]; ok {
+			return media.ErrIDMismatch
+		}
+		seen[id] = struct{}{}
+		item, ok := r.media[id]
+		if !ok {
+			return media.ErrNotFound
+		}
+		selected = append(selected, item)
+	}
+	if len(selected) == 0 {
+		return media.ErrMediaRequired
+	}
+	source := selected[0].Owner()
+	maxPosition := -1
+	for _, item := range r.media {
+		if item.Owner() == destination && item.Position > maxPosition {
+			maxPosition = item.Position
+		}
+	}
+	for position, item := range selected {
+		item.VisitID = destination.VisitID
+		item.TravelLegID = destination.TravelLegID
+		item.Position = maxPosition + position + 1
+	}
+	remaining := make([]*media.Media, 0)
+	for _, item := range r.media {
+		if item.Owner() == source {
+			if _, moved := seen[item.ID]; !moved {
+				remaining = append(remaining, item)
+			}
+		}
+	}
+	sort.Slice(remaining, func(i, j int) bool {
+		if remaining[i].Position == remaining[j].Position {
+			return remaining[i].ID < remaining[j].ID
+		}
+		return remaining[i].Position < remaining[j].Position
+	})
+	for position, item := range remaining {
+		item.Position = position
+	}
+	return nil
+}
+
 func (r *mediaRepository) NextPosition(_ context.Context, visitID string) (int, error) {
 	return r.NextPositionForOwner(context.Background(), media.VisitOwner(visitID))
 }
@@ -161,6 +235,7 @@ type testContext struct {
 	repo         *mediaRepository
 	tripChecker  *stubTripChecker
 	visitChecker *stubVisitChecker
+	legChecker   *stubTravelLegChecker
 	storage      *stubStorage
 }
 
@@ -168,16 +243,20 @@ func newTestContext() *testContext {
 	repo := newMediaRepository()
 	tripChecker := newStubTripChecker()
 	visitChecker := newStubVisitChecker()
+	legChecker := newStubTravelLegChecker()
 	storage := newStubStorage()
 
 	visitChecker.visits["visit-1"] = "trip-1"
 	visitChecker.visits["visit-2"] = "trip-1"
+	legChecker.legs["leg-1"] = "trip-1"
+	legChecker.legs["leg-2"] = "trip-1"
 
 	return &testContext{
-		handler:      media.NewHandler(repo, storage, tripChecker, visitChecker),
+		handler:      media.NewHandler(repo, storage, tripChecker, visitChecker, legChecker),
 		repo:         repo,
 		tripChecker:  tripChecker,
 		visitChecker: visitChecker,
+		legChecker:   legChecker,
 		storage:      storage,
 	}
 }
@@ -378,6 +457,89 @@ func TestDelete_TripClosed(t *testing.T) {
 
 	err := tc.handler.Delete(ctx, media.DeleteMediaCommand{ID: m.ID})
 	require.Error(t, err)
+	assert.ErrorIs(t, err, media.ErrTripClosed)
+}
+
+func TestMove_VisitToVisit_AppendsAndCompacts(t *testing.T) {
+	tc := newTestContext()
+	ctx := context.Background()
+
+	first, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-1", TripID: "trip-1", Filename: "first.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	second, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-1", TripID: "trip-1", Filename: "second.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	destination, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-2", TripID: "trip-1", Filename: "existing.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+
+	result, err := tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{second.ID}, Owner: media.VisitOwner("visit-2")})
+	require.NoError(t, err)
+	require.Len(t, result, 2)
+	assert.Equal(t, destination.ID, result[0].ID)
+	assert.Equal(t, second.ID, result[1].ID)
+	assert.Equal(t, 1, result[1].Position)
+
+	remaining, err := tc.repo.FindByID(ctx, first.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "visit-1", remaining.VisitID)
+	assert.Equal(t, 0, remaining.Position)
+	moved, err := tc.repo.FindByID(ctx, second.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "visit-2", moved.VisitID)
+	assert.Equal(t, 1, moved.Position)
+}
+
+func TestMove_WorksBetweenVisitsAndTravelLegs(t *testing.T) {
+	tc := newTestContext()
+	ctx := context.Background()
+
+	fromVisit, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-1", TripID: "trip-1", Filename: "visit.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{fromVisit.ID}, Owner: media.TravelLegOwner("leg-1")})
+	require.NoError(t, err)
+	moved, err := tc.repo.FindByID(ctx, fromVisit.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "leg-1", moved.TravelLegID)
+	assert.Empty(t, moved.VisitID)
+
+	fromLeg, err := tc.handler.Add(ctx, media.AddMediaCommand{TravelLegID: "leg-2", TripID: "trip-1", Filename: "leg.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{fromLeg.ID}, Owner: media.VisitOwner("visit-2")})
+	require.NoError(t, err)
+	moved, err = tc.repo.FindByID(ctx, fromLeg.ID)
+	require.NoError(t, err)
+	assert.Equal(t, "visit-2", moved.VisitID)
+	assert.Empty(t, moved.TravelLegID)
+}
+
+func TestMove_RejectsInvalidSelectionAndDestination(t *testing.T) {
+	tc := newTestContext()
+	ctx := context.Background()
+	item, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-1", TripID: "trip-1", Filename: "photo.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	other, err := tc.handler.Add(ctx, media.AddMediaCommand{VisitID: "visit-2", TripID: "trip-1", Filename: "other.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{item.ID}, Owner: media.Owner{}})
+	assert.ErrorIs(t, err, media.ErrOwnerRequired)
+
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{item.ID, other.ID}, Owner: media.TravelLegOwner("leg-1")})
+	assert.ErrorIs(t, err, media.ErrMixedOwners)
+
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{item.ID}, Owner: media.VisitOwner("missing")})
+	assert.ErrorIs(t, err, media.ErrVisitNotFound)
+
+	tc.visitChecker.visits["other-trip-visit"] = "trip-2"
+	_, err = tc.handler.Move(ctx, media.MoveMediaCommand{MediaIDs: []string{item.ID}, Owner: media.VisitOwner("other-trip-visit")})
+	assert.ErrorIs(t, err, media.ErrTripMismatch)
+}
+
+func TestMove_RejectsClosedTrip(t *testing.T) {
+	tc := newTestContext()
+	item, err := tc.handler.Add(context.Background(), media.AddMediaCommand{VisitID: "visit-1", TripID: "trip-1", Filename: "photo.jpg", ContentType: "image/jpeg"})
+	require.NoError(t, err)
+	tc.tripChecker.closedTripIDs["trip-1"] = true
+
+	_, err = tc.handler.Move(context.Background(), media.MoveMediaCommand{MediaIDs: []string{item.ID}, Owner: media.VisitOwner("visit-2")})
 	assert.ErrorIs(t, err, media.ErrTripClosed)
 }
 

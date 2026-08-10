@@ -656,6 +656,24 @@ func (r *mutationResolver) DeleteMedia(ctx context.Context, id string) (*DeleteM
 	return &DeleteMediaPayload{Success: true, Errors: []*UserError{}}, nil
 }
 
+// MoveMedia is the resolver for the moveMedia field.
+func (r *mutationResolver) MoveMedia(ctx context.Context, input MoveMediaInput) (*MoveMediaPayload, error) {
+	if err := r.requireEditor(ctx); err != nil {
+		return &MoveMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	items, err := r.mediaHandler.Move(ctx, media.MoveMediaCommand{
+		MediaIDs: input.MediaIDs,
+		Owner: media.Owner{
+			VisitID:     derefString(input.VisitID),
+			TravelLegID: derefString(input.TravelLegID),
+		},
+	})
+	if err != nil {
+		return &MoveMediaPayload{Media: []*Media{}, Errors: domainErrorToUserErrors(err)}, nil
+	}
+	return &MoveMediaPayload{Media: toGraphQLMediaList(items), Errors: []*UserError{}}, nil
+}
+
 // Trips is the resolver for the trips field.
 func (r *queryResolver) Trips(ctx context.Context, status []TripStatus) ([]*Trip, error) {
 	statuses := make([]trip.Status, 0, len(status))

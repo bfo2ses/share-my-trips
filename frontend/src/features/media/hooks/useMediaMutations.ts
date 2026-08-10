@@ -1,6 +1,23 @@
 import { useMutation } from 'urql';
 import { gql } from '../../../graphql/generated';
 
+const MOVE_MEDIA = gql(`
+  mutation MoveMedia($input: MoveMediaInput!) {
+    moveMedia(input: $input) {
+      media {
+        id
+        visitID
+        travelLegID
+        position
+      }
+      errors {
+        field
+        message
+      }
+    }
+  }
+`);
+
 const UPDATE_MEDIA_CAPTION = gql(`
   mutation UpdateMediaCaption($id: ID!, $caption: String) {
     updateMediaCaption(id: $id, caption: $caption) {
@@ -45,6 +62,10 @@ const DELETE_MEDIA = gql(`
 
 export function useUpdateMediaCaption() {
   return useMutation(UPDATE_MEDIA_CAPTION);
+}
+
+export function useMoveMedia() {
+  return useMutation(MOVE_MEDIA);
 }
 
 export function useReorderMedia() {

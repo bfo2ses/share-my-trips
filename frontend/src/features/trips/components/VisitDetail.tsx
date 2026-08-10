@@ -6,6 +6,7 @@ import { MediaUploader } from '../../media/components/MediaUploader';
 import { ActionMenu, type ActionMenuItem } from '../../../components/ActionMenu/ActionMenu';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { VisitsQuery } from '../../../graphql/generated/graphql';
+import type { MediaTarget } from '../../media/mediaOwner';
 import styles from './DetailView.module.css';
 
 type Visit = VisitsQuery['visits'][number];
@@ -20,9 +21,10 @@ interface VisitDetailProps {
   onClose: () => void;
   onBack: () => void;
   onRequestDelete?: (visit: Visit) => void;
+  mediaTargets?: MediaTarget[];
 }
 
-export function VisitDetail({ visit, canEdit, onClose, onBack, onRequestDelete }: VisitDetailProps) {
+export function VisitDetail({ visit, canEdit, onClose, onBack, onRequestDelete, mediaTargets }: VisitDetailProps) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -70,7 +72,7 @@ export function VisitDetail({ visit, canEdit, onClose, onBack, onRequestDelete }
           <p className={styles.description}>{visit.description}</p>
         )}
 
-        <MediaGallery media={media} owner={{ type: 'visit', id: visit.id }} isAdmin={canEdit} onDeleted={refetchMedia} />
+        <MediaGallery media={media} owner={{ type: 'visit', id: visit.id }} isAdmin={canEdit} onDeleted={refetchMedia} mediaTargets={mediaTargets} />
 
         {canEdit && (
           <MediaUploader owner={{ type: 'visit', id: visit.id }} tripID={visit.tripID} onUploadComplete={refetchMedia} />

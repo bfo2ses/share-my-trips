@@ -6,6 +6,7 @@ import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifi
 import { CSS } from '@dnd-kit/utilities';
 import { useTripDetail } from '../hooks/useTripDetail';
 import { useTripMedia } from '../../media/hooks/useMediaQueries';
+import type { MediaTarget } from '../../media/mediaOwner';
 import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
@@ -273,6 +274,19 @@ export function TripDetailPage() {
     }
     return ranges;
   }, [visitsByStage]);
+
+  const mediaTargets = useMemo<MediaTarget[]>(() => {
+    const stageNames = new Map(stages.map((stage) => [stage.id, stage.displayName]));
+    const visitTargets = allVisits.map((visit) => ({
+      owner: { type: 'visit' as const, id: visit.id },
+      label: `Visite · ${visit.title ?? visit.date}`,
+    }));
+    const legTargets = travelLegs.map((leg) => ({
+      owner: { type: 'travelLeg' as const, id: leg.id },
+      label: `Trajet · ${stageNames.get(leg.fromStageID) ?? '?'} → ${stageNames.get(leg.toStageID) ?? '?'}`,
+    }));
+    return [...visitTargets, ...legTargets];
+  }, [allVisits, stages, travelLegs]);
 
   const activeStageVisits = useMemo(() => {
     if (!selectedStageId) return [];
@@ -730,6 +744,7 @@ export function TripDetailPage() {
               toStageID: selectedTravelLeg.toStageID,
               travelLeg: selectedTravelLeg,
             })}
+            mediaTargets={mediaTargets}
           />
         ) : displayVisit && (
           <VisitDetail
@@ -738,6 +753,7 @@ export function TripDetailPage() {
             onClose={handleDetailClose}
             onBack={handleBackToStage}
             onRequestDelete={requestVisitDelete}
+            mediaTargets={mediaTargets}
           />
         )}
       />
@@ -781,6 +797,7 @@ export function TripDetailPage() {
               pendingCoords={pendingVisitCoords}
               actions={visitFormActions}
               onSubmitWithResolution={(submission) => submitVisitWithResolution(submission, handleBackToStage)}
+              mediaTargets={mediaTargets}
             />
           )}
           {travelLegForm && (
@@ -794,6 +811,7 @@ export function TripDetailPage() {
               travelLeg={travelLegForm.travelLeg}
               onClose={closeTravelLegForm}
               onSaved={handleTravelLegSaved}
+              mediaTargets={mediaTargets}
             />
           )}
         </div>

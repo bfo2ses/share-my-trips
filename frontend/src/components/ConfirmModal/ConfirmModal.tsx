@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './ConfirmModal.module.css';
 
@@ -10,6 +10,8 @@ interface ConfirmModalProps {
   cancelLabel?: string;
   danger?: boolean;
   busy?: boolean;
+  confirmDisabled?: boolean;
+  children?: ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -22,6 +24,8 @@ export function ConfirmModal({
   cancelLabel = 'Annuler',
   danger = false,
   busy = false,
+  confirmDisabled = false,
+  children,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -105,7 +109,8 @@ export function ConfirmModal({
         aria-labelledby={titleId}
       >
         <h3 id={titleId} className={styles.title}>{title}</h3>
-        {message && <p className={styles.message}>{message}</p>}
+        {message && <p role="alert" className={styles.message}>{message}</p>}
+        {children}
         <div className={styles.actions}>
           {/* Button paths are gated by `disabled={busy}`; keyboard + backdrop
               paths are gated via busyRef in the handlers above. */}
@@ -117,7 +122,7 @@ export function ConfirmModal({
             type="button"
             className={`${styles.btn} ${danger ? styles.btnDanger : styles.btnPrimary}`}
             onClick={onConfirm}
-            disabled={busy}
+            disabled={busy || confirmDisabled}
           >
             {busy ? 'En cours…' : confirmLabel}
           </button>

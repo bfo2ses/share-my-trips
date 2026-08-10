@@ -63,3 +63,23 @@ func TestDelete_RemovesFiles(t *testing.T) {
 	_, err = os.Stat(s.ThumbPath("m1", "t1", media.VisitOwner("d1")))
 	assert.True(t, os.IsNotExist(err))
 }
+
+func TestMove_RenamesOriginalAndThumbnail(t *testing.T) {
+	base := t.TempDir()
+	s := filesystem.NewStorage(base)
+	from := media.VisitOwner("visit-1")
+	to := media.TravelLegOwner("leg-1")
+
+	require.NoError(t, s.Store("m1", "t1", from, ".jpg", strings.NewReader("data")))
+	thumbDir := filepath.Dir(s.ThumbPath("m1", "t1", from))
+	require.NoError(t, os.MkdirAll(thumbDir, 0755))
+	require.NoError(t, os.WriteFile(s.ThumbPath("m1", "t1", from), []byte("thumb"), 0644))
+
+	require.NoError(t, s.Move("m1", "t1", from, to, ".jpg"))
+	_, err := os.Stat(s.FilePath("m1", "t1", from, ".jpg"))
+	assert.True(t, os.IsNotExist(err))
+	_, err = os.Stat(s.ThumbPath("m1", "t1", from))
+	assert.True(t, os.IsNotExist(err))
+	assert.FileExists(t, s.FilePath("m1", "t1", to, ".jpg"))
+	assert.FileExists(t, s.ThumbPath("m1", "t1", to))
+}

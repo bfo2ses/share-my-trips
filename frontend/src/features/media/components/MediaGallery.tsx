@@ -3,10 +3,11 @@ import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type D
 import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
-import { useDeleteMedia, useReorderMedia, useReorderTravelLegMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
+import { useDeleteMedia, useMoveMedia, useReorderMedia, useReorderTravelLegMedia, useUpdateMediaCaption } from '../hooks/useMediaMutations';
 import { MediaLightbox } from './MediaLightbox';
+import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { Media } from '../../../graphql/generated/graphql';
-import type { MediaOwner } from '../mediaOwner';
+import type { MediaOwner, MediaTarget } from '../mediaOwner';
 import styles from './MediaGallery.module.css';
 
 interface MediaGalleryProps {
@@ -14,23 +15,30 @@ interface MediaGalleryProps {
   owner: MediaOwner;
   isAdmin: boolean;
   onDeleted: () => void;
+  mediaTargets?: MediaTarget[];
 }
 
-export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryProps) {
+export function MediaGallery({ media, owner, isAdmin, onDeleted, mediaTargets = [] }: MediaGalleryProps) {
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [localMedia, setLocalMedia] = useState<Media[] | null>(null);
   const [editingCaption, setEditingCaption] = useState<string | null>(null);
   const [captionValue, setCaptionValue] = useState('');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [selectedIDs, setSelectedIDs] = useState<string[]>([]);
+  const [destinationKey, setDestinationKey] = useState('');
+  const [moveModalOpen, setMoveModalOpen] = useState(false);
+  const [moveError, setMoveError] = useState<string | null>(null);
 
   const [, deleteMedia] = useDeleteMedia();
   const [, reorderMedia] = useReorderMedia();
   const [, reorderTravelLegMedia] = useReorderTravelLegMedia();
   const [, updateCaption] = useUpdateMediaCaption();
+  const [{ fetching: moving }, moveMedia] = useMoveMedia();
 
   const items = localMedia ?? media;
   // Nothing to reorder against with a single item.
   const canDrag = isAdmin && items.length > 1;
+  const destinations = mediaTargets.filter((target) => target.owner.type !== owner.type || target.owner.id !== owner.id);
 
   // Reset local state when props change (after refetch).
   const prevMediaRef = useRef(media);
@@ -110,6 +118,44 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryP
     onDeleted(); // Refetch to sync.
   }
 
+  function toggleSelected(id: string) {
+    setSelectedIDs((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  async function handleMove() {
+    const destination = destinations.find((target) => ownerKey(target.owner) === destinationKey);
+    if (!destination || selectedIDs.length === 0) return;
+    setMoveError(null);
+    const result = await moveMedia({
+      input: {
+        mediaIDs: selectedIDs,
+        visitID: destination.owner.type === 'visit' ? destination.owner.id : null,
+        travelLegID: destination.owner.type === 'travelLeg' ? destination.owner.id : null,
+      },
+    }, { additionalTypenames: ['Media'] });
+    const errors = result.data?.moveMedia.errors ?? [];
+    if (result.error || errors.length > 0) {
+      setMoveError(errors.map((error) => error.message).join(' ') || result.error?.message || 'Impossible de déplacer les médias.');
+      return;
+    }
+    setSelectedIDs([]);
+    setDestinationKey('');
+    setMoveModalOpen(false);
+    onDeleted();
+  }
+
+  function openMoveModal() {
+    setMoveError(null);
+    setDestinationKey('');
+    setMoveModalOpen(true);
+  }
+
+  function closeMoveModal() {
+    if (moving) return;
+    setMoveError(null);
+    setMoveModalOpen(false);
+  }
+
   if (items.length === 0) {
     return null;
   }
@@ -117,6 +163,16 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryP
   function renderThumb(m: Media, i: number) {
     return (
       <>
+        {isAdmin && (
+          <label className={styles.selectBox} onPointerDown={(e) => e.stopPropagation()}>
+            <input
+              type="checkbox"
+              checked={selectedIDs.includes(m.id)}
+              onChange={() => toggleSelected(m.id)}
+              aria-label={`Sélectionner ${m.filename}`}
+            />
+          </label>
+        )}
         <button className={styles.thumb} onClick={() => setLightboxIndex(i)}>
           <img src={m.thumbUrl} alt={m.caption ?? m.filename} loading="lazy" />
           {m.contentType.startsWith('video/') && (
@@ -157,6 +213,13 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryP
   return (
     <>
       {actionError && <p role="alert" className={styles.errorMessage}>{actionError}</p>}
+      {isAdmin && selectedIDs.length > 0 && (
+        <div className={styles.moveBar}>
+          <span>{selectedIDs.length} média{selectedIDs.length > 1 ? 's' : ''} sélectionné{selectedIDs.length > 1 ? 's' : ''}</span>
+          <button type="button" className={styles.clearSelection} onClick={() => setSelectedIDs([])}>Annuler</button>
+          <button type="button" className={styles.moveButton} onClick={openMoveModal}>Déplacer vers…</button>
+        </div>
+      )}
       <div className={styles.gallery}>
         {canDrag ? (
           <DndContext
@@ -188,8 +251,42 @@ export function MediaGallery({ media, owner, isAdmin, onDeleted }: MediaGalleryP
         open={lightboxIndex >= 0}
         onClose={() => setLightboxIndex(-1)}
       />
+      <ConfirmModal
+        open={moveModalOpen}
+        title="Déplacer les médias"
+        message={moveError ?? undefined}
+        confirmLabel="Confirmer"
+        cancelLabel="Annuler"
+        busy={moving}
+        confirmDisabled={!destinationKey || destinations.length === 0}
+        onConfirm={handleMove}
+        onCancel={closeMoveModal}
+      >
+        <label className={styles.moveDestination}>
+          Destination
+          <select
+            aria-label="Destination du déplacement"
+            value={destinationKey}
+            onChange={(e) => {
+              setMoveError(null);
+              setDestinationKey(e.target.value);
+            }}
+            disabled={destinations.length === 0}
+          >
+            <option value="">Choisir une destination…</option>
+            {destinations.map((target) => (
+              <option key={ownerKey(target.owner)} value={ownerKey(target.owner)}>{target.label}</option>
+            ))}
+          </select>
+          {destinations.length === 0 && <span>Aucune autre visite ou trajet disponible dans ce voyage.</span>}
+        </label>
+      </ConfirmModal>
     </>
   );
+}
+
+function ownerKey(owner: MediaOwner) {
+  return `${owner.type}:${owner.id}`;
 }
 
 function SortableThumb({ id, children }: { id: string; children: React.ReactNode }) {

@@ -66,6 +66,52 @@ const DeleteTravelLegDocument = parse(`
   }
 `);
 
+const VisitMediaDocument = parse(`
+  query TestVisitMedia($visitID: ID!) {
+    visitMedia(visitID: $visitID) {
+      __typename
+      id
+      visitID
+      travelLegID
+      tripID
+      filename
+    }
+  }
+`);
+
+const TravelLegMediaDocument = parse(`
+  query TestTravelLegMedia($travelLegID: ID!) {
+    travelLegMedia(travelLegID: $travelLegID) {
+      __typename
+      id
+      visitID
+      travelLegID
+      tripID
+      filename
+    }
+  }
+`);
+
+const MoveMediaDocument = parse(`
+  mutation TestMoveMedia($input: MoveMediaInput!) {
+    moveMedia(input: $input) {
+      __typename
+      media {
+        __typename
+        id
+        visitID
+        travelLegID
+        tripID
+        position
+      }
+      errors {
+        __typename
+        message
+      }
+    }
+  }
+`);
+
 const SetupStatusDocument = parse(`
   query TestSetupStatus {
     setupStatus {
@@ -190,5 +236,38 @@ describe('makeClient', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.data?.travelLegs).toHaveLength(0);
+  });
+
+  it('invalidates source and destination media galleries after moving media', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        visitMedia: [{ __typename: 'Media', id: 'media-1', visitID: 'visit-1', travelLegID: null, tripID: 'trip-1', filename: 'photo.jpg' }],
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { travelLegMedia: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        moveMedia: {
+          __typename: 'MoveMediaPayload',
+          media: [{ __typename: 'Media', id: 'media-1', visitID: null, travelLegID: 'leg-1', tripID: 'trip-1', position: 0 }],
+          errors: [],
+        },
+      } }))
+      .mockResolvedValueOnce(jsonResponse({ data: { visitMedia: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ data: {
+        travelLegMedia: [{ __typename: 'Media', id: 'media-1', visitID: null, travelLegID: 'leg-1', tripID: 'trip-1', filename: 'photo.jpg' }],
+      } }));
+    vi.stubGlobal('fetch', fetchMock);
+    const client = makeClient('token-a', vi.fn());
+
+    await client.query(VisitMediaDocument, { visitID: 'visit-1' }).toPromise();
+    await client.query(TravelLegMediaDocument, { travelLegID: 'leg-1' }).toPromise();
+    await client.mutation(MoveMediaDocument, {
+      input: { mediaIDs: ['media-1'], visitID: null, travelLegID: 'leg-1' },
+    }).toPromise();
+    const source = await client.query(VisitMediaDocument, { visitID: 'visit-1' }).toPromise();
+    const destination = await client.query(TravelLegMediaDocument, { travelLegID: 'leg-1' }).toPromise();
+
+    expect(fetchMock).toHaveBeenCalledTimes(5);
+    expect(source.data?.visitMedia).toHaveLength(0);
+    expect(destination.data?.travelLegMedia).toHaveLength(1);
   });
 });

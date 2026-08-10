@@ -11,7 +11,11 @@ vi.mock('../../media/hooks/useMediaQueries', () => ({
   useVisitMedia: vi.fn(() => [{ data: { visitMedia: [] } }, vi.fn()]),
 }));
 
-vi.mock('../../media/components/MediaGallery', () => ({ MediaGallery: () => null }));
+vi.mock('../../media/components/MediaGallery', () => ({
+  MediaGallery: ({ mediaTargets }: { mediaTargets?: unknown[] }) => (
+    <div data-testid="media-gallery" data-target-count={mediaTargets?.length ?? 0} />
+  ),
+}));
 vi.mock('../../media/components/MediaUploader', () => ({ MediaUploader: () => null }));
 
 describe('VisitForm', () => {
@@ -62,5 +66,21 @@ describe('VisitForm', () => {
       kind: 'update', visitID: 'visit-1', date: '2025-05-12', stageID: 'stage-1', tripID: 'trip-1',
     })));
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('passes media destinations to the existing visit gallery', () => {
+    render(
+      <VisitForm
+        open
+        panel
+        tripID="trip-1"
+        stageID="stage-1"
+        visit={{ id: 'visit-1', date: '2025-05-10', title: 'Arrivée', lat: 48.8, lng: 2.3 }}
+        mediaTargets={[{ owner: { type: 'visit', id: 'visit-2' }, label: 'Visite suivante' }]}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByTestId('media-gallery')).toHaveAttribute('data-target-count', '1');
   });
 });

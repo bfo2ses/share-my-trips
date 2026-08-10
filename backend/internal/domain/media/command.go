@@ -31,3 +31,9 @@ type ReorderTravelLegCommand struct {
 type DeleteMediaCommand struct {
 	ID string
 }
+
+// MoveMediaCommand identifies media to move and their new owner.
+type MoveMediaCommand struct {
+	MediaIDs []string
+	Owner    Owner
+}

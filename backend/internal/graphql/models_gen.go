@@ -157,6 +157,18 @@ type MediaPayload struct {
 	Errors []*UserError `json:"errors"`
 }
 
+type MoveMediaInput struct {
+	MediaIDs []string `json:"mediaIDs"`
+	// Exactly one of visitID or travelLegID must be set.
+	VisitID     *string `json:"visitID,omitempty"`
+	TravelLegID *string `json:"travelLegID,omitempty"`
+}
+
+type MoveMediaPayload struct {
+	Media  []*Media     `json:"media"`
+	Errors []*UserError `json:"errors"`
+}
+
 type MoveTravelLegInput struct {
 	FromStageID string `json:"fromStageID"`
 	ToStageID   string `json:"toStageID"`
