@@ -198,12 +198,15 @@ export function MediaGallery({ media, owner, tripID, isAdmin, onDeleted, mediaTa
             />
           </label>
         )}
-        <button className={styles.thumb} onClick={() => setLightboxIndex(i)}>
-          <img src={m.thumbUrl} alt={m.caption ?? m.filename} loading="lazy" />
-          {m.contentType.startsWith('video/') && (
-            <span className={styles.playBadge}>▶</span>
-          )}
-        </button>
+        {isAdmin ? (
+          <div className={`${styles.thumb} ${styles.thumbDisabled}`}>
+            {thumbnailContent(m)}
+          </div>
+        ) : (
+          <button className={styles.thumb} onClick={() => setLightboxIndex(i)}>
+            {thumbnailContent(m)}
+          </button>
+        )}
         {isAdmin && editingCaption === m.id ? (
           <input
             className={styles.captionInput}
@@ -221,6 +224,17 @@ export function MediaGallery({ media, owner, tripID, isAdmin, onDeleted, mediaTa
           >
             {m.caption || (isAdmin ? 'Ajouter une légende' : '')}
           </span>
+        )}
+      </>
+    );
+  }
+
+  function thumbnailContent(m: Media) {
+    return (
+      <>
+        <img src={m.thumbUrl} alt={m.caption ?? m.filename} loading="lazy" />
+        {m.contentType.startsWith('video/') && (
+          <span className={styles.playBadge}>▶</span>
         )}
       </>
     );

@@ -63,6 +63,18 @@ describe('MediaGallery', () => {
     expect(screen.getByRole('toolbar', { name: 'Actions sur la sélection' })).toBeInTheDocument();
   });
 
+  it('does not make thumbnails clickable in edit mode', () => {
+    render(<MediaGallery media={media} owner={{ type: 'visit', id: 'visit-1' }} tripID="trip-1" isAdmin onDeleted={vi.fn()} />);
+
+    expect(screen.queryByRole('button', { name: 'roadtrip.jpg' })).not.toBeInTheDocument();
+  });
+
+  it('keeps thumbnails clickable outside edit mode', () => {
+    render(<MediaGallery media={media} owner={{ type: 'visit', id: 'visit-1' }} tripID="trip-1" isAdmin={false} onDeleted={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'roadtrip.jpg' })).toBeInTheDocument();
+  });
+
   it('moves selected media to another owner', async () => {
     moveMedia.mockResolvedValue({ data: { moveMedia: { media: [], errors: [] } } });
     const onDeleted = vi.fn();
