@@ -66,6 +66,13 @@ Fonctionnalité: Gestion des voyages
     Quand je publie le voyage
     Alors son statut passe à "publié"
 
+  Scénario: Impossible de publier un voyage sans date de début
+    Etant donné que je suis connecté en tant qu'administrateur
+    Et qu'un voyage sans date de début existe en brouillon
+    Quand je publie le voyage
+    Alors un message d'erreur m'indique que la date de début est obligatoire
+    Et le voyage reste en brouillon
+
   Scénario: Un voyage publié reste modifiable
     Etant donné que je suis connecté en tant qu'administrateur
     Et qu'un voyage "Road trip en Islande" est publié

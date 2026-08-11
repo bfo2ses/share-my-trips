@@ -22,6 +22,8 @@ func domainErrorToUserErrors(err error) []*UserError {
 		return []*UserError{{Field: strPtr("country"), Message: trip.ErrCountryRequired.Error()}}
 	case errors.Is(err, trip.ErrGPSRequired):
 		return []*UserError{{Field: strPtr("lat"), Message: trip.ErrGPSRequired.Error()}}
+	case errors.Is(err, trip.ErrStartDateRequired):
+		return []*UserError{{Field: strPtr("startDate"), Message: trip.ErrStartDateRequired.Error()}}
 	case errors.Is(err, trip.ErrInvalidDates):
 		return []*UserError{{Field: strPtr("endDate"), Message: trip.ErrInvalidDates.Error()}}
 	case errors.Is(err, trip.ErrNotFound):

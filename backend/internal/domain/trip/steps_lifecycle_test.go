@@ -13,10 +13,13 @@ import (
 
 func registerLifecycleSteps(ctx *godog.ScenarioContext, tc *testContext) {
 	ctx.Step(`^un voyage "([^"]*)" existe en brouillon$`, tc.tripExistsAsDraft)
+	ctx.Step(`^un voyage sans date de début existe en brouillon$`, tc.undatedTripExistsAsDraft)
 	ctx.Step(`^un voyage "([^"]*)" est publié$`, tc.tripIsPublished)
 	ctx.Step(`^un voyage "([^"]*)" est clôturé$`, tc.tripIsClosed)
 	ctx.Step(`^je publie le voyage$`, tc.publishTrip)
 	ctx.Step(`^son statut passe à "([^"]*)"$`, tc.tripStatusChangesTo)
+	ctx.Step(`^le voyage reste en brouillon$`, tc.tripRemainsDraft)
+	ctx.Step(`^un message d'erreur m'indique que la date de début est obligatoire$`, tc.errStartDateRequired)
 	ctx.Step(`^le voyage est modifiable$`, tc.tripIsEditable)
 	ctx.Step(`^le voyage n\'est pas modifiable$`, tc.tripIsNotEditable)
 	ctx.Step(`^je repasse le voyage en brouillon$`, tc.unpublishTrip)
@@ -42,6 +45,16 @@ func (tc *testContext) tripExistsAsDraft(title string) error {
 	return tc.lastErr
 }
 
+func (tc *testContext) undatedTripExistsAsDraft() error {
+	tc.currentTrip, tc.lastErr = tc.handler.Create(context.Background(), trip.CreateTripCommand{
+		Title:   "Voyage sans date",
+		Country: "Islande",
+		Lat:     defaultLat,
+		Lng:     defaultLng,
+	})
+	return tc.lastErr
+}
+
 func (tc *testContext) tripIsPublished(title string) error {
 	if err := tc.tripExistsAsDraft(title); err != nil {
 		return err
@@ -63,7 +76,31 @@ func (tc *testContext) tripIsClosed(title string) error {
 }
 
 func (tc *testContext) publishTrip() error {
-	tc.currentTrip, tc.lastErr = tc.handler.Publish(context.Background(), trip.PublishTripCommand{ID: tc.currentTrip.ID})
+	original := tc.currentTrip
+	updated, err := tc.handler.Publish(context.Background(), trip.PublishTripCommand{ID: tc.currentTrip.ID})
+	tc.lastErr = err
+	if err != nil {
+		tc.currentTrip = original
+	} else {
+		tc.currentTrip = updated
+	}
+	return nil
+}
+
+func (tc *testContext) tripRemainsDraft() error {
+	if tc.currentTrip == nil {
+		return fmt.Errorf("expected current trip to be preserved")
+	}
+	if tc.currentTrip.Status != trip.StatusDraft {
+		return fmt.Errorf("expected trip to remain draft, got %q", tc.currentTrip.Status)
+	}
+	return nil
+}
+
+func (tc *testContext) errStartDateRequired() error {
+	if !errors.Is(tc.lastErr, trip.ErrStartDateRequired) {
+		return fmt.Errorf("expected ErrStartDateRequired, got: %v", tc.lastErr)
+	}
 	return nil
 }
 
