@@ -27,6 +27,10 @@ func TestOpenRouteServiceClientRequestsGeoJSON(t *testing.T) {
 	require.Equal(t, 12.345, distance)
 }
 
+func TestOpenRouteServiceClientUsesHeiGITBaseURL(t *testing.T) {
+	require.Equal(t, "https://api.heigit.org/openrouteservice", defaultOpenRouteServiceBaseURL)
+}
+
 func TestOpenRouteServiceClientRejectsAGeoJSONRouteWithoutDistance(t *testing.T) {
 	t.Parallel()
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

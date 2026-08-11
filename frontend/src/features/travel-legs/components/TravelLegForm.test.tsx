@@ -215,6 +215,35 @@ describe('TravelLegForm', () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalledWith(expect.objectContaining({ id: 'leg-1' }), true));
   });
 
+  it('keeps the edit form open after saving an existing journey', async () => {
+    const onClose = vi.fn();
+    updateLeg.mockResolvedValue({
+      data: {
+        updateTravelLeg: {
+          travelLeg: { id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null },
+          errors: [],
+        },
+      },
+    });
+    render(
+      <TravelLegForm
+        open
+        panel
+        tripID="trip-1"
+        fromStageID="stage-1"
+        toStageID="stage-2"
+        travelLeg={{ id: 'leg-1', tripID: 'trip-1', fromStageID: 'stage-1', toStageID: 'stage-2', transport: 'CAR', description: null, distanceKm: null }}
+        onClose={onClose}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer le trajet' }));
+
+    await waitFor(() => expect(updateLeg).toHaveBeenCalled());
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Enregistrer le trajet' })).toBeInTheDocument();
+  });
+
   it('prevents duplicate calculations while one is pending', () => {
     const pending = deferred<{ data: { calculateTravelLegDistance: { distanceKm: number; errors: [] } } }>();
     calculate.mockReturnValue(pending.promise);
