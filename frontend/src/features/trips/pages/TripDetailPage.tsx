@@ -362,12 +362,9 @@ export function TripDetailPage() {
     setTravelLegForm({ fromStageID, toStageID });
   }, [closeStageForm, closeVisitForm, setSearchParams]);
 
-  const handleTravelLegSaved = useCallback((travelLeg: TravelLegData, created: boolean) => {
-    setTravelLegForm(null);
-    if (!created) {
-      setSearchParams({ leg: travelLeg.id }, { replace: true });
-    }
-  }, [setSearchParams]);
+  const handleTravelLegSaved = useCallback((_travelLeg: TravelLegData, created: boolean) => {
+    if (created) setTravelLegForm(null);
+  }, []);
 
   const handleDetailClose = useCallback(() => {
     setSearchParams({}, { replace: true });

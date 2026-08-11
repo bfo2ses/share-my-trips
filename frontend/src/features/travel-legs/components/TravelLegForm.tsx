@@ -132,7 +132,6 @@ function TravelLegFormContent({
         return;
       }
       onSaved?.(payload.travelLeg, false);
-      onClose();
       return;
     }
 
