@@ -21,7 +21,7 @@ var (
 	ErrRequestFailed = errors.New("road distance calculation failed")
 )
 
-const defaultOpenRouteServiceBaseURL = "https://api.openrouteservice.org"
+const defaultOpenRouteServiceBaseURL = "https://api.heigit.org/openrouteservice"
 
 // OpenRouteServiceClient calculates driving distance with the ORS Directions
 // API. It exposes no credentials through returned errors.
