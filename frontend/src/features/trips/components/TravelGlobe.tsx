@@ -241,6 +241,9 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
           arcColor={() => GOLD}
           arcAltitudeAutoScale={0.45}
           arcStroke={0.7}
+          arcDashLength={0.38}
+          arcDashGap={1.2}
+          arcDashAnimateTime={3600}
           onGlobeClick={handleGlobeClick}
           onGlobeReady={handleGlobeReady}
           showAtmosphere

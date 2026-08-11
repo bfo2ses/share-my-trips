@@ -18,6 +18,9 @@ type MockGlobeProps = {
   pointsData?: object[];
   arcsData?: object[];
   arcColor?: (arc: object) => string;
+  arcDashLength?: number;
+  arcDashGap?: number;
+  arcDashAnimateTime?: number;
 };
 
 const latestProps: { current: MockGlobeProps } = { current: {} };
@@ -59,6 +62,9 @@ describe('TravelGlobe', () => {
     expect(latestProps.current.arcsData).toHaveLength(1);
     expect(latestProps.current.arcsData?.[0]).toMatchObject({ startLat: 44.8378, startLng: -0.5792, endLat: 35.6762, endLng: 139.6503 });
     expect(latestProps.current.arcColor?.({})).toBe(GOLD);
+    expect(latestProps.current.arcDashLength).toBe(0.38);
+    expect(latestProps.current.arcDashGap).toBe(1.2);
+    expect(latestProps.current.arcDashAnimateTime).toBe(3600);
 
     act(() => latestProps.current.onPointClick?.(latestProps.current.pointsData?.[0] ?? {}, {}, { lat: 35.6762, lng: 139.6503 }));
     expect(onTripSelect).toHaveBeenCalledWith(trips[0]);

@@ -174,7 +174,12 @@
   }
 
   .globeArea {
-    min-height: 440px;
+    min-height: 0;
+  }
+
+  .globeFrame {
+    flex: none;
+    height: 380px;
   }
 
   .globeHeader {

@@ -29,6 +29,9 @@ describe('TripTimeline', () => {
 
     expect(screen.getByRole('heading', { name: 'Mes voyages' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'À planifier' })).toBeVisible();
+    expect(screen.getByText('2025')).toBeVisible();
+    expect(screen.getByText('2024')).toBeVisible();
+    expect(screen.getByText('—')).toBeVisible();
     expect(screen.getByRole('button', { name: /Voyage récent/ })).toBeVisible();
     expect(screen.getByRole('button', { name: /Voyage à planifier/ })).toBeVisible();
   });

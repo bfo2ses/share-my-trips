@@ -62,6 +62,7 @@ function TimelineSection({
       <div className={styles.cards}>
         {trips.map((trip, index) => (
           <div className={styles.entry} key={trip.id}>
+            <span className={styles.year}>{trip.startDate?.slice(0, 4) ?? '—'}</span>
             <span className={styles.dot} aria-hidden="true" />
             <TripCard trip={trip} index={startIndex + index} isAdmin={isAdmin} onEdit={onTripSelect} />
           </div>
