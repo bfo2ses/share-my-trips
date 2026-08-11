@@ -8,6 +8,7 @@ type TripSummary = TripsQuery['trips'][number];
 const BORDEAUX = { lat: 44.8378, lng: -0.5792 };
 const GOLD = '#c6a35d';
 const GOLD_LIGHT = '#dbbf7c';
+const GOLD_SOFT = 'rgba(198, 163, 93, 0.32)';
 const RESUME_DELAY_MS = 3000;
 
 type GlobePoint = {
@@ -25,6 +26,7 @@ type GlobeArc = {
   startLng: number;
   endLat: number;
   endLng: number;
+  animated: boolean;
 };
 
 interface TravelGlobeProps {
@@ -93,13 +95,18 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
   ], [pendingCoords, validTrips]);
 
   const arcs = useMemo<GlobeArc[]>(
-    () => validTrips.map((trip) => ({
-      id: trip.id,
-      startLat: BORDEAUX.lat,
-      startLng: BORDEAUX.lng,
-      endLat: trip.lat,
-      endLng: trip.lng,
-    })),
+    () => validTrips.flatMap((trip) => {
+      const coordinates = {
+        startLat: BORDEAUX.lat,
+        startLng: BORDEAUX.lng,
+        endLat: trip.lat,
+        endLng: trip.lng,
+      };
+      return [
+        { id: `${trip.id}-base`, ...coordinates, animated: false },
+        { id: `${trip.id}-animated`, ...coordinates, animated: true },
+      ];
+    }),
     [validTrips],
   );
 
@@ -238,12 +245,12 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
           arcStartLng="startLng"
           arcEndLat="endLat"
           arcEndLng="endLng"
-          arcColor={() => GOLD}
+          arcColor={(arc: object) => (arc as GlobeArc).animated ? GOLD : GOLD_SOFT}
           arcAltitudeAutoScale={0.45}
-          arcStroke={0.7}
-          arcDashLength={0.38}
-          arcDashGap={1.2}
-          arcDashAnimateTime={3600}
+          arcStroke={(arc: object) => (arc as GlobeArc).animated ? 0.7 : 0.35}
+          arcDashLength={(arc: object) => (arc as GlobeArc).animated ? 0.38 : 1}
+          arcDashGap={(arc: object) => (arc as GlobeArc).animated ? 1.2 : 0}
+          arcDashAnimateTime={(arc: object) => (arc as GlobeArc).animated ? 3600 : 0}
           onGlobeClick={handleGlobeClick}
           onGlobeReady={handleGlobeReady}
           showAtmosphere

@@ -19,7 +19,7 @@ describe('TripTimeline', () => {
     render(
       <MemoryRouter>
         <TripTimeline
-          datedTrips={[trip('new', 'Voyage récent', '2025-01-01'), trip('old', 'Voyage ancien', '2024-01-01')]}
+          datedTrips={[trip('new', 'Voyage récent', '2025-01-01'), trip('new-2', 'Second voyage récent', '2025-06-01'), trip('old', 'Voyage ancien', '2024-01-01')]}
           undatedTrips={[trip('todo', 'Voyage à planifier', null)]}
           isAdmin={false}
           onTripSelect={vi.fn()}
@@ -30,6 +30,7 @@ describe('TripTimeline', () => {
     expect(screen.getByRole('heading', { name: 'Mes voyages' })).toBeVisible();
     expect(screen.getByRole('heading', { name: 'À planifier' })).toBeVisible();
     expect(screen.getByText('2025')).toBeVisible();
+    expect(screen.getAllByText('2025')).toHaveLength(1);
     expect(screen.getByText('2024')).toBeVisible();
     expect(screen.getByText('—')).toBeVisible();
     expect(screen.getByRole('button', { name: /Voyage récent/ })).toBeVisible();
