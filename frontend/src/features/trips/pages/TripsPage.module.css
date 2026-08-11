@@ -22,26 +22,9 @@
   z-index: 2;
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 4rem) 0;
-}
-
-.kicker {
-  margin: 0 0 0.35rem;
-  color: var(--color-gold);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.globeHeader h1 {
-  margin: 0;
-  color: var(--color-text);
-  font-family: var(--font-display);
-  font-size: clamp(1.8rem, 4vw, 3.2rem);
-  line-height: 1;
 }
 
 .editActions {
@@ -167,10 +150,10 @@
 @media (max-width: 768px) {
   .page {
     display: flex;
-    height: auto;
-    min-height: calc(100svh - var(--header-height));
+    height: calc(100svh - var(--header-height) - 1px);
+    min-height: 0;
     flex-direction: column;
-    overflow: visible;
+    overflow: hidden;
   }
 
   .globeArea {
@@ -186,10 +169,6 @@
     padding: 1.25rem 1rem 0;
   }
 
-  .globeHeader h1 {
-    font-size: 2rem;
-  }
-
   .editActions {
     max-width: 45%;
   }
@@ -201,8 +180,9 @@
   }
 
   .timelinePanel {
-    min-height: auto;
-    overflow: visible;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
     border-top: 1px solid var(--color-border);
     border-left: none;
   }

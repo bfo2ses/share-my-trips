@@ -201,13 +201,9 @@ export function TripsPage() {
 
   return (
     <main className={styles.page}>
-      <section className={styles.globeArea} aria-labelledby="home-title">
-        <div className={styles.globeHeader}>
-          <div>
-            <p className={styles.kicker}>ShareMyTrips</p>
-            <h1 id="home-title">Mes voyages</h1>
-          </div>
-          {isAdmin && (
+      <section className={styles.globeArea} aria-label="Globe des voyages">
+        {isAdmin && (
+          <div className={styles.globeHeader}>
             <div className={styles.editActions}>
               <button type="button" className={styles.secondaryButton} onClick={handleCreate}>
                 Créer un voyage
@@ -221,8 +217,8 @@ export function TripsPage() {
                 {placementMode ? 'Annuler le placement' : 'Placer un voyage'}
               </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
         {placementMode && <p className={styles.placementHint}>Cliquez sur le globe pour placer le voyage.</p>}
         <div className={styles.globeFrame}>
           <Suspense fallback={<div className={styles.globeFallback} role="status">Chargement du globe…</div>}>

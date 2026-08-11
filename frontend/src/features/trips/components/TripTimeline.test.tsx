@@ -27,7 +27,7 @@ describe('TripTimeline', () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole('heading', { name: 'Mes voyages' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Mes voyages' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'À planifier' })).toBeVisible();
     expect(screen.getByText('2025')).toBeVisible();
     expect(screen.getAllByText('2025')).toHaveLength(1);

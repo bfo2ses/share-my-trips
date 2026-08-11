@@ -72,8 +72,7 @@ describe('TripsPage', () => {
     );
 
     expect(await screen.findByTestId('travel-globe')).toBeVisible();
-    expect(screen.getByRole('heading', { level: 1, name: 'Mes voyages' })).toBeVisible();
-    expect(screen.getByRole('heading', { level: 2, name: 'Mes voyages' })).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Mes voyages' })).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'À planifier' })).toBeVisible();
 
     const cards = screen.getAllByRole('button');

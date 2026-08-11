@@ -51,7 +51,7 @@ export function TripTimeline({ datedTrips, undatedTrips, isAdmin, onTripSelect }
   return (
     <section className={styles.timeline} aria-label="Timeline des voyages">
       {datedTrips.length > 0 && (
-        <TimelineSection title="Mes voyages" groups={groupTripsByYear(datedTrips)} isAdmin={isAdmin} onTripSelect={onTripSelect} startIndex={0} />
+        <TimelineSection groups={groupTripsByYear(datedTrips)} isAdmin={isAdmin} onTripSelect={onTripSelect} startIndex={0} />
       )}
       {undatedTrips.length > 0 && (
         <TimelineSection
@@ -73,13 +73,13 @@ function TimelineSection({
   onTripSelect,
   startIndex,
 }: {
-  title: string;
+  title?: string;
   groups: TripGroup[];
   isAdmin: boolean;
   onTripSelect: (trip: TripSummary) => void;
   startIndex: number;
 }) {
-  const sectionId = `timeline-${title.replaceAll(' ', '-').toLowerCase()}`;
+  const sectionId = title ? `timeline-${title.replaceAll(' ', '-').toLowerCase()}` : undefined;
   const indexedGroups = groups.map((group, groupIndex) => ({
     group,
     groupStartIndex: startIndex + groups
@@ -88,11 +88,13 @@ function TimelineSection({
   }));
 
   return (
-    <section className={styles.section} aria-labelledby={sectionId}>
-      <h2 id={sectionId} className={styles.heading}>
-        <span className={styles.headingRule} aria-hidden="true" />
-        {title}
-      </h2>
+    <section className={styles.section} aria-label={title ?? 'Voyages datés'}>
+      {title && (
+        <h2 id={sectionId} className={styles.heading}>
+          <span className={styles.headingRule} aria-hidden="true" />
+          {title}
+        </h2>
+      )}
       <div className={styles.groups}>
         {indexedGroups.map(({ group, groupStartIndex }, groupIndex) => {
           return (
