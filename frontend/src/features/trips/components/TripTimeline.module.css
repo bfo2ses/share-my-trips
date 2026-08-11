@@ -69,13 +69,15 @@
 
 .year {
   position: absolute;
-  top: 1.2rem;
+  top: 1.12rem;
   left: -4.7rem;
   width: 2.25rem;
-  color: var(--color-text-muted);
-  font-size: 0.68rem;
+  color: var(--color-gold-light);
+  font-size: 0.76rem;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
+  text-shadow: 0 0 10px rgba(198, 163, 93, 0.3);
   text-align: right;
 }
 
@@ -107,8 +109,10 @@
   }
 
   .year {
+    top: 1.08rem;
     left: -4.4rem;
     width: 2rem;
+    font-size: 0.72rem;
   }
 
   .groups::before {
