@@ -8,6 +8,10 @@ export interface FormAction {
   danger?: boolean;
 }
 
+export interface TripFormAction extends Omit<FormAction, 'onClick'> {
+  onClick: () => void | Promise<string[] | void>;
+}
+
 interface TripData {
   id: string;
   title: string;
@@ -33,7 +37,7 @@ interface TripFormProps {
   pendingCoords?: { lat: number; lng: number } | null;
   noBackdrop?: boolean;
   panel?: boolean;
-  actions?: FormAction[];
+  actions?: TripFormAction[];
   coverChoices?: CoverChoice[];
 }
 
@@ -52,7 +56,7 @@ export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel
   );
 }
 
-function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverChoices }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: FormAction[]; coverChoices?: CoverChoice[] }) {
+function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverChoices }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: TripFormAction[]; coverChoices?: CoverChoice[] }) {
   const isEdit = !!trip;
 
   const [title, setTitle] = useState(trip?.title ?? '');
@@ -62,6 +66,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
   const [endDate, setEndDate] = useState(trip?.endDate ?? '');
   const [coverPhoto, setCoverPhoto] = useState(trip?.coverPhoto ?? '');
   const [errors, setErrors] = useState<string[]>([]);
+  const [actionBusy, setActionBusy] = useState<number | null>(null);
 
   const [, createTrip] = useCreateTrip();
   const [, updateTrip] = useUpdateTrip();
@@ -72,6 +77,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (actionBusy !== null) return;
     setErrors([]);
 
     if (lat == null || lng == null) {
@@ -117,6 +123,18 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
     }
 
     onClose();
+  }
+
+  async function handleAction(action: TripFormAction, index: number) {
+    if (actionBusy !== null) return;
+    setErrors([]);
+    setActionBusy(index);
+    try {
+      const actionErrors = await action.onClick();
+      if (actionErrors && actionErrors.length > 0) setErrors(actionErrors);
+    } finally {
+      setActionBusy(null);
+    }
   }
 
   return (
@@ -233,7 +251,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
           </label>
         </div>
 
-        <button type="submit" className={styles.submit}>
+        <button type="submit" className={styles.submit} disabled={actionBusy !== null}>
           {isEdit ? 'Enregistrer' : 'Créer le voyage'}
         </button>
 
@@ -244,9 +262,10 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
                 key={i}
                 type="button"
                 className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
-                onClick={action.onClick}
+                onClick={() => void handleAction(action, i)}
+                disabled={actionBusy !== null}
               >
-                {action.label}
+                {actionBusy === i ? 'En cours…' : action.label}
               </button>
             ))}
           </div>

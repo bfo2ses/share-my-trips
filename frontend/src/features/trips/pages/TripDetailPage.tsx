@@ -13,7 +13,8 @@ import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useClos
 import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
 import { useAddVisit, useUpdateVisit, useDeleteVisit, useReorderVisits } from '../../stages/hooks/useVisitMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
-import { TripForm, type FormAction } from '../components/TripForm';
+import { TripForm, type FormAction, type TripFormAction } from '../components/TripForm';
+import { payloadErrors } from '../utils/payloadErrors';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
 import { VisitDetail } from '../components/VisitDetail';
 import { StageForm } from '../../stages/components/StageForm';
@@ -443,24 +444,28 @@ export function TripDetailPage() {
     }
   }, [resolutionRequest, resolving]);
 
-  async function handlePublish() {
-    await publishTrip({ id: id! }, refetchContext);
+  async function handlePublish(): Promise<string[] | void> {
+    const result = await publishTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.publishTrip.errors);
   }
 
-  async function handleUnpublish() {
-    await unpublishTrip({ id: id! }, refetchContext);
+  async function handleUnpublish(): Promise<string[] | void> {
+    const result = await unpublishTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.unpublishTrip.errors);
   }
 
-  async function handleCloseTripAction() {
-    const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
-    if (allDates.length === 0) return;
+  async function handleCloseTripAction(): Promise<string[] | void> {
+    const allDates = Object.values(stageDateRanges).flatMap((range) => [range.start, range.end]).sort();
+    if (allDates.length === 0) return ['Impossible de clôturer ce voyage sans visite.'];
     const firstVisitDate = allDates[0];
     const lastVisitDate = allDates[allDates.length - 1];
-    await closeTrip({ id: id!, input: { firstVisitDate, lastVisitDate } }, refetchContext);
+    const result = await closeTrip({ id: id!, input: { firstVisitDate, lastVisitDate } }, refetchContext);
+    return payloadErrors(result, result.data?.closeTrip.errors);
   }
 
-  async function handleReopen() {
-    await reopenTrip({ id: id! }, refetchContext);
+  async function handleReopen(): Promise<string[] | void> {
+    const result = await reopenTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.reopenTrip.errors);
   }
 
   async function handleDelete() {
@@ -635,7 +640,7 @@ export function TripDetailPage() {
   const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedVisit || selectedTravelLeg ? 1 : 0;
 
   // Actions for each form panel
-  const tripFormActions: FormAction[] = isAdmin ? [
+  const tripFormActions: TripFormAction[] = isAdmin ? [
     ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
     ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
     ...(trip.status === 'PUBLISHED' && canCloseTrip ? [{ label: 'Clôturer le voyage', onClick: handleCloseTripAction }] : []),

@@ -15,7 +15,8 @@ test('initial setup authenticates the administrator and protects private routes'
   await expect(page).toHaveURL('/')
   await expect.poll(() => page.evaluate(() => sessionStorage.getItem('smt_token'))).not.toBeNull()
   await expect(page.getByRole('button', { name: /Benjamin/ })).toBeVisible()
-  await expect(page.getByText('Tous les voyages')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Mes voyages' })).toBeVisible()
+  await expect(page.getByText('Aucun voyage pour le moment.')).toBeVisible()
 
   const anonymousPage = await browser.newPage()
   await anonymousPage.goto('/setup')

@@ -1,183 +1,211 @@
 .page {
   display: grid;
-  grid-template-columns: 0px 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 38vw);
   height: calc(100svh - var(--header-height));
   overflow: hidden;
-  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--color-bg);
 }
 
-.panelOpen {
-  grid-template-columns: 380px 1fr;
-}
-
-/* ── Panel gauche ── */
-.panel {
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--color-border);
-  overflow: hidden;
-  background: var(--color-bg-panel);
-  width: 380px;
-  min-width: 380px;
-}
-
-.panelHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--color-border);
-  flex-shrink: 0;
-}
-
-.panelTitle {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.panelActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.addBtn {
-  background: var(--color-gold);
-  color: var(--color-bg);
-  border: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  font-size: 1.1rem;
-  font-weight: 300;
-  line-height: 1;
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-
-.addBtn:hover {
-  opacity: 0.85;
-}
-
-.closeBtn {
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  transition: color 0.15s ease;
-}
-
-.closeBtn:hover {
-  color: var(--color-text);
-}
-
-.list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-border) transparent;
-}
-
-.empty {
-  color: var(--color-text-muted);
-  font-size: 0.8rem;
-  text-align: center;
-  padding: 40px 20px;
-  margin: 0;
-}
-
-/* ── Carte ── */
-.mapArea {
+.globeArea {
   position: relative;
-}
-
-/* ── Bouton toggle ── */
-.listButton {
-  position: fixed;
-  bottom: 36px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 30;
   display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 22px;
-  background: var(--color-bg-subtle);
-  border: 1px solid var(--color-border);
-  border-radius: 100px;
-  color: var(--color-text);
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(198, 163, 93, 0.08), transparent 46%),
+    var(--color-bg);
 }
 
-.listButton:hover {
-  border-color: var(--color-gold);
+.globeHeader {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 4rem) 0;
+}
+
+.kicker {
+  margin: 0 0 0.35rem;
   color: var(--color-gold);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-.listButtonIcon {
-  font-size: 1rem;
+.globeHeader h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: clamp(1.8rem, 4vw, 3.2rem);
   line-height: 1;
 }
 
-/* ── Mobile ── */
+.editActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.secondaryButton,
+.placeButton {
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  padding: 0.6rem 0.9rem;
+  color: var(--color-text);
+  background: rgba(22, 19, 16, 0.76);
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+}
+
+.secondaryButton:hover,
+.placeButton:hover,
+.placeButtonActive {
+  border-color: var(--color-gold);
+  color: var(--color-gold-light);
+}
+
+.placeButtonActive {
+  background: rgba(198, 163, 93, 0.12);
+}
+
+.secondaryButton:focus-visible,
+.placeButton:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+.placementHint {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  margin: 0.8rem 1rem 0;
+  padding: 0.4rem 0.8rem;
+  border: 1px solid var(--color-border-focus);
+  border-radius: 999px;
+  color: var(--color-gold-light);
+  background: rgba(22, 19, 16, 0.84);
+  font-size: 0.75rem;
+}
+
+.globeFrame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+
+.globeFallback {
+  display: grid;
+  min-height: 28rem;
+  place-items: center;
+  color: var(--color-text-muted, #aeb8ce);
+}
+
+.timelinePanel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-left: 1px solid var(--color-border);
+  background: linear-gradient(90deg, rgba(22, 19, 16, 0.94), var(--color-bg-panel));
+}
+
+.message,
+.loadingMessage {
+  margin: auto;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+}
+
+.loadingGlobe {
+  width: min(42vw, 420px);
+  aspect-ratio: 1;
+  margin: auto;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, rgba(242, 232, 217, 0.14), rgba(198, 163, 93, 0.04) 42%, transparent 70%);
+  animation: pulse 1.8s ease-in-out infinite alternate;
+}
+
+.loadingMessage {
+  position: absolute;
+  right: 0;
+  bottom: 2rem;
+  left: 0;
+  text-align: center;
+}
+
+.timelineSkeleton {
+  width: calc(100% - 4rem);
+  height: 70%;
+  margin: 4rem auto;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(110deg, var(--color-bg-subtle), var(--color-surface), var(--color-bg-subtle));
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+@keyframes pulse {
+  from { opacity: 0.45; transform: scale(0.96); }
+  to { opacity: 0.85; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  to { background-position: -200% 0; }
+}
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: minmax(0, 1fr) minmax(320px, 42vw);
+  }
+}
+
 @media (max-width: 768px) {
   .page {
-    grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
+    display: flex;
+    height: auto;
+    min-height: calc(100svh - var(--header-height));
+    flex-direction: column;
+    overflow: visible;
   }
 
-  .panelOpen {
-    grid-template-columns: 1fr;
+  .globeArea {
+    min-height: 440px;
   }
 
-  .panel {
-    position: fixed;
-    top: var(--header-height);
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 50;
-    border-right: none;
-    transform: translateX(-100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  .globeHeader {
+    padding: 1.25rem 1rem 0;
   }
 
-  .panelOpen .panel {
-    transform: translateX(0);
+  .globeHeader h1 {
+    font-size: 2rem;
   }
 
-  .listButton {
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+  .editActions {
+    max-width: 45%;
   }
 
-  /* Lecture : la liste est la page — pas de carte monde ni de toggle.
-     En mode édition, le layout carte + liste réapparaît (placement au clic). */
-  .listOnly .panel {
-    position: static;
-    transform: none;
-    width: 100%;
-    min-width: 0;
-    border-right: none;
+  .secondaryButton,
+  .placeButton {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.68rem;
   }
 
-  .listOnly .mapArea,
-  .listOnly .listButton,
-  .listOnly .closeBtn {
-    display: none;
+  .timelinePanel {
+    min-height: auto;
+    overflow: visible;
+    border-top: 1px solid var(--color-border);
+    border-left: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loadingGlobe,
+  .timelineSkeleton {
+    animation: none;
   }
 }

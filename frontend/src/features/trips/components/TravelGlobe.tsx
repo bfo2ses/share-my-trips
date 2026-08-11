@@ -68,8 +68,11 @@ function isValidCoordinate(lat: number | null | undefined, lng: number | null | 
 
 export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendingCoords, onLocationSelect }: TravelGlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
+  const surfaceRef = useRef<HTMLElement | null>(null);
+  const inViewport = useRef(true);
   const resumeTimer = useRef<number | null>(null);
   const [globeReady, setGlobeReady] = useState(false);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   const validTrips = useMemo(
     () => trips.filter((trip) => isValidCoordinate(trip.lat, trip.lng)),
@@ -84,10 +87,10 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
       lat: trip.lat,
       lng: trip.lng,
     })),
-    ...(placementMode && pendingCoords && isValidCoordinate(pendingCoords.lat, pendingCoords.lng)
+    ...(pendingCoords && isValidCoordinate(pendingCoords.lat, pendingCoords.lng)
       ? [{ id: 'pending-location', title: 'Nouvel emplacement', country: '', ...pendingCoords, pending: true }]
       : []),
-  ], [pendingCoords, placementMode, validTrips]);
+  ], [pendingCoords, validTrips]);
 
   const arcs = useMemo<GlobeArc[]>(
     () => validTrips.map((trip) => ({
@@ -99,6 +102,22 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
     })),
     [validTrips],
   );
+
+  useEffect(() => {
+    const surface = surfaceRef.current;
+    if (!surface) return undefined;
+
+    const updateDimensions = () => {
+      const { width, height } = surface.getBoundingClientRect();
+      setDimensions((current) => current.width === width && current.height === height ? current : { width, height });
+    };
+    updateDimensions();
+
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(updateDimensions);
+    observer.observe(surface);
+    return () => observer.disconnect();
+  }, []);
 
   const setAutoRotate = useCallback((enabled: boolean) => {
     const controls = globeRef.current?.controls?.();
@@ -145,6 +164,37 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
     };
   }, [globeReady, pauseForInteraction, scheduleResume]);
 
+  useEffect(() => {
+    if (!globeReady) return undefined;
+    const surface = surfaceRef.current;
+    if (!surface) return undefined;
+
+    const resumeIfVisible = () => {
+      if (document.visibilityState !== 'hidden' && inViewport.current) {
+        globeRef.current?.resumeAnimation();
+        if (resumeTimer.current === null) setAutoRotate(true);
+      }
+    };
+    const pauseIfHidden = () => globeRef.current?.pauseAnimation();
+
+    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(([entry]) => {
+      inViewport.current = entry.isIntersecting;
+      if (entry.isIntersecting) resumeIfVisible();
+      else pauseIfHidden();
+    }, { threshold: 0.1 });
+    observer?.observe(surface);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') pauseIfHidden();
+      else resumeIfVisible();
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      observer?.disconnect();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [globeReady, setAutoRotate]);
+
   useEffect(() => () => clearResumeTimer(), [clearResumeTimer]);
 
   function handlePointClick(point: object) {
@@ -162,12 +212,12 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
   }
 
   return (
-    <section className={styles.surface} aria-label="Globe des voyages">
+    <section ref={surfaceRef} className={styles.surface} aria-label="Globe des voyages">
       <GlobeBoundary>
         <Globe
           ref={globeRef}
-          width={undefined}
-          height={undefined}
+          width={dimensions.width || undefined}
+          height={dimensions.height || undefined}
           backgroundColor="rgba(0, 0, 0, 0)"
           globeImageUrl="https://unpkg.com/three-globe/example/img/earth-night.jpg"
           bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"

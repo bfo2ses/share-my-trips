@@ -21,8 +21,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
-  if (!start || !end) return '';
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+  if (!start) return 'Date à définir';
+  if (!end) return `À partir du ${formatDateOnly(start, opts)}`;
   return `${formatDateOnly(start, opts)} — ${formatDateOnly(end, opts)}`;
 }
 
@@ -49,13 +50,11 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
     styles.statusPublished;
 
   return (
-    <article
+    <button
+      type="button"
       className={styles.card}
       style={{ animationDelay: `${index * 80}ms` }}
       onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
     >
       <div
         className={styles.cover}
@@ -83,6 +82,6 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
         <h2 className={styles.title}>{trip.title}</h2>
         <p className={styles.dates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
       </div>
-    </article>
+    </button>
   );
 }

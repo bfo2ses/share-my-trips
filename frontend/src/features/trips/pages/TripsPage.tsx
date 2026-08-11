@@ -1,29 +1,29 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrips } from '../hooks/useTrips';
 import { useMe } from '../../auth/hooks/useMe';
-import { isMobileViewport } from '../../../lib/viewport';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
 import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useTripCloseData } from '../hooks/useTripCloseData';
-import { WorldMap } from '../components/WorldMap';
-import { TripCard } from '../components/TripCard';
-import { TripForm, type FormAction } from '../components/TripForm';
+import { TripTimeline } from '../components/TripTimeline';
+import { TripForm, type TripFormAction } from '../components/TripForm';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
+import { payloadErrors } from '../utils/payloadErrors';
 import styles from './TripsPage.module.css';
 
 type TripSummary = TripsQuery['trips'][number];
 
+const TravelGlobe = lazy(() => import('../components/TravelGlobe').then(({ TravelGlobe: Globe }) => ({ default: Globe })));
+
 export function TripsPage() {
   const navigate = useNavigate();
-  // On mobile the list is the primary entry point — the world map markers are
-  // too small to be a mandatory tap path.
-  const [panelOpen, setPanelOpen] = useState(isMobileViewport);
   const [formOpen, setFormOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [placementPreviewCoords, setPlacementPreviewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [placementMode, setPlacementMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -41,43 +41,46 @@ export function TripsPage() {
   const isAdmin = hasEditRole && editMode;
 
   const { data, fetching, error } = useTrips(hasEditRole ? undefined : ['PUBLISHED', 'CLOSED']);
+  const trips = data?.trips ?? [];
+  const datedTrips = trips
+    .filter((trip) => trip.startDate)
+    .sort((a, b) => (b.startDate ?? '').localeCompare(a.startDate ?? ''));
+  const undatedTrips = trips.filter((trip) => !trip.startDate);
 
   // Photos de l'album du voyage en cours d'édition, proposées comme cover.
   // Filtre par tripID indispensable : urql conserve la data du voyage
   // précédent quand la query est en pause ou en cours de refetch.
   const [{ data: tripMediaData }] = useTripMedia(isAdmin ? editingTrip?.id : null);
   const coverChoices = (tripMediaData?.tripMedia ?? [])
-    .filter((m) => m.tripID === editingTrip?.id && m.contentType.startsWith('image/'))
-    .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
-
-  const trips = data?.trips ?? [];
+    .filter((media) => media.tripID === editingTrip?.id && media.contentType.startsWith('image/'))
+    .map((media) => ({ id: media.id, thumbUrl: media.thumbUrl }));
 
   // Version fraîche du voyage édité : après un changement de statut, la liste
   // refetchée porte le nouveau statut alors que le state editingTrip est figé.
-  const liveEditingTrip = editingTrip ? trips.find((t) => t.id === editingTrip.id) ?? editingTrip : null;
+  const liveEditingTrip = editingTrip ? trips.find((trip) => trip.id === editingTrip.id) ?? editingTrip : null;
 
   const refetchContext = { additionalTypenames: ['Trip'] };
 
   // Données nécessaires à « Clôturer » (chaque étape doit porter au moins une
   // visite ; les dates de clôture = bornes des visites). Chargées uniquement
-  // pour un voyage publié en cours d'édition ; filtrées par tripID (data urql
-  // conservée en pause/refetch).
+  // pour un voyage publié en cours d'édition ; filtrées par tripID.
   const [{ data: closeData }] = useTripCloseData(
     isAdmin && liveEditingTrip?.status === 'PUBLISHED' ? liveEditingTrip.id : null,
   );
-  const closeStages = (closeData?.stages ?? []).filter((s) => s.tripID === liveEditingTrip?.id);
-  const closeVisits = (closeData?.tripVisits ?? []).filter((v) => v.tripID === liveEditingTrip?.id);
+  const closeStages = (closeData?.stages ?? []).filter((stage) => stage.tripID === liveEditingTrip?.id);
+  const closeVisits = (closeData?.tripVisits ?? []).filter((visit) => visit.tripID === liveEditingTrip?.id);
   const canCloseTrip =
     closeStages.length > 0 &&
-    closeStages.every((s) => closeVisits.some((v) => v.stageIDs[0] === s.id));
+    closeStages.every((stage) => closeVisits.some((visit) => visit.stageIDs[0] === stage.id));
 
-  async function handleCloseTrip() {
-    if (!liveEditingTrip || closeVisits.length === 0) return;
-    const dates = closeVisits.map((v) => v.date).sort();
-    await closeTrip(
+  async function handleCloseTrip(): Promise<string[] | void> {
+    if (!liveEditingTrip || closeVisits.length === 0) return ['Impossible de clôturer ce voyage sans visite.'];
+    const dates = closeVisits.map((visit) => visit.date).sort();
+    const result = await closeTrip(
       { id: liveEditingTrip.id, input: { firstVisitDate: dates[0], lastVisitDate: dates[dates.length - 1] } },
       refetchContext,
     );
+    return payloadErrors(result, result.data?.closeTrip.errors);
   }
 
   async function handleDelete() {
@@ -94,21 +97,37 @@ export function TripsPage() {
     handleFormClose();
   }
 
-  // Mêmes actions de cycle de vie que le formulaire de la page voyage —
-  // Clôturer reste sur la page voyage (elle exige les dates des jours).
-  const tripFormActions: FormAction[] = liveEditingTrip
+  async function handlePublish(): Promise<string[] | void> {
+    if (!liveEditingTrip) return;
+    const result = await publishTrip({ id: liveEditingTrip.id }, refetchContext);
+    return payloadErrors(result, result.data?.publishTrip.errors);
+  }
+
+  async function handleUnpublish(): Promise<string[] | void> {
+    if (!liveEditingTrip) return;
+    const result = await unpublishTrip({ id: liveEditingTrip.id }, refetchContext);
+    return payloadErrors(result, result.data?.unpublishTrip.errors);
+  }
+
+  async function handleReopen(): Promise<string[] | void> {
+    if (!liveEditingTrip) return;
+    const result = await reopenTrip({ id: liveEditingTrip.id }, refetchContext);
+    return payloadErrors(result, result.data?.reopenTrip.errors);
+  }
+
+  const tripFormActions: TripFormAction[] = liveEditingTrip
     ? [
         ...(liveEditingTrip.status === 'DRAFT'
-          ? [{ label: 'Publier le voyage', onClick: () => publishTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          ? [{ label: 'Publier le voyage', onClick: handlePublish }]
           : []),
         ...(liveEditingTrip.status === 'PUBLISHED'
-          ? [{ label: 'Repasser en brouillon', onClick: () => unpublishTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }]
           : []),
         ...(liveEditingTrip.status === 'PUBLISHED' && canCloseTrip
           ? [{ label: 'Clôturer le voyage', onClick: handleCloseTrip }]
           : []),
         ...(liveEditingTrip.status === 'CLOSED'
-          ? [{ label: 'Réouvrir le voyage', onClick: () => reopenTrip({ id: liveEditingTrip.id }, refetchContext) }]
+          ? [{ label: 'Réouvrir le voyage', onClick: handleReopen }]
           : []),
         { label: 'Supprimer le voyage', onClick: () => setConfirmDelete(true), danger: true },
       ]
@@ -116,11 +135,13 @@ export function TripsPage() {
 
   function handleEdit(trip: TripSummary) {
     setEditingTrip(trip);
-    setPendingCoords(trip.lat != null && trip.lng != null ? { lat: trip.lat, lng: trip.lng } : null);
+    setPendingCoords({ lat: trip.lat, lng: trip.lng });
+    setPlacementPreviewCoords(null);
+    setPlacementMode(false);
     setFormOpen(true);
   }
 
-  function handleCardClick(trip: TripSummary) {
+  function handleTripSelect(trip: TripSummary) {
     if (isAdmin) {
       handleEdit(trip);
     } else {
@@ -131,6 +152,8 @@ export function TripsPage() {
   function handleCreate() {
     setEditingTrip(null);
     setPendingCoords(null);
+    setPlacementPreviewCoords(null);
+    setPlacementMode(true);
     setFormOpen(true);
   }
 
@@ -138,10 +161,14 @@ export function TripsPage() {
     setFormOpen(false);
     setEditingTrip(null);
     setPendingCoords(null);
+    setPlacementPreviewCoords(null);
+    setPlacementMode(false);
   }
 
-  function handleMapClick(coords: { lat: number; lng: number }) {
+  function handleLocationSelect(coords: { lat: number; lng: number }) {
     setPendingCoords(coords);
+    setPlacementPreviewCoords(coords);
+    setPlacementMode(false);
     if (!formOpen) {
       setEditingTrip(null);
       setFormOpen(true);
@@ -150,92 +177,96 @@ export function TripsPage() {
 
   if (error) {
     return (
-      <main className={styles.page} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--color-text-muted)' }}>Impossible de charger les voyages.</p>
+      <main className={styles.page}>
+        <section className={styles.globeArea}>
+          <p className={styles.message} role="alert">Impossible de charger les voyages.</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (fetching && !data) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.globeArea}>
+          <div className={styles.loadingGlobe} aria-hidden="true" />
+          <p className={styles.loadingMessage}>Chargement des voyages…</p>
+        </section>
+        <aside className={styles.timelinePanel} aria-label="Timeline des voyages">
+          <div className={styles.timelineSkeleton} aria-hidden="true" />
+        </aside>
       </main>
     );
   }
 
   return (
-    // En lecture sur mobile, la liste EST la page (carte monde et toggle
-    // masqués) ; la carte ne réapparaît qu'en mode édition, pour le placement
-    // d'un voyage au clic. Desktop inchangé.
-    <main className={`${styles.page} ${panelOpen ? styles.panelOpen : ''} ${!isAdmin ? styles.listOnly : ''}`}>
-      {/* ── Panel gauche ── */}
-      <aside className={styles.panel}>
-        <div className={styles.panelHeader}>
-          <span className={styles.panelTitle}>Tous les voyages</span>
-          <div className={styles.panelActions}>
-            {isAdmin && (
-              <button className={styles.addBtn} onClick={handleCreate} aria-label="Créer un voyage">
-                +
-              </button>
-            )}
-            <button className={styles.closeBtn} onClick={() => setPanelOpen(false)} aria-label="Fermer">
-              ✕
-            </button>
+    <main className={styles.page}>
+      <section className={styles.globeArea} aria-labelledby="home-title">
+        <div className={styles.globeHeader}>
+          <div>
+            <p className={styles.kicker}>ShareMyTrips</p>
+            <h1 id="home-title">Mes voyages</h1>
           </div>
-        </div>
-        <div className={styles.list}>
-          {trips.map((trip, index) => (
-            <TripCard
-              key={trip.id}
-              trip={trip}
-              index={index}
-              isAdmin={isAdmin}
-              onEdit={handleCardClick}
-            />
-          ))}
-          {trips.length === 0 && (
-            <p className={styles.empty}>Aucun voyage pour le moment.</p>
+          {isAdmin && (
+            <div className={styles.editActions}>
+              <button type="button" className={styles.secondaryButton} onClick={handleCreate}>
+                Créer un voyage
+              </button>
+              <button
+                type="button"
+                className={`${styles.placeButton} ${placementMode ? styles.placeButtonActive : ''}`}
+                onClick={() => setPlacementMode((active) => !active)}
+                aria-pressed={placementMode}
+              >
+                {placementMode ? 'Annuler le placement' : 'Placer un voyage'}
+              </button>
+            </div>
           )}
         </div>
+        {placementMode && <p className={styles.placementHint}>Cliquez sur le globe pour placer le voyage.</p>}
+        <div className={styles.globeFrame}>
+          <Suspense fallback={<div className={styles.globeFallback} role="status">Chargement du globe…</div>}>
+            <TravelGlobe
+              trips={trips}
+              onTripSelect={handleTripSelect}
+              placementMode={isAdmin && placementMode}
+              pendingCoords={placementPreviewCoords ?? (!editingTrip && placementMode ? pendingCoords : null)}
+              onLocationSelect={isAdmin ? handleLocationSelect : undefined}
+            />
+          </Suspense>
+        </div>
+      </section>
+
+      <aside className={styles.timelinePanel}>
+        <TripTimeline
+          datedTrips={datedTrips}
+          undatedTrips={undatedTrips}
+          isAdmin={isAdmin}
+          onTripSelect={handleTripSelect}
+        />
       </aside>
 
-      {/* ── Carte ── */}
-      <div className={styles.mapArea}>
-        {!fetching && (
-          <WorldMap
-            trips={trips}
-            placementMode={isAdmin}
-            pendingCoords={formOpen ? pendingCoords : null}
-            onMapClick={isAdmin ? handleMapClick : undefined}
-          />
-        )}
-      </div>
-
-      {/* ── Bouton toggle ── */}
-      <button
-        className={styles.listButton}
-        onClick={() => setPanelOpen(!panelOpen)}
-        aria-label="Afficher la liste des voyages"
-      >
-        <span className={styles.listButtonIcon}>≡</span>
-        <span>Voyages</span>
-      </button>
-
-      {/* ── Formulaire (drawer) ── */}
       {isAdmin && (
         <>
-        <TripForm
-          open={formOpen}
-          onClose={handleFormClose}
-          trip={liveEditingTrip}
-          pendingCoords={pendingCoords}
-          coverChoices={coverChoices}
-          actions={tripFormActions}
-          noBackdrop
-        />
-        <ConfirmModal
-          open={confirmDelete}
-          title="Supprimer ce voyage ?"
-          message={deleteError ?? 'Toutes les étapes et toutes les visites associées seront définitivement perdues.'}
-          confirmLabel="Supprimer"
-          danger
-          busy={deleting}
-          onConfirm={handleDelete}
-          onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
-        />
+          <TripForm
+            open={formOpen}
+            onClose={handleFormClose}
+            trip={liveEditingTrip}
+            pendingCoords={pendingCoords}
+            coverChoices={coverChoices}
+            actions={tripFormActions}
+            noBackdrop
+          />
+          <ConfirmModal
+            open={confirmDelete}
+            title="Supprimer ce voyage ?"
+            message={deleteError ?? 'Toutes les étapes et toutes les visites associées seront définitivement perdues.'}
+            confirmLabel="Supprimer"
+            danger
+            busy={deleting}
+            onConfirm={handleDelete}
+            onCancel={() => { setConfirmDelete(false); setDeleteError(null); }}
+          />
         </>
       )}
     </main>
