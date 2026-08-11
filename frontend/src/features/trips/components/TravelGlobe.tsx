@@ -32,7 +32,6 @@ type GlobeArc = {
 interface TravelGlobeProps {
   trips: TripSummary[];
   onTripSelect: (trip: TripSummary) => void;
-  placementMode?: boolean;
   pendingCoords?: { lat: number; lng: number } | null;
   onLocationSelect?: (coords: { lat: number; lng: number }) => void;
 }
@@ -68,7 +67,7 @@ function isValidCoordinate(lat: number | null | undefined, lng: number | null | 
   return lat != null && lng != null && Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180;
 }
 
-export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendingCoords, onLocationSelect }: TravelGlobeProps) {
+export function TravelGlobe({ trips, onTripSelect, pendingCoords, onLocationSelect }: TravelGlobeProps) {
   const globeRef = useRef<GlobeMethods | undefined>(undefined);
   const surfaceRef = useRef<HTMLElement | null>(null);
   const inViewport = useRef(true);
@@ -215,7 +214,7 @@ export function TravelGlobe({ trips, onTripSelect, placementMode = false, pendin
 
   function handleGlobeClick(coords: { lat: number; lng: number }) {
     pauseForInteraction();
-    if (placementMode) onLocationSelect?.(coords);
+    onLocationSelect?.(coords);
   }
 
   return (

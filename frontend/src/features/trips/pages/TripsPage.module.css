@@ -17,66 +17,6 @@
     var(--color-bg);
 }
 
-.globeHeader {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1rem, 4vw, 4rem) 0;
-}
-
-.editActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.5rem;
-}
-
-.secondaryButton,
-.placeButton {
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  padding: 0.6rem 0.9rem;
-  color: var(--color-text);
-  background: rgba(22, 19, 16, 0.76);
-  font: inherit;
-  font-size: 0.72rem;
-  cursor: pointer;
-  transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
-}
-
-.secondaryButton:hover,
-.placeButton:hover,
-.placeButtonActive {
-  border-color: var(--color-gold);
-  color: var(--color-gold-light);
-}
-
-.placeButtonActive {
-  background: rgba(198, 163, 93, 0.12);
-}
-
-.secondaryButton:focus-visible,
-.placeButton:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 3px;
-}
-
-.placementHint {
-  position: relative;
-  z-index: 2;
-  align-self: center;
-  margin: 0.8rem 1rem 0;
-  padding: 0.4rem 0.8rem;
-  border: 1px solid var(--color-border-focus);
-  border-radius: 999px;
-  color: var(--color-gold-light);
-  background: rgba(22, 19, 16, 0.84);
-  font-size: 0.75rem;
-}
-
 .globeFrame {
   position: relative;
   flex: 1;
@@ -163,20 +103,6 @@
   .globeFrame {
     flex: none;
     height: 380px;
-  }
-
-  .globeHeader {
-    padding: 1.25rem 1rem 0;
-  }
-
-  .editActions {
-    max-width: 45%;
-  }
-
-  .secondaryButton,
-  .placeButton {
-    padding: 0.5rem 0.65rem;
-    font-size: 0.68rem;
   }
 
   .timelinePanel {

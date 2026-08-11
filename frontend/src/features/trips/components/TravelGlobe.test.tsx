@@ -88,10 +88,10 @@ describe('TravelGlobe', () => {
     expect(controls.autoRotate).toBe(true);
   });
 
-  it('uses globe clicks for coordinate placement only in placement mode', () => {
+  it('uses empty globe clicks for coordinate placement', () => {
     const onLocationSelect = vi.fn();
     const onTripSelect = vi.fn();
-    render(<TravelGlobe trips={trips} onTripSelect={onTripSelect} placementMode onLocationSelect={onLocationSelect} />);
+    render(<TravelGlobe trips={trips} onTripSelect={onTripSelect} onLocationSelect={onLocationSelect} />);
 
     act(() => latestProps.current.onGlobeClick?.({ lat: 12, lng: 34 }, {}));
     expect(onLocationSelect).toHaveBeenCalledWith({ lat: 12, lng: 34 });

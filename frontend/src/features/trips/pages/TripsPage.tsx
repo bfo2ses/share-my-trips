@@ -23,7 +23,6 @@ export function TripsPage() {
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [placementPreviewCoords, setPlacementPreviewCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [placementMode, setPlacementMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -137,7 +136,6 @@ export function TripsPage() {
     setEditingTrip(trip);
     setPendingCoords({ lat: trip.lat, lng: trip.lng });
     setPlacementPreviewCoords(null);
-    setPlacementMode(false);
     setFormOpen(true);
   }
 
@@ -149,30 +147,18 @@ export function TripsPage() {
     }
   }
 
-  function handleCreate() {
-    setEditingTrip(null);
-    setPendingCoords(null);
-    setPlacementPreviewCoords(null);
-    setPlacementMode(true);
-    setFormOpen(true);
-  }
-
   function handleFormClose() {
     setFormOpen(false);
     setEditingTrip(null);
     setPendingCoords(null);
     setPlacementPreviewCoords(null);
-    setPlacementMode(false);
   }
 
   function handleLocationSelect(coords: { lat: number; lng: number }) {
+    setEditingTrip(null);
     setPendingCoords(coords);
     setPlacementPreviewCoords(coords);
-    setPlacementMode(false);
-    if (!formOpen) {
-      setEditingTrip(null);
-      setFormOpen(true);
-    }
+    setFormOpen(true);
   }
 
   if (error) {
@@ -202,31 +188,12 @@ export function TripsPage() {
   return (
     <main className={styles.page}>
       <section className={styles.globeArea} aria-label="Globe des voyages">
-        {isAdmin && (
-          <div className={styles.globeHeader}>
-            <div className={styles.editActions}>
-              <button type="button" className={styles.secondaryButton} onClick={handleCreate}>
-                Créer un voyage
-              </button>
-              <button
-                type="button"
-                className={`${styles.placeButton} ${placementMode ? styles.placeButtonActive : ''}`}
-                onClick={() => setPlacementMode((active) => !active)}
-                aria-pressed={placementMode}
-              >
-                {placementMode ? 'Annuler le placement' : 'Placer un voyage'}
-              </button>
-            </div>
-          </div>
-        )}
-        {placementMode && <p className={styles.placementHint}>Cliquez sur le globe pour placer le voyage.</p>}
         <div className={styles.globeFrame}>
           <Suspense fallback={<div className={styles.globeFallback} role="status">Chargement du globe…</div>}>
             <TravelGlobe
               trips={trips}
               onTripSelect={handleTripSelect}
-              placementMode={isAdmin && placementMode}
-              pendingCoords={placementPreviewCoords ?? (!editingTrip && placementMode ? pendingCoords : null)}
+              pendingCoords={placementPreviewCoords ?? (!editingTrip ? pendingCoords : null)}
               onLocationSelect={isAdmin ? handleLocationSelect : undefined}
             />
           </Suspense>
