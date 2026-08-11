@@ -1,8 +1,10 @@
 package routing
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -20,11 +22,13 @@ func TestOpenRouteServiceClientRequestsGeoJSON(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewOpenRouteServiceClientWithBaseURL("test-key", server.URL, server.Client())
+	var logs bytes.Buffer
+	client := newOpenRouteServiceClientWithLogger("test-key", server.URL, server.Client(), log.New(&logs, "", 0))
 	distance, err := client.CalculateDrivingDistance(context.Background(), 48.8566, 2.3522, 45.7640, 4.8357)
 
 	require.NoError(t, err)
 	require.Equal(t, 12.345, distance)
+	require.Empty(t, logs.String())
 }
 
 func TestOpenRouteServiceClientUsesHeiGITBaseURL(t *testing.T) {
@@ -42,4 +46,23 @@ func TestOpenRouteServiceClientRejectsAGeoJSONRouteWithoutDistance(t *testing.T)
 	_, err := client.CalculateDrivingDistance(context.Background(), 48.8566, 2.3522, 45.7640, 4.8357)
 
 	require.ErrorIs(t, err, ErrRequestFailed)
+}
+
+func TestOpenRouteServiceClientLogsProviderFailureWithoutCredentials(t *testing.T) {
+	t.Parallel()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = fmt.Fprint(w, `{"error":"rate limit exceeded"}`)
+	}))
+	defer server.Close()
+
+	var logs bytes.Buffer
+	client := newOpenRouteServiceClientWithLogger("secret-test-key", server.URL, server.Client(), log.New(&logs, "", 0))
+	_, err := client.CalculateDrivingDistance(context.Background(), 48.8566, 2.3522, 45.7640, 4.8357)
+
+	require.ErrorIs(t, err, ErrRequestFailed)
+	require.Contains(t, logs.String(), "status=429")
+	require.Contains(t, logs.String(), "rate limit exceeded")
+	require.NotContains(t, logs.String(), "secret-test-key")
 }
