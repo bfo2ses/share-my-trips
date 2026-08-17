@@ -1,4 +1,9 @@
 .card {
+  display: block;
+  width: 100%;
+  padding: 0;
+  text-align: left;
+  font: inherit;
   background: var(--color-bg-subtle);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -115,4 +120,31 @@
   color: var(--color-text-muted);
   margin: 0;
   font-weight: 300;
+}
+
+@media (max-width: 768px) {
+  .cover {
+    height: 112px;
+    padding: 10px 12px;
+  }
+
+  .statusBadge {
+    top: 10px;
+    right: 12px;
+    padding: 2px 6px;
+    font-size: 0.56rem;
+  }
+
+  .body {
+    padding: 10px 14px 12px;
+  }
+
+  .title {
+    margin-bottom: 4px;
+    font-size: 0.95rem;
+  }
+
+  .dates {
+    font-size: 0.68rem;
+  }
 }

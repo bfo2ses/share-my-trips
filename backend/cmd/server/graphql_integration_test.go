@@ -191,6 +191,71 @@ func TestGraphQLHTTP_ProtectedMutationRejectsMissingOrInvalidToken(t *testing.T)
 	}
 }
 
+func TestGraphQLHTTP_PublishTripWithoutStartDateReturnsPayloadError(t *testing.T) {
+	harness := newGraphQLHarness(t)
+	setupEnvelope := harness.post(t, `mutation SetupAdmin($input: SetupAdminInput!) {
+		setupAdmin(input: $input) { token errors { field message } }
+	}`, map[string]any{"input": map[string]any{
+		"name": "Admin", "email": "publish-date@example.com", "password": "strong-password", "passwordConfirm": "strong-password",
+	}}, "")
+	setup := decodeData[struct {
+		SetupAdmin struct {
+			Token  *string     `json:"token"`
+			Errors []userError `json:"errors"`
+		} `json:"setupAdmin"`
+	}](t, setupEnvelope)
+	require.Empty(t, setup.SetupAdmin.Errors)
+	require.NotNil(t, setup.SetupAdmin.Token)
+
+	createEnvelope := harness.post(t, `mutation CreateTrip($input: CreateTripInput!) {
+		createTrip(input: $input) { trip { id status startDate } errors { field message } }
+	}`, map[string]any{"input": map[string]any{
+		"title": "Undated trip", "country": "Iceland", "lat": 64.1466, "lng": -21.9426,
+	}}, *setup.SetupAdmin.Token)
+	created := decodeData[struct {
+		CreateTrip struct {
+			Trip *struct {
+				ID        string  `json:"id"`
+				Status    string  `json:"status"`
+				StartDate *string `json:"startDate"`
+			} `json:"trip"`
+			Errors []userError `json:"errors"`
+		} `json:"createTrip"`
+	}](t, createEnvelope)
+	require.Empty(t, created.CreateTrip.Errors)
+	require.NotNil(t, created.CreateTrip.Trip)
+	assert.Equal(t, "DRAFT", created.CreateTrip.Trip.Status)
+	assert.Nil(t, created.CreateTrip.Trip.StartDate)
+
+	publishEnvelope := harness.post(t, `mutation PublishTrip($id: ID!) {
+		publishTrip(id: $id) { trip { id status } errors { field message } }
+	}`, map[string]any{"id": created.CreateTrip.Trip.ID}, *setup.SetupAdmin.Token)
+	published := decodeData[struct {
+		PublishTrip struct {
+			Trip *struct {
+				Status string `json:"status"`
+			} `json:"trip"`
+			Errors []userError `json:"errors"`
+		} `json:"publishTrip"`
+	}](t, publishEnvelope)
+	require.Nil(t, published.PublishTrip.Trip)
+	require.Len(t, published.PublishTrip.Errors, 1)
+	assert.Equal(t, "startDate", *published.PublishTrip.Errors[0].Field)
+	assert.Equal(t, "start date is required", published.PublishTrip.Errors[0].Message)
+
+	tripEnvelope := harness.post(t, `query Trip($id: ID!) {
+		trip(id: $id) { status startDate }
+	}`, map[string]any{"id": created.CreateTrip.Trip.ID}, *setup.SetupAdmin.Token)
+	current := decodeData[struct {
+		Trip struct {
+			Status    string  `json:"status"`
+			StartDate *string `json:"startDate"`
+		} `json:"trip"`
+	}](t, tripEnvelope)
+	assert.Equal(t, "DRAFT", current.Trip.Status)
+	assert.Nil(t, current.Trip.StartDate)
+}
+
 func TestGraphQLHTTP_MoveMediaReturnsPayloadErrors(t *testing.T) {
 	harness := newGraphQLHarness(t)
 	setupEnvelope := harness.post(t, `mutation SetupAdmin($input: SetupAdminInput!) {

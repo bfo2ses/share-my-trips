@@ -12,13 +12,16 @@ function snapUp(snap: SheetSnap): SheetSnap {
   return snap === 'peek' ? 'half' : 'full';
 }
 
-function snapDown(snap: SheetSnap): SheetSnap {
-  return snap === 'full' ? 'half' : 'peek';
+function snapDown(snap: SheetSnap, allowPeek: boolean): SheetSnap {
+  if (snap === 'full') return 'half';
+  return allowPeek ? 'peek' : 'half';
 }
 
 // Tap / Enter on the grab handle: cycle peek → half → full → half.
-function toggleSnap(snap: SheetSnap): SheetSnap {
-  return snap === 'full' ? 'half' : snapUp(snap);
+function toggleSnap(snap: SheetSnap, allowPeek: boolean): SheetSnap {
+  if (snap === 'full') return 'half';
+  if (snap === 'half') return 'full';
+  return allowPeek ? 'half' : 'full';
 }
 
 interface TripPanelProps {
@@ -31,6 +34,9 @@ interface TripPanelProps {
   onSnapChange: (snap: SheetSnap) => void;
   /** Mobile edit mode renders forms in the page flow instead of the sheet. */
   hiddenOnMobile?: boolean;
+  className?: string;
+  /** When false, the sheet cannot be dragged below its default half height. */
+  allowPeek?: boolean;
 }
 
 // Single navigation container for the trip page: fixed left drawer on desktop,
@@ -43,9 +49,12 @@ export function TripPanel({
   snap,
   onSnapChange,
   hiddenOnMobile = false,
+  className,
+  allowPeek = true,
 }: TripPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
   const drag = useRef<{ pointerId: number; startY: number } | null>(null);
+  const effectiveSnap = !allowPeek && snap === 'peek' ? 'half' : snap;
 
   function resetDragStyles() {
     if (panelRef.current) {
@@ -65,7 +74,7 @@ export function TripPanel({
     if (drag.current?.pointerId !== e.pointerId || !panelRef.current) return;
     // Live-follow downward only (upward snaps on release). At peek the sheet
     // is already at its lowest position: nothing to follow.
-    if (snap === 'peek') return;
+    if (effectiveSnap === 'peek') return;
     const dy = Math.max(0, e.clientY - drag.current.startY);
     panelRef.current.style.transition = 'none';
     panelRef.current.style.transform = `translateY(${dy}px)`;
@@ -77,12 +86,12 @@ export function TripPanel({
     drag.current = null;
     resetDragStyles();
     if (Math.abs(dy) < TAP_SLOP_PX) {
-      onSnapChange(toggleSnap(snap));
+      onSnapChange(toggleSnap(effectiveSnap, allowPeek));
     } else if (dy <= -SNAP_UP_DRAG_PX) {
-      onSnapChange(snapUp(snap));
+      onSnapChange(snapUp(effectiveSnap));
     } else if (dy >= SNAP_DOWN_DRAG_PX) {
-      // Never below peek: the sheet is persistent, there is no closed state.
-      onSnapChange(snapDown(snap));
+      // Never below the configured minimum: the sheet is persistent, there is no closed state.
+      onSnapChange(snapDown(effectiveSnap, allowPeek));
     }
   }
 
@@ -97,21 +106,21 @@ export function TripPanel({
   function handleGrabKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      onSnapChange(toggleSnap(snap));
+      onSnapChange(toggleSnap(effectiveSnap, allowPeek));
     }
   }
 
   return (
     <aside
       ref={panelRef}
-      className={`${styles.panel} ${snap === 'peek' ? styles.snapPeek : ''} ${snap === 'full' ? styles.snapFull : ''} ${hiddenOnMobile ? styles.mobileHidden : ''}`}
+      className={`${styles.panel} ${className ?? ''} ${effectiveSnap === 'peek' ? styles.snapPeek : ''} ${effectiveSnap === 'full' ? styles.snapFull : ''} ${hiddenOnMobile ? styles.mobileHidden : ''}`}
     >
       <div
         className={styles.grabZone}
         role="button"
         tabIndex={0}
         aria-label="Régler la hauteur du panneau"
-        aria-expanded={snap !== 'peek'}
+        aria-expanded={effectiveSnap !== 'peek'}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

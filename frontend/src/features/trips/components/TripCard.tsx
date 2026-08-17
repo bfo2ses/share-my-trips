@@ -11,6 +11,7 @@ interface TripCardProps {
   trip: TripSummary;
   index: number;
   isAdmin?: boolean;
+  onSelect?: (trip: TripSummary) => void;
   onEdit?: (trip: TripSummary) => void;
 }
 
@@ -21,12 +22,13 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 function formatDateRange(start: string | null | undefined, end: string | null | undefined): string {
-  if (!start || !end) return '';
   const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+  if (!start) return 'Date à définir';
+  if (!end) return `À partir du ${formatDateOnly(start, opts)}`;
   return `${formatDateOnly(start, opts)} — ${formatDateOnly(end, opts)}`;
 }
 
-export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
+export function TripCard({ trip, index, isAdmin, onSelect, onEdit }: TripCardProps) {
   const navigate = useNavigate();
   // Fallback to the gradient when the cover URL is dead (media deleted, or
   // legacy marker values). Keyed by URL so a new cover retries the load.
@@ -36,11 +38,15 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
   // In edit mode the card opens the trip form, which carries all lifecycle
   // actions (publish, close, delete…) — the card itself has no menu.
   function handleCardClick() {
+    if (onSelect) {
+      onSelect(trip);
+      return;
+    }
     if (isAdmin && onEdit) {
       onEdit(trip);
       return;
     }
-    navigate(`/trips/${trip.id}`);
+    navigate(`/trips/${trip.id}`, { viewTransition: true });
   }
 
   const badgeClass =
@@ -49,13 +55,11 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
     styles.statusPublished;
 
   return (
-    <article
+    <button
+      type="button"
       className={styles.card}
       style={{ animationDelay: `${index * 80}ms` }}
       onClick={handleCardClick}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
     >
       <div
         className={styles.cover}
@@ -83,6 +87,6 @@ export function TripCard({ trip, index, isAdmin, onEdit }: TripCardProps) {
         <h2 className={styles.title}>{trip.title}</h2>
         <p className={styles.dates}>{formatDateRange(trip.startDate, trip.endDate)}</p>
       </div>
-    </article>
+    </button>
   );
 }

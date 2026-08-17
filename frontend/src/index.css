@@ -17,6 +17,8 @@
 
   /* Layout */
   --header-height: 60px;
+  --trip-panel-width: 420px;
+  --trip-form-panel-width: 380px;
 
   /* Tokens UI */
   --radius-sm: 4px;
@@ -58,12 +60,13 @@ body {
     isolation: auto;
   }
 
-  /* Root : crossfade synchrone — même durée pour éviter tout gap */
+  /* Root : fondu léger avec une très courte mise en profondeur. Le panneau
+     conserve sa propre transition nommée plus bas. */
   ::view-transition-old(root) {
-    animation: 300ms ease both vt-crossfade-out;
+    animation: 260ms cubic-bezier(0.4, 0, 1, 1) both vt-page-out;
   }
   ::view-transition-new(root) {
-    animation: 300ms ease both vt-crossfade-in;
+    animation: 420ms cubic-bezier(0, 0, 0.2, 1) both vt-page-in;
   }
 
   /* Panneau voyage : slide depuis/vers la gauche */
@@ -86,11 +89,11 @@ body {
   }
 }
 
-@keyframes vt-crossfade-out {
-  to { opacity: 0; }
+@keyframes vt-page-out {
+  to { opacity: 0; transform: scale(0.992); }
 }
-@keyframes vt-crossfade-in {
-  from { opacity: 0; }
+@keyframes vt-page-in {
+  from { opacity: 0; transform: translateY(6px) scale(1.004); }
 }
 @keyframes vt-slide-from-left {
   from { transform: translateX(-100%); opacity: 0; }

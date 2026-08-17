@@ -17,18 +17,19 @@ const (
 
 // Domain errors.
 var (
-	ErrTitleRequired    = errors.New("title is required")
-	ErrCountryRequired  = errors.New("country is required")
-	ErrGPSRequired      = errors.New("GPS coordinates are required")
-	ErrInvalidDates     = errors.New("end date must be after start date")
-	ErrNotFound         = errors.New("trip not found")
-	ErrAlreadyPublished = errors.New("trip is already published")
-	ErrAlreadyClosed    = errors.New("trip is already closed")
-	ErrNotPublished     = errors.New("trip must be published to perform this action")
-	ErrClosed           = errors.New("trip is closed and cannot be modified")
-	ErrNoVisitsToClose  = errors.New("trip must have at least one visit to be closed")
-	ErrCannotCloseDraft = errors.New("cannot close a draft trip")
-	ErrNotClosed        = errors.New("trip is not closed")
+	ErrTitleRequired     = errors.New("title is required")
+	ErrCountryRequired   = errors.New("country is required")
+	ErrGPSRequired       = errors.New("GPS coordinates are required")
+	ErrStartDateRequired = errors.New("start date is required")
+	ErrInvalidDates      = errors.New("end date must be after start date")
+	ErrNotFound          = errors.New("trip not found")
+	ErrAlreadyPublished  = errors.New("trip is already published")
+	ErrAlreadyClosed     = errors.New("trip is already closed")
+	ErrNotPublished      = errors.New("trip must be published to perform this action")
+	ErrClosed            = errors.New("trip is closed and cannot be modified")
+	ErrNoVisitsToClose   = errors.New("trip must have at least one visit to be closed")
+	ErrCannotCloseDraft  = errors.New("cannot close a draft trip")
+	ErrNotClosed         = errors.New("trip is not closed")
 )
 
 // Trip is the root aggregate for the trip context.
@@ -91,6 +92,9 @@ func (t *Trip) Publish() error {
 	if t.Status == StatusPublished {
 		return ErrAlreadyPublished
 	}
+	if t.StartDate.IsZero() {
+		return ErrStartDateRequired
+	}
 	t.Status = StatusPublished
 	t.UpdatedAt = time.Now()
 	return nil
@@ -139,6 +143,9 @@ func (t *Trip) Reopen() error {
 func (t *Trip) Update(title, country, description, coverPhoto string, lat, lng float64, startDate, endDate time.Time) error {
 	if t.Status == StatusClosed {
 		return ErrClosed
+	}
+	if t.Status == StatusPublished && startDate.IsZero() {
+		return ErrStartDateRequired
 	}
 	if title == "" {
 		return ErrTitleRequired

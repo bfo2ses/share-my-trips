@@ -1,11 +1,10 @@
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { DndContext, PointerSensor, closestCenter, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis, restrictToParentElement } from '@dnd-kit/modifiers';
 import { CSS } from '@dnd-kit/utilities';
 import { useTripDetail } from '../hooks/useTripDetail';
-import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import type { MediaTarget } from '../../media/mediaOwner';
 import { useMe } from '../../auth/hooks/useMe';
 import { useEditMode } from '../../../components/EditMode/useEditMode';
@@ -13,7 +12,8 @@ import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useClos
 import { useUpdateStage, useDeleteStage } from '../../stages/hooks/useStageMutations';
 import { useAddVisit, useUpdateVisit, useDeleteVisit, useReorderVisits } from '../../stages/hooks/useVisitMutations';
 import { TripMap, type PlacementMode } from '../components/TripMap';
-import { TripForm, type FormAction } from '../components/TripForm';
+import { type FormAction } from '../components/TripForm';
+import { payloadErrors } from '../utils/payloadErrors';
 import { TripPanel, type SheetSnap } from '../components/TripPanel';
 import { VisitDetail } from '../components/VisitDetail';
 import { StageForm } from '../../stages/components/StageForm';
@@ -46,6 +46,17 @@ type ResolutionRequest = {
   pairs: ResolutionPair[];
   execute: (plan: TravelLegResolution[]) => Promise<void>;
 };
+
+function PanelFormView({ onBack, children }: { onBack: () => void; children: ReactNode }) {
+  return (
+    <div className={styles.panelFormView}>
+      <button type="button" className={styles.panelFormBack} onClick={onBack}>
+        ← Retour à la liste
+      </button>
+      <div className={styles.panelFormContent}>{children}</div>
+    </div>
+  );
+}
 
 function formatDate(d: string) {
   return formatDateOnly(d, { day: 'numeric', month: 'short' });
@@ -111,16 +122,6 @@ export function TripDetailPage() {
   const [, deleteVisit] = useDeleteVisit();
 
   const refetchContext = { additionalTypenames: ['Trip', 'Stage', 'Visit'] };
-
-  // Photos de l'album, proposées comme cover dans le formulaire voyage. En
-  // pause dès qu'une étape est sélectionnée : le retour au niveau voyage
-  // relance un fetch réseau (cache-and-network) et récupère les photos
-  // uploadées entre-temps. Filtre par tripID : urql conserve la data
-  // précédente pendant pause/refetch.
-  const [{ data: tripMediaData }] = useTripMedia(isAdmin && !selectedStageId ? id : null);
-  const coverChoices = (tripMediaData?.tripMedia ?? [])
-    .filter((m) => m.tripID === id && m.contentType.startsWith('image/'))
-    .map((m) => ({ id: m.id, thumbUrl: m.thumbUrl }));
 
   const trip = data?.trip ?? null;
   const isModifiable = trip ? trip.status !== 'CLOSED' : false;
@@ -443,24 +444,28 @@ export function TripDetailPage() {
     }
   }, [resolutionRequest, resolving]);
 
-  async function handlePublish() {
-    await publishTrip({ id: id! }, refetchContext);
+  async function handlePublish(): Promise<string[] | void> {
+    const result = await publishTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.publishTrip.errors);
   }
 
-  async function handleUnpublish() {
-    await unpublishTrip({ id: id! }, refetchContext);
+  async function handleUnpublish(): Promise<string[] | void> {
+    const result = await unpublishTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.unpublishTrip.errors);
   }
 
-  async function handleCloseTripAction() {
-    const allDates = Object.values(stageDateRanges).flatMap((r) => [r.start, r.end]).sort();
-    if (allDates.length === 0) return;
+  async function handleCloseTripAction(): Promise<string[] | void> {
+    const allDates = Object.values(stageDateRanges).flatMap((range) => [range.start, range.end]).sort();
+    if (allDates.length === 0) return ['Impossible de clôturer ce voyage sans visite.'];
     const firstVisitDate = allDates[0];
     const lastVisitDate = allDates[allDates.length - 1];
-    await closeTrip({ id: id!, input: { firstVisitDate, lastVisitDate } }, refetchContext);
+    const result = await closeTrip({ id: id!, input: { firstVisitDate, lastVisitDate } }, refetchContext);
+    return payloadErrors(result, result.data?.closeTrip.errors);
   }
 
-  async function handleReopen() {
-    await reopenTrip({ id: id! }, refetchContext);
+  async function handleReopen(): Promise<string[] | void> {
+    const result = await reopenTrip({ id: id! }, refetchContext);
+    return payloadErrors(result, result.data?.reopenTrip.errors);
   }
 
   async function handleDelete() {
@@ -573,8 +578,8 @@ export function TripDetailPage() {
     stages.length > 0 && Object.keys(stageDateRanges).length === stages.length;
 
   // Auto-open edit forms in edit mode based on current selection.
-  // Manual opens (create via map click / menu) take priority over auto-open.
-  const autoTripForm = isAdmin && isModifiable && !selectedStageId && !selectedTravelLegId && !travelLegForm && !stageFormOpen && !visitFormOpen;
+  // The trip itself is never edited from this page; trip lifecycle actions
+  // remain available from the trip action menu.
   const autoStageForm = isAdmin && isModifiable && !!selectedStage && !selectedVisitId && !stageFormOpen && !visitFormOpen;
   const autoVisitForm = isAdmin && isModifiable && !!selectedVisit && !!selectedStageId && !visitFormOpen;
 
@@ -627,21 +632,11 @@ export function TripDetailPage() {
   };
 
   // Auto-form is one of the three auto-open forms (panel mode in-grid).
-  const anyAutoForm = autoTripForm || autoStageForm || autoVisitForm || !!travelLegForm;
+  const anyAutoForm = autoStageForm || autoVisitForm || !!travelLegForm;
 
-  // Niveau du panneau unique : seule une visite sélectionnée change de vue. En
-  // mode édition (auto-form), le panneau reste sur la timeline — c'est le
-  // formulaire qui porte le détail sélectionné.
-  const panelLevel: 0 | 1 = anyAutoForm ? 0 : selectedVisit || selectedTravelLeg ? 1 : 0;
-
-  // Actions for each form panel
-  const tripFormActions: FormAction[] = isAdmin ? [
-    ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
-    ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
-    ...(trip.status === 'PUBLISHED' && canCloseTrip ? [{ label: 'Clôturer le voyage', onClick: handleCloseTripAction }] : []),
-    ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir le voyage', onClick: handleReopen }] : []),
-    { label: 'Supprimer le voyage', onClick: () => setConfirmDelete(true), danger: true },
-  ] : [];
+  // Niveau du panneau unique : une sélection ou un formulaire d'édition prend
+  // la place de la timeline dans le second pane.
+  const panelLevel: 0 | 1 = anyAutoForm || selectedVisit || selectedTravelLeg ? 1 : 0;
 
   const stageFormActions: FormAction[] = isAdmin && selectedStage ? [
     {
@@ -661,7 +656,9 @@ export function TripDetailPage() {
 
   const tripMenuItems: ActionMenuItem[] = isAdmin && !anyAutoForm
     ? [
+        ...(trip.status === 'DRAFT' ? [{ label: 'Publier le voyage', onClick: handlePublish }] : []),
         ...(trip.status === 'PUBLISHED' ? [{ label: 'Repasser en brouillon', onClick: handleUnpublish }] : []),
+        ...(trip.status === 'PUBLISHED' && canCloseTrip ? [{ label: 'Clôturer le voyage', onClick: handleCloseTripAction }] : []),
         ...(trip.status === 'CLOSED' ? [{ label: 'Réouvrir', onClick: handleReopen }] : []),
         { label: 'Supprimer', onClick: () => setConfirmDelete(true), danger: true },
       ]
@@ -676,13 +673,13 @@ export function TripDetailPage() {
         {recalculationNotice}
       </div>
     )}
-    <div className={`${styles.page} ${anyAutoForm ? styles.formPanelOpen : ''}`}>
+    <div className={styles.page}>
       {/* ── Panneau unique : timeline ⇄ détail d'étape ⇄ détail de visite ── */}
       <TripPanel
         level={panelLevel}
         snap={sheetSnap}
         onSnapChange={setSheetSnap}
-        hiddenOnMobile={anyAutoForm || stageFormOpen || visitFormOpen}
+        hiddenOnMobile={stageFormOpen || visitFormOpen}
         timeline={
           <>
         <div className={styles.tripHeader} style={{ borderColor: color }}>
@@ -730,7 +727,50 @@ export function TripDetailPage() {
         </div>
           </>
         }
-        visitDetail={selectedTravelLeg ? (
+        visitDetail={autoStageForm && selectedStage ? (
+          <PanelFormView onBack={handleBackToTimeline}>
+            <StageForm
+              open
+              panel
+              onClose={handleBackToTimeline}
+              tripID={id!}
+              stage={selectedStage}
+              pendingCoords={pendingStageCoords}
+              actions={stageFormActions}
+              onRecalculationWarning={setRecalculationNotice}
+            />
+          </PanelFormView>
+        ) : autoVisitForm && selectedVisit && effectiveVisitStageId ? (
+          <PanelFormView onBack={handleBackToTimeline}>
+            <VisitForm
+              open
+              panel
+              onClose={handleBackToTimeline}
+              tripID={id!}
+              stageID={effectiveVisitStageId}
+              visit={selectedVisit}
+              pendingCoords={pendingVisitCoords}
+              actions={visitFormActions}
+              onSubmitWithResolution={(submission) => submitVisitWithResolution(submission, handleBackToTimeline)}
+              mediaTargets={mediaTargets}
+            />
+          </PanelFormView>
+        ) : travelLegForm ? (
+          <PanelFormView onBack={closeTravelLegForm}>
+            <TravelLegForm
+              key={travelLegForm.travelLeg?.id ?? `${travelLegForm.fromStageID}-${travelLegForm.toStageID}`}
+              open
+              panel
+              tripID={id!}
+              fromStageID={travelLegForm.fromStageID}
+              toStageID={travelLegForm.toStageID}
+              travelLeg={travelLegForm.travelLeg}
+              onClose={closeTravelLegForm}
+              onSaved={handleTravelLegSaved}
+              mediaTargets={mediaTargets}
+            />
+          </PanelFormView>
+        ) : selectedTravelLeg ? (
           <TravelLegDetail
             travelLeg={selectedTravelLeg}
             canEdit={canEditDetail}
@@ -755,65 +795,6 @@ export function TripDetailPage() {
         )}
       />
 
-      {/* ── Form panel (mode édition) ── */}
-      {anyAutoForm && (
-        <div className={styles.formPanelWrapper}>
-          {autoTripForm && (
-            <TripForm
-              open
-              panel
-              onClose={() => {}}
-              trip={trip}
-              pendingCoords={pendingStageCoords}
-              actions={tripFormActions}
-              coverChoices={coverChoices}
-            />
-          )}
-          {autoStageForm && selectedStage && (
-            <StageForm
-              key={selectedStage.id}
-              open
-              panel
-              onClose={handleDetailClose}
-              tripID={id!}
-              stage={selectedStage}
-              pendingCoords={pendingStageCoords}
-              actions={stageFormActions}
-              onRecalculationWarning={setRecalculationNotice}
-            />
-          )}
-          {autoVisitForm && selectedVisit && effectiveVisitStageId && (
-            <VisitForm
-              key={`${effectiveVisitStageId}-${selectedVisit.id}`}
-              open
-              panel
-              onClose={handleBackToStage}
-              tripID={id!}
-              stageID={effectiveVisitStageId}
-              visit={selectedVisit}
-              pendingCoords={pendingVisitCoords}
-              actions={visitFormActions}
-              onSubmitWithResolution={(submission) => submitVisitWithResolution(submission, handleBackToStage)}
-              mediaTargets={mediaTargets}
-            />
-          )}
-          {travelLegForm && (
-            <TravelLegForm
-              key={travelLegForm.travelLeg?.id ?? `${travelLegForm.fromStageID}-${travelLegForm.toStageID}`}
-              open
-              panel
-              tripID={id!}
-              fromStageID={travelLegForm.fromStageID}
-              toStageID={travelLegForm.toStageID}
-              travelLeg={travelLegForm.travelLeg}
-              onClose={closeTravelLegForm}
-              onSaved={handleTravelLegSaved}
-              mediaTargets={mediaTargets}
-            />
-          )}
-        </div>
-      )}
-
       {/* ── Carte droite ── */}
       <div className={styles.mapArea}>
         {stages.length > 0 || canEditMarkers ? (
@@ -835,7 +816,7 @@ export function TripDetailPage() {
             onStageDragEnd={canEditMarkers ? handleStageDragEnd : undefined}
             onVisitDragEnd={canEditMarkers ? handleVisitDragEnd : undefined}
             panTarget={panTarget}
-            mobileSheetLayout={!anyAutoForm}
+            mobileSheetLayout={!stageFormOpen && !visitFormOpen}
           />
         ) : (
           !detailFetching && <div className={styles.emptyMap}>Aucune étape pour ce voyage.</div>
