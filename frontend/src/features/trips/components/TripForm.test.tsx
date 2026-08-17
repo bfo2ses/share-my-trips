@@ -46,4 +46,45 @@ describe('TripForm lifecycle actions', () => {
     resolveAction([]);
     await waitFor(() => expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeEnabled());
   });
+
+  it('starts globe repositioning from the edit form', () => {
+    vi.mocked(useCreateTrip).mockReturnValue([{}, vi.fn()] as never);
+    vi.mocked(useUpdateTrip).mockReturnValue([{}, vi.fn()] as never);
+    const onReposition = vi.fn();
+
+    render(<TripForm open onClose={vi.fn()} trip={trip} onReposition={onReposition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Repositionner sur le globe' }));
+
+    expect(onReposition).toHaveBeenCalledOnce();
+  });
+
+  it('shows an error when a lifecycle action rejects', async () => {
+    vi.mocked(useCreateTrip).mockReturnValue([{}, vi.fn()] as never);
+    vi.mocked(useUpdateTrip).mockReturnValue([{}, vi.fn()] as never);
+    const action = vi.fn().mockRejectedValue(new Error('network failure'));
+
+    render(<TripForm open onClose={vi.fn()} trip={trip} actions={[{ label: 'Publier le voyage', onClick: action }]} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Publier le voyage' }));
+
+    expect(await screen.findByText('Une erreur est survenue.')).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Enregistrer' })).toBeEnabled();
+  });
+
+  it('disables repositioning while saving', async () => {
+    let resolveUpdate!: (result: unknown) => void;
+    const updateTrip = vi.fn(() => new Promise((resolve) => { resolveUpdate = resolve; }));
+    vi.mocked(useCreateTrip).mockReturnValue([{}, vi.fn()] as never);
+    vi.mocked(useUpdateTrip).mockReturnValue([{}, updateTrip] as never);
+    const onReposition = vi.fn();
+
+    render(<TripForm open onClose={vi.fn()} trip={trip} onReposition={onReposition} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enregistrer' }));
+
+    expect(screen.getByRole('button', { name: 'Repositionner sur le globe' })).toBeDisabled();
+    resolveUpdate({ data: { updateTrip: { errors: [] } } });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Repositionner sur le globe' })).toBeEnabled());
+  });
 });

@@ -1,13 +1,28 @@
 .page {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 38vw);
+  grid-template-columns: var(--trip-panel-width) minmax(0, 1fr);
   height: calc(100svh - var(--header-height));
   overflow: hidden;
   background: var(--color-bg);
 }
 
+.formPanelOpen {
+  grid-template-columns: var(--trip-panel-width) minmax(0, 1fr) var(--trip-form-panel-width);
+}
+
+.singleColumn {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.homePanel {
+  grid-column: 1;
+  grid-row: 1;
+}
+
 .globeArea {
   position: relative;
+  grid-column: 2;
+  grid-row: 1;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -17,10 +32,31 @@
     var(--color-bg);
 }
 
+.singleColumn .globeArea {
+  grid-column: 1;
+}
+
 .globeFrame {
   position: relative;
   flex: 1;
   min-height: 0;
+}
+
+.placementHint {
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  z-index: 2;
+  margin: 0;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--color-border-focus);
+  border-radius: 999px;
+  color: var(--color-gold-light);
+  background: rgba(22, 19, 16, 0.9);
+  font-size: 0.75rem;
+  text-align: center;
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .globeFallback {
@@ -28,14 +64,6 @@
   min-height: 28rem;
   place-items: center;
   color: var(--color-text-muted, #aeb8ce);
-}
-
-.timelinePanel {
-  min-width: 0;
-  min-height: 0;
-  overflow: hidden;
-  border-left: 1px solid var(--color-border);
-  background: linear-gradient(90deg, rgba(22, 19, 16, 0.94), var(--color-bg-panel));
 }
 
 .message,
@@ -72,6 +100,13 @@
   animation: shimmer 1.8s linear infinite;
 }
 
+.formPanelWrapper {
+  grid-column: 3;
+  grid-row: 1;
+  overflow: hidden;
+  border-left: 1px solid var(--color-border);
+}
+
 @keyframes pulse {
   from { opacity: 0.45; transform: scale(0.96); }
   to { opacity: 0.85; transform: scale(1); }
@@ -79,12 +114,6 @@
 
 @keyframes shimmer {
   to { background-position: -200% 0; }
-}
-
-@media (max-width: 900px) {
-  .page {
-    grid-template-columns: minmax(0, 1fr) minmax(320px, 42vw);
-  }
 }
 
 @media (max-width: 768px) {
@@ -97,19 +126,24 @@
   }
 
   .globeArea {
+    flex: none;
     min-height: 0;
+    height: calc(100% - 55svh);
   }
 
   .globeFrame {
-    flex: none;
-    height: 380px;
+    min-height: 0;
+    height: 100%;
   }
 
-  .timelinePanel {
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    border-top: 1px solid var(--color-border);
+  .formPanelWrapper {
+    position: fixed;
+    top: var(--header-height);
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    background: var(--color-bg-panel);
     border-left: none;
   }
 }

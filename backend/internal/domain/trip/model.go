@@ -144,6 +144,9 @@ func (t *Trip) Update(title, country, description, coverPhoto string, lat, lng f
 	if t.Status == StatusClosed {
 		return ErrClosed
 	}
+	if t.Status == StatusPublished && startDate.IsZero() {
+		return ErrStartDateRequired
+	}
 	if title == "" {
 		return ErrTitleRequired
 	}

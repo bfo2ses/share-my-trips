@@ -39,9 +39,10 @@ interface TripFormProps {
   panel?: boolean;
   actions?: TripFormAction[];
   coverChoices?: CoverChoice[];
+  onReposition?: () => void;
 }
 
-export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel, actions, coverChoices }: TripFormProps) {
+export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel, actions, coverChoices, onReposition }: TripFormProps) {
   return (
     <>
       {open && !noBackdrop && !panel && (
@@ -50,13 +51,13 @@ export function TripForm({ open, onClose, trip, pendingCoords, noBackdrop, panel
       <aside className={`${styles.drawer} ${open ? styles.open : ''} ${panel ? styles.panel : ''}`}>
         {/* Keyed by trip so switching the edited trip while the form is open
             remounts the content and reseeds the field state. */}
-        {open && <TripFormContent key={trip?.id ?? 'new'} trip={trip} pendingCoords={pendingCoords} onClose={onClose} panel={panel} actions={actions} coverChoices={coverChoices} />}
+        {open && <TripFormContent key={trip?.id ?? 'new'} trip={trip} pendingCoords={pendingCoords} onClose={onClose} panel={panel} actions={actions} coverChoices={coverChoices} onReposition={onReposition} />}
       </aside>
     </>
   );
 }
 
-function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverChoices }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: TripFormAction[]; coverChoices?: CoverChoice[] }) {
+function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverChoices, onReposition }: { trip?: TripData | null; pendingCoords?: { lat: number; lng: number } | null; onClose: () => void; panel?: boolean; actions?: TripFormAction[]; coverChoices?: CoverChoice[]; onReposition?: () => void }) {
   const isEdit = !!trip;
 
   const [title, setTitle] = useState(trip?.title ?? '');
@@ -67,6 +68,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
   const [coverPhoto, setCoverPhoto] = useState(trip?.coverPhoto ?? '');
   const [errors, setErrors] = useState<string[]>([]);
   const [actionBusy, setActionBusy] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const [, createTrip] = useCreateTrip();
   const [, updateTrip] = useUpdateTrip();
@@ -77,7 +79,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (actionBusy !== null) return;
+    if (actionBusy !== null || saving) return;
     setErrors([]);
 
     if (lat == null || lng == null) {
@@ -97,41 +99,50 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
     };
 
     const context = { additionalTypenames: ['Trip'] };
+    setSaving(true);
 
-    if (isEdit) {
-      const result = await updateTrip({ id: trip!.id, input }, context);
-      if (result.error) {
-        setErrors(['Une erreur est survenue.']);
-        return;
+    try {
+      if (isEdit) {
+        const result = await updateTrip({ id: trip!.id, input }, context);
+        if (result.error) {
+          setErrors(['Une erreur est survenue.']);
+          return;
+        }
+        const errs = result.data?.updateTrip.errors ?? [];
+        if (errs.length > 0) {
+          setErrors(errs.map((err) => err.message));
+          return;
+        }
+      } else {
+        const result = await createTrip({ input }, context);
+        if (result.error) {
+          setErrors(['Une erreur est survenue.']);
+          return;
+        }
+        const errs = result.data?.createTrip.errors ?? [];
+        if (errs.length > 0) {
+          setErrors(errs.map((err) => err.message));
+          return;
+        }
       }
-      const errs = result.data?.updateTrip.errors ?? [];
-      if (errs.length > 0) {
-        setErrors(errs.map((err) => err.message));
-        return;
-      }
-    } else {
-      const result = await createTrip({ input }, context);
-      if (result.error) {
-        setErrors(['Une erreur est survenue.']);
-        return;
-      }
-      const errs = result.data?.createTrip.errors ?? [];
-      if (errs.length > 0) {
-        setErrors(errs.map((err) => err.message));
-        return;
-      }
+
+      onClose();
+    } catch {
+      setErrors(['Une erreur est survenue.']);
+    } finally {
+      setSaving(false);
     }
-
-    onClose();
   }
 
   async function handleAction(action: TripFormAction, index: number) {
-    if (actionBusy !== null) return;
+    if (actionBusy !== null || saving) return;
     setErrors([]);
     setActionBusy(index);
     try {
       const actionErrors = await action.onClick();
       if (actionErrors && actionErrors.length > 0) setErrors(actionErrors);
+    } catch {
+      setErrors(['Une erreur est survenue.']);
     } finally {
       setActionBusy(null);
     }
@@ -203,6 +214,12 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
           )}
         </div>
 
+        {isEdit && onReposition && (
+          <button type="button" className={styles.repositionButton} onClick={onReposition} disabled={actionBusy !== null || saving}>
+            Repositionner sur le globe
+          </button>
+        )}
+
         {coverChoices && coverChoices.length > 0 && (
           <div className={styles.label}>
             Photo de couverture
@@ -251,8 +268,8 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
           </label>
         </div>
 
-        <button type="submit" className={styles.submit} disabled={actionBusy !== null}>
-          {isEdit ? 'Enregistrer' : 'Créer le voyage'}
+        <button type="submit" className={styles.submit} disabled={actionBusy !== null || saving}>
+          {saving ? 'Enregistrement…' : isEdit ? 'Enregistrer' : 'Créer le voyage'}
         </button>
 
         {actions && actions.length > 0 && (
@@ -263,7 +280,7 @@ function TripFormContent({ trip, pendingCoords, onClose, panel, actions, coverCh
                 type="button"
                 className={`${styles.actionBtn} ${action.danger ? styles.actionDanger : ''}`}
                 onClick={() => void handleAction(action, i)}
-                disabled={actionBusy !== null}
+                disabled={actionBusy !== null || saving}
               >
                 {actionBusy === i ? 'En cours…' : action.label}
               </button>

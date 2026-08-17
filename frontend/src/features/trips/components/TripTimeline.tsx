@@ -108,7 +108,7 @@ function TimelineSection({
                     trip={trip}
                     index={groupStartIndex + tripIndex}
                     isAdmin={isAdmin}
-                    onEdit={onTripSelect}
+                    onSelect={onTripSelect}
                   />
                 ))}
               </div>

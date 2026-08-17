@@ -4,20 +4,56 @@
   min-height: 460px;
   height: 100%;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 45%, rgba(198, 163, 93, 0.08), transparent 58%);
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(72, 126, 203, 0.2), transparent 34%),
+    radial-gradient(circle at 50% 45%, rgba(198, 163, 93, 0.14), transparent 58%),
+    radial-gradient(circle at 18% 18%, rgba(104, 151, 220, 0.08), transparent 24%),
+    linear-gradient(180deg, #07101f 0%, #0d111c 72%, #0d111c 100%);
+}
+
+.surface::before {
+  position: absolute;
+  inset: 8% 14%;
+  z-index: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(173, 211, 255, 0.18), transparent 16%),
+    radial-gradient(circle, rgba(31, 76, 139, 0.3), transparent 64%);
+  filter: blur(22px);
+  content: '';
+  pointer-events: none;
+}
+
+.surface::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.42;
+  background-image:
+    radial-gradient(rgba(242, 232, 217, 0.5) 0.7px, transparent 0.7px),
+    radial-gradient(rgba(219, 191, 124, 0.4) 0.6px, transparent 0.6px);
+  background-position: 12px 24px, 76px 62px;
+  background-size: 118px 96px, 154px 128px;
+  content: '';
+  pointer-events: none;
 }
 
 .surface :global(canvas) {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100% !important;
   height: 100% !important;
+  filter: drop-shadow(0 0 24px rgba(65, 128, 217, 0.16));
 }
 
 .loading {
   position: absolute;
   inset: 20% 20%;
+  z-index: 2;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, rgba(242, 232, 217, 0.14), rgba(198, 163, 93, 0.04) 42%, transparent 70%);
+  background: radial-gradient(circle at 35% 30%, rgba(178, 213, 255, 0.2), rgba(198, 163, 93, 0.07) 42%, transparent 70%);
   pointer-events: none;
 }
 
@@ -33,6 +69,6 @@
 @media (max-width: 768px) {
   .surface,
   .error {
-    min-height: 360px;
+    min-height: 0;
   }
 }

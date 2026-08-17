@@ -7,6 +7,7 @@ import { useTripMedia } from '../../media/hooks/useMediaQueries';
 import { usePublishTrip, useUnpublishTrip, useDeleteTrip, useReopenTrip, useCloseTrip } from '../hooks/useTripMutations';
 import { useTripCloseData } from '../hooks/useTripCloseData';
 import { TripTimeline } from '../components/TripTimeline';
+import { TripPanel, type SheetSnap } from '../components/TripPanel';
 import { TripForm, type TripFormAction } from '../components/TripForm';
 import { ConfirmModal } from '../../../components/ConfirmModal/ConfirmModal';
 import type { TripsQuery } from '../../../graphql/generated/graphql';
@@ -23,9 +24,12 @@ export function TripsPage() {
   const [editingTrip, setEditingTrip] = useState<TripSummary | null>(null);
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [placementPreviewCoords, setPlacementPreviewCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [focusTrip, setFocusTrip] = useState<TripSummary | null>(null);
+  const [repositioning, setRepositioning] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('half');
 
   const [, publishTrip] = usePublishTrip();
   const [, unpublishTrip] = useUnpublishTrip();
@@ -136,6 +140,7 @@ export function TripsPage() {
     setEditingTrip(trip);
     setPendingCoords({ lat: trip.lat, lng: trip.lng });
     setPlacementPreviewCoords(null);
+    setRepositioning(false);
     setFormOpen(true);
   }
 
@@ -147,23 +152,47 @@ export function TripsPage() {
     }
   }
 
+  function handleTimelineTripSelect(trip: TripSummary) {
+    if (isAdmin) {
+      handleEdit(trip);
+      return;
+    }
+    setFocusTrip(trip);
+  }
+
   function handleFormClose() {
     setFormOpen(false);
     setEditingTrip(null);
     setPendingCoords(null);
     setPlacementPreviewCoords(null);
+    setRepositioning(false);
   }
 
   function handleLocationSelect(coords: { lat: number; lng: number }) {
+    if (repositioning && editingTrip) {
+      setPendingCoords(coords);
+      setPlacementPreviewCoords(coords);
+      setRepositioning(false);
+      return;
+    }
+
+    if (editingTrip) return;
+
     setEditingTrip(null);
     setPendingCoords(coords);
     setPlacementPreviewCoords(coords);
     setFormOpen(true);
   }
 
+  function handleReposition() {
+    if (!editingTrip) return;
+    setPlacementPreviewCoords(null);
+    setRepositioning(true);
+  }
+
   if (error) {
     return (
-      <main className={styles.page}>
+      <main className={`${styles.page} ${styles.singleColumn}`}>
         <section className={styles.globeArea}>
           <p className={styles.message} role="alert">Impossible de charger les voyages.</p>
         </section>
@@ -178,21 +207,36 @@ export function TripsPage() {
           <div className={styles.loadingGlobe} aria-hidden="true" />
           <p className={styles.loadingMessage}>Chargement des voyages…</p>
         </section>
-        <aside className={styles.timelinePanel} aria-label="Timeline des voyages">
-          <div className={styles.timelineSkeleton} aria-hidden="true" />
-        </aside>
+        <TripPanel
+          level={0}
+          snap={sheetSnap}
+          onSnapChange={setSheetSnap}
+          allowPeek={false}
+          className={styles.homePanel}
+          timeline={<div className={styles.timelineSkeleton} aria-hidden="true" />}
+          visitDetail={null}
+        />
       </main>
     );
   }
 
   return (
-    <main className={styles.page}>
+    <main className={`${styles.page} ${isAdmin && formOpen ? styles.formPanelOpen : ''}`}>
       <section className={styles.globeArea} aria-label="Globe des voyages">
+        {repositioning && (
+          <p className={styles.placementHint}>Cliquez sur le globe pour choisir le nouvel emplacement.</p>
+        )}
         <div className={styles.globeFrame}>
           <Suspense fallback={<div className={styles.globeFallback} role="status">Chargement du globe…</div>}>
             <TravelGlobe
               trips={trips}
-              onTripSelect={handleTripSelect}
+              onTripSelect={(trip) => { if (!repositioning) handleTripSelect(trip); }}
+              focusTripId={focusTrip?.id}
+              onFocusComplete={(trip) => {
+                setFocusTrip(null);
+                handleTripSelect(trip);
+              }}
+              onFocusCancel={() => setFocusTrip(null)}
               pendingCoords={placementPreviewCoords ?? (!editingTrip ? pendingCoords : null)}
               onLocationSelect={isAdmin ? handleLocationSelect : undefined}
             />
@@ -200,26 +244,40 @@ export function TripsPage() {
         </div>
       </section>
 
-      <aside className={styles.timelinePanel}>
-        <TripTimeline
-          datedTrips={datedTrips}
-          undatedTrips={undatedTrips}
-          isAdmin={isAdmin}
-          onTripSelect={handleTripSelect}
-        />
-      </aside>
+      <TripPanel
+        level={0}
+        snap={sheetSnap}
+        onSnapChange={setSheetSnap}
+        allowPeek={false}
+        className={styles.homePanel}
+        hiddenOnMobile={isAdmin && formOpen}
+        timeline={(
+          <TripTimeline
+            datedTrips={datedTrips}
+            undatedTrips={undatedTrips}
+            isAdmin={isAdmin}
+            onTripSelect={handleTimelineTripSelect}
+          />
+        )}
+        visitDetail={null}
+      />
 
       {isAdmin && (
         <>
-          <TripForm
-            open={formOpen}
-            onClose={handleFormClose}
-            trip={liveEditingTrip}
-            pendingCoords={pendingCoords}
-            coverChoices={coverChoices}
-            actions={tripFormActions}
-            noBackdrop
-          />
+          {formOpen && (
+            <div className={styles.formPanelWrapper}>
+              <TripForm
+                open
+                panel
+                onClose={handleFormClose}
+                trip={liveEditingTrip}
+                pendingCoords={pendingCoords}
+                coverChoices={coverChoices}
+                actions={tripFormActions}
+                onReposition={handleReposition}
+              />
+            </div>
+          )}
           <ConfirmModal
             open={confirmDelete}
             title="Supprimer ce voyage ?"

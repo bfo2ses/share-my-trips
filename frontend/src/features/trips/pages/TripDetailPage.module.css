@@ -1,14 +1,8 @@
 .page {
   display: grid;
-  grid-template-columns: 420px 1fr;
+  grid-template-columns: var(--trip-panel-width) minmax(0, 1fr);
   height: calc(100svh - var(--header-height));
   overflow: hidden;
-  transition: grid-template-columns 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Mode édition : colonne formulaire à droite (formPanelWrapper, order 3) */
-.formPanelOpen {
-  grid-template-columns: 420px 1fr 380px;
 }
 
 .tripHeader {
@@ -246,12 +240,37 @@
   border-style: dashed;
 }
 
-/* ── Form panel (edit mode) ── */
-.formPanelWrapper {
+/* ── Form view inside the panel ── */
+.panelFormView {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.panelFormBack {
+  flex-shrink: 0;
+  padding: 12px 24px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.panelFormBack:hover {
+  color: var(--color-gold);
+  background: var(--color-bg-subtle);
+}
+
+.panelFormContent {
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  order: 3;
-  border-left: 1px solid var(--color-border);
-  border-right: none;
 }
 
 /* ── Carte ── */
@@ -284,16 +303,6 @@
   .page {
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
-  }
-
-  /* Mode édition : layout empilé (carte 35svh + formulaire), sheet masqué */
-  .formPanelOpen {
-    grid-template-rows: 35svh 1fr;
-  }
-
-  .formPanelWrapper {
-    order: 2;
-    border-left: none;
   }
 
   .mapArea {
