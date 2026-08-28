@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
+import { lazy, Suspense, useEffect, useRef } from 'react';
+import { MapContainer, Marker, Polyline, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import type { StagesQuery, TravelLeg, VisitsQuery } from '../../../graphql/generated/graphql';
 import { MOBILE_QUERY, isMobileViewport } from '../../../lib/viewport';
@@ -8,6 +8,8 @@ import { transportIconSVG, transportLabel } from '../../travel-legs/transport';
 import { formatDateOnly } from '../../../lib/date';
 import styles from './TripMap.module.css';
 import 'leaflet/dist/leaflet.css';
+
+const OpenFreeMapLayer = lazy(() => import('./OpenFreeMapLayer'));
 
 type Stage = Pick<StagesQuery['stages'][number], 'id' | 'tripID' | 'city' | 'displayName' | 'lat' | 'lng' | 'description'>;
 type Visit = VisitsQuery['visits'][number];
@@ -327,13 +329,13 @@ export function TripMap({
       <MapContainer
         center={stages[0] ? [stages[0].lat, stages[0].lng] : [64.1, -18.5]}
         zoom={6}
+        minZoom={1}
         className={styles.map}
         zoomControl={false}
       >
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-        />
+        <Suspense fallback={null}>
+          <OpenFreeMapLayer />
+        </Suspense>
 
         <TouchGestureMode interactive={mobileSheetLayout} />
         <PlacementZoomToggle disabled={drawerOpen} />
